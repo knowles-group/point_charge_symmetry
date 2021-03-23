@@ -16,3 +16,5 @@ foreach (t test-${PROJECT_NAME})
         add_test(${t} ${t})
     endif ()
 endforeach ()
+
+file(COPY h2o.xyz DESTINATION .)

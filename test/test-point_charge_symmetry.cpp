@@ -3,6 +3,7 @@
 #include <molpro/point_charge_symmetry/Operator.h>
 #include <gmock/gmock.h>
 #include <molpro/point_charge_symmetry/Group.h>
+#include <molpro/point_charge_symmetry/Molecule.h>
 
 using std::cout;
 using namespace molpro::point_charge_symmetry;
@@ -56,4 +57,9 @@ TEST(point_charge_symmetry, Group) {
   c2v.add(Axis({0,0,1},2));
   c2v.add(ReflectionPlane({1,0,0}));
   c2v.add(ReflectionPlane({0,1,0}));
+}
+
+TEST(point_charge_symmetry, Molecule) {
+  Molecule water("h2o.xyz");
+  std::cout << water << std::endl;
 }
