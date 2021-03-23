@@ -1,14 +1,15 @@
 #include <gtest/gtest.h>
 #include <iostream>
-#include <molpro/point_charge_symmetry/SymmetryOperator.h>
+#include <molpro/point_charge_symmetry/Operator.h>
 #include <gmock/gmock.h>
+#include <molpro/point_charge_symmetry/Group.h>
 
 using std::cout;
 using namespace molpro::point_charge_symmetry;
-using vec = SymmetryOperator::vec;
-using mat = SymmetryOperator::mat;
+using vec = Operator::vec;
+using mat = Operator::mat;
 
-void test_operation(const vec &initial, const SymmetryOperator &op, const vec &expected) {
+void test_operation(const vec &initial, const Operator &op, const vec &expected) {
   auto ttt = op(initial);
   EXPECT_THAT(std::vector<double>(ttt.data(),ttt.data()+3),
   ::testing::Pointwise(::testing::DoubleNear(1e-13), std::vector<double>(expected.data(),expected.data()+3)))<< "original: "<<initial.transpose() << "\nOperator: "<<op;
@@ -45,4 +46,14 @@ TEST(point_charge_symmetry, rotated_operations) {
   test_operation({1,1,1},ReflectionPlane(coords,{1,-1,0}),{-1,-1,1});
   test_operation({1,1,1},ReflectionPlane(coords,{-1,1,0}),{-1,-1,1});
   test_operation({-1,-1,1},ReflectionPlane(coords,{-1,1,0}),{1,1,1});
+}
+
+TEST(point_charge_symmetry, Group) {
+  mat axes; axes << 0,1,0,-1,0,0,0,0,1;
+  CoordinateSystem coords({0,0,0});
+  Group c2v(coords);
+  c2v.add(Identity());
+  c2v.add(Axis({0,0,1},2));
+  c2v.add(ReflectionPlane({1,0,0}));
+  c2v.add(ReflectionPlane({0,1,0}));
 }

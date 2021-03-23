@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_subdirectory(src)
 
-add_executable(point_charge_symmetry_main main.cpp)
+add_executable(point_charge_symmetry_main main.cpp src/molpro/point_charge_symmetry/Group.cpp src/molpro/point_charge_symmetry/Group.h)
 target_link_libraries(point_charge_symmetry_main PRIVATE molpro::point_charge_symmetry)
 
 if (${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})

@@ -1,5 +1,5 @@
 #include <iostream>
-#include <molpro/point_charge_symmetry/SymmetryOperator.h>
+#include <molpro/point_charge_symmetry/Operator.h>
 
 int main() {
   using namespace molpro::point_charge_symmetry;
