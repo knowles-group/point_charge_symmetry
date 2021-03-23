@@ -20,12 +20,12 @@ SymmetryOperator::vec ReflectionPlane::operator()(vec v) const {
 SymmetryOperator::vec Axis::operator()(vec v) const {
 //  std::cout << "v: "<<v.transpose()<<std::endl;
   auto vlocal = global_to_local(v);
-  double angle=(double) 2 *std::acos( double(-1)) / m_order;
-  auto aa = Eigen::AngleAxis<double>((double) 2 *std::acos( double(-1)) / m_order, m_axis);
+  double angle = (double) 2 * std::acos(double(-1)) / m_order;
+  auto aa = Eigen::AngleAxis<double>((double) 2 * std::acos(double(-1)) / m_order, m_axis);
 //  std::cout << "vlocal: " << vlocal.transpose() << std::endl;
   vlocal = aa * vlocal;
   if (not m_proper)
-    vlocal -= 2* m_axis.dot(vlocal) * m_axis;
+    vlocal -= 2 * m_axis.dot(vlocal) * m_axis;
 //  std::cout << "vlocal: " << vlocal.transpose() << std::endl;
 //  std::cout << "vglobal: " << local_to_global(vlocal).transpose() << std::endl;
   return local_to_global(vlocal);
@@ -35,7 +35,7 @@ SymmetryOperator::vec Inversion::operator()(vec v) const {
 //  std::cout << "v: "<<v.transpose()<<std::endl;
   auto vlocal = global_to_local(v);
 //  std::cout << "vlocal: " << vlocal.transpose() << std::endl;
-  vlocal = - vlocal;
+  vlocal = -vlocal;
 //  std::cout << "vlocal: " << vlocal.transpose() << std::endl;
 //  std::cout << "vglobal: " << local_to_global(vlocal).transpose() << std::endl;
   return local_to_global(vlocal);

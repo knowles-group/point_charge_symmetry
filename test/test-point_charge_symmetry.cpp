@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <iostream>
-#include <molpro/SymmetryOperator.h>
+#include <molpro/point_charge_symmetry/SymmetryOperator.h>
 #include <gmock/gmock.h>
 
 using std::cout;
