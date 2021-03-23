@@ -3,6 +3,7 @@
 #include <array>
 #include <Eigen/Dense>
 
+namespace molpro::point_charge_symmetry {
 /*!
  * @brief Hold the definition of a coordinate system - origin and axes
  */
@@ -16,9 +17,10 @@ class CoordinateSystem {
   const mat axes() const;
   Eigen::Map<const vec> axis_generator() const { return Eigen::Map<const vec>(&m_parameters[3]); }
   Eigen::Map<vec> axis_generator() { return Eigen::Map<vec>(&m_parameters[3]); }
-  CoordinateSystem(const vec& origin=vec::Zero(), const mat& axes=mat::Identity());
-  double* data() { return m_parameters.data();}
-  const double* data() const { return m_parameters.data();}
+  CoordinateSystem(const vec &origin = vec::Zero(), const mat &axes = mat::Identity());
+  double *data() { return m_parameters.data(); }
+  const double *data() const { return m_parameters.data(); }
 };
+}
 
 #endif //NEAR_SYMMETRY__COORDINATESYSTEM_H_
