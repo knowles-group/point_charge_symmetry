@@ -1,11 +1,12 @@
 #include "CoordinateSystem.h"
-#include <unsupported/Eigen/MatrixFunctions>
 #include <iostream>
+#include <unsupported/Eigen/MatrixFunctions>
 
 namespace molpro::point_charge_symmetry {
 
-CoordinateSystem::CoordinateSystem(const vec &origin, const mat &axes) {
-  if (std::abs(axes.determinant() - 1) > 1e-14) throw std::runtime_error("Axes must be proper rotation");
+CoordinateSystem::CoordinateSystem(const vec& origin, const mat& axes) {
+  if (std::abs(axes.determinant() - 1) > 1e-14)
+    throw std::runtime_error("Axes must be proper rotation");
   auto generator = axes.log();
   axis_generator()(0) = generator(1, 0);
   axis_generator()(1) = generator(2, 0);
@@ -17,9 +18,12 @@ CoordinateSystem::CoordinateSystem(const vec &origin, const mat &axes) {
 
 const CoordinateSystem::mat CoordinateSystem::axes() const {
   Eigen::Matrix3d generator;
-  generator << 0, axis_generator()(0), axis_generator()(1),
-      -axis_generator()(0), 0, axis_generator()(2),
+  generator << 0, axis_generator()(0), axis_generator()(1), -axis_generator()(0), 0, axis_generator()(2),
       -axis_generator()(1), -axis_generator()(2), 0;
   return generator.exp();
 }
+
+const std::array<CoordinateSystem::mat,3> CoordinateSystem::axes_gradient() const {
+  throw std::logic_error("unimplemented");
 }
+} // namespace molpro::point_charge_symmetry
