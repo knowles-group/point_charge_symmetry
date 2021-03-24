@@ -13,7 +13,8 @@ public:
   virtual ~Operator() = default;
   Operator(const CoordinateSystem& coordinate_system = s_default_coordinate_system)
       : m_coordinate_system(coordinate_system){};
-  virtual vec operator()(vec v) const = 0;
+  vec operator()(vec v) const;
+  virtual vec operator_local(vec v) const = 0;
   virtual std::string str(const std::string& title) const;
   const std::string& name() const { return m_name; };
 
@@ -46,7 +47,7 @@ public:
     if (m_normal(2) > 0.99)
       m_name += "_xy";
   }
-  vec operator()(vec v) const override;
+  vec operator_local(vec v) const override;
   std::string str(const std::string& title) const override;
   friend class Group;
 };
@@ -70,7 +71,7 @@ public:
     if (m_axis(2) > 0.99)
       m_name += "z";
   }
-  vec operator()(vec v) const override;
+  vec operator_local(vec v) const override;
   friend class Group;
 };
 
@@ -78,7 +79,7 @@ class Inversion : public Operator {
 public:
   Inversion() : Operator() {}
   Inversion(const CoordinateSystem& coordinate_system) : Operator(coordinate_system) { m_name = "i"; }
-  vec operator()(vec v) const override;
+  vec operator_local(vec v) const override;
   friend class Group;
 };
 
@@ -86,7 +87,7 @@ class Identity : public Operator {
 public:
   Identity() : Operator() {}
   Identity(const CoordinateSystem& coordinate_system) : Operator(coordinate_system) { m_name = "E"; }
-  vec operator()(vec v) const override;
+  vec operator_local(vec v) const override;
   friend class Group;
 };
 
