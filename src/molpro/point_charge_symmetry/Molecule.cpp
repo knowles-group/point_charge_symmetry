@@ -32,6 +32,13 @@ Molecule::Molecule(const std::string& filename) {
   }
 }
 
+Eigen::Vector3d Molecule::centre_of_charge() const {
+  Eigen::Vector3d result{0,0,0};
+  for (const auto& atom : m_atoms)
+    result += atom.position * atom.charge;
+  return result;
+}
+
 std::string Molecule::str() const {
   std::stringstream ss;
   ss << m_title << std::endl;

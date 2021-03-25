@@ -19,6 +19,7 @@ public:
   std::string m_title;
   Molecule(const std::string& filename);
   std::string str() const;
+  Eigen::Vector3d centre_of_charge() const;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Molecule& op) {
