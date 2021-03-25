@@ -19,38 +19,38 @@ void test_operation(const vec &initial, const Operator &op, const vec &expected)
       << "original: " << initial.transpose() << "\nOperator: " << op;
 }
 TEST(point_charge_symmetry, local_operations) {
-  test_operation({1, 1, 1}, ReflectionPlane({0, 0, 1}), {1, 1, -1});
-  test_operation({1, 1, 1}, ReflectionPlane({0, 0, -1}), {1, 1, -1});
-  test_operation({1, 1, 1}, ReflectionPlane({-1, -1, -1}), {-1, -1, -1});
-  test_operation({1, 1, 1}, ReflectionPlane({1, -1, 0}), {1, 1, 1});
-  test_operation({1, 1, 1}, ReflectionPlane({-1, 1, 0}), {1, 1, 1});
-  test_operation({-1, -1, 1}, ReflectionPlane({-1, 1, 0}), {-1, -1, 1});
-  test_operation({1, 1, 1}, Axis({0, 0, 1}, 2), {-1, -1, 1});
-  test_operation({1, 1, 1}, Axis({0, 0, 1}, 4), {-1, 1, 1});
-  test_operation({1, 1, 1}, Axis({0, 0, 1}, 4, false), {-1, 1, -1});
+  test_operation({1, 1, 1}, Reflection({0, 0, 1}), {1, 1, -1});
+  test_operation({1, 1, 1}, Reflection({0, 0, -1}), {1, 1, -1});
+  test_operation({1, 1, 1}, Reflection({-1, -1, -1}), {-1, -1, -1});
+  test_operation({1, 1, 1}, Reflection({1, -1, 0}), {1, 1, 1});
+  test_operation({1, 1, 1}, Reflection({-1, 1, 0}), {1, 1, 1});
+  test_operation({-1, -1, 1}, Reflection({-1, 1, 0}), {-1, -1, 1});
+  test_operation({1, 1, 1}, Rotation({0, 0, 1}, 2), {-1, -1, 1});
+  test_operation({1, 1, 1}, Rotation({0, 0, 1}, 4), {-1, 1, 1});
+  test_operation({1, 1, 1}, Rotation({0, 0, 1}, 4, false), {-1, 1, -1});
   test_operation({1, 1, 1}, Inversion(), {-1, -1, -1});
 }
 
 TEST(point_charge_symmetry, translated_operations) {
   CoordinateSystem coords({10, 10, 10});
-  test_operation({1, 1, 1}, ReflectionPlane(coords, {0, 0, 1}), {1, 1, 19});
-  test_operation({1, 1, 1}, ReflectionPlane(coords, {0, 0, -1}), {1, 1, 19});
-  test_operation({1, 1, 1}, ReflectionPlane(coords, {-1, -1, -1}), {19, 19, 19});
-  test_operation({1, 1, 1}, ReflectionPlane(coords, {1, -1, 0}), {1, 1, 1});
-  test_operation({1, 1, 1}, ReflectionPlane(coords, {-1, 1, 0}), {1, 1, 1});
-  test_operation({-1, -1, 1}, ReflectionPlane(coords, {-1, 1, 0}), {-1, -1, 1});
+  test_operation({1, 1, 1}, Reflection(coords, {0, 0, 1}), {1, 1, 19});
+  test_operation({1, 1, 1}, Reflection(coords, {0, 0, -1}), {1, 1, 19});
+  test_operation({1, 1, 1}, Reflection(coords, {-1, -1, -1}), {19, 19, 19});
+  test_operation({1, 1, 1}, Reflection(coords, {1, -1, 0}), {1, 1, 1});
+  test_operation({1, 1, 1}, Reflection(coords, {-1, 1, 0}), {1, 1, 1});
+  test_operation({-1, -1, 1}, Reflection(coords, {-1, 1, 0}), {-1, -1, 1});
 }
 
 TEST(point_charge_symmetry, rotated_operations) {
   mat axes;
   axes << 0, 1, 0, -1, 0, 0, 0, 0, 1;
   CoordinateSystem coords({0, 0, 0}, axes);
-  test_operation({1, 1, 1}, ReflectionPlane(coords, {0, 0, 1}), {1, 1, -1});
-  test_operation({1, 1, 1}, ReflectionPlane(coords, {0, 0, -1}), {1, 1, -1});
-  test_operation({1, 1, 1}, ReflectionPlane(coords, {-1, -1, -1}), {5 / 3., 1 / 3., 1 / 3.});
-  test_operation({1, 1, 1}, ReflectionPlane(coords, {1, -1, 0}), {-1, -1, 1});
-  test_operation({1, 1, 1}, ReflectionPlane(coords, {-1, 1, 0}), {-1, -1, 1});
-  test_operation({-1, -1, 1}, ReflectionPlane(coords, {-1, 1, 0}), {1, 1, 1});
+  test_operation({1, 1, 1}, Reflection(coords, {0, 0, 1}), {1, 1, -1});
+  test_operation({1, 1, 1}, Reflection(coords, {0, 0, -1}), {1, 1, -1});
+  test_operation({1, 1, 1}, Reflection(coords, {-1, -1, -1}), {5 / 3., 1 / 3., 1 / 3.});
+  test_operation({1, 1, 1}, Reflection(coords, {1, -1, 0}), {-1, -1, 1});
+  test_operation({1, 1, 1}, Reflection(coords, {-1, 1, 0}), {-1, -1, 1});
+  test_operation({-1, -1, 1}, Reflection(coords, {-1, 1, 0}), {1, 1, 1});
 }
 
 TEST(point_charge_symmetry, Group) {
@@ -59,9 +59,9 @@ TEST(point_charge_symmetry, Group) {
   CoordinateSystem coords({0, 0, 0});
   Group c2v(coords);
   c2v.add(Identity());
-  c2v.add(Axis({0, 0, 1}, 2));
-  c2v.add(ReflectionPlane({1, 0, 0}));
-  c2v.add(ReflectionPlane({0, 1, 0}));
+  c2v.add(Rotation({0, 0, 1}, 2));
+  c2v.add(Reflection({1, 0, 0}));
+  c2v.add(Reflection({0, 1, 0}));
 }
 
 TEST(point_charge_symmetry, Molecule) {
@@ -69,9 +69,9 @@ TEST(point_charge_symmetry, Molecule) {
   std::cout << water << std::endl;
   Group c2v("C2v");
   c2v.add(Identity());
-  c2v.add(Axis({0, 0, 1}, 2));
-  c2v.add(ReflectionPlane({1, 0, 0}));
-  c2v.add(ReflectionPlane({0, 1, 0}));
+  c2v.add(Rotation({0, 0, 1}, 2));
+  c2v.add(Reflection({1, 0, 0}));
+  c2v.add(Reflection({0, 1, 0}));
   auto sm = SymmetryMeasure(water, c2v);
   std::cout << sm << std::endl;
   int i = 0;
