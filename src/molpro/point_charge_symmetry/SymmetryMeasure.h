@@ -20,7 +20,7 @@ public:
   //  SymmetryMeasure(const Molecule& molecule, const Operator& op) : SymmetryMeasure(molecule, Group)
   std::string str() const;
 
-  void optimise_frame();
+  void optimise_frame(CoordinateSystem& coordinate_system);
 
 protected:
   const Molecule& m_molecule;

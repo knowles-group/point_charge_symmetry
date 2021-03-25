@@ -1,4 +1,6 @@
 #include "SymmetryMeasure.h"
+#include <molpro/linalg/itsolv/OptimizeBFGS.h>
+#include <molpro/linalg/itsolv/SolverFactory.h>
 #include <sstream>
 namespace molpro::point_charge_symmetry {
 Atom SymmetryMeasure::image(const Atom& source, const Operator& op) {
@@ -27,13 +29,14 @@ double SymmetryMeasure::operator()(int operator_index) const {
   auto start = operator_index < 0 ? m_group.begin() : m_group.begin() + operator_index;
   auto end = operator_index < 0 ? m_group.end() : m_group.begin() + operator_index + 1;
   for (auto op = start; op < end; op++) {
-//    std::cout << "Operator " << (*op)->name() << std::endl;
-//    std::cout << "Frame parameters";
-//    for (int i=0; i<6;i++)std::cout<<" "<<(*op)->coordinate_system().data()[i];
-//    std::cout << std::endl;
+    //    std::cout << "Operator " << (*op)->name() << std::endl;
+    //    std::cout << "Frame parameters";
+    //    for (int i=0; i<6;i++)std::cout<<" "<<(*op)->coordinate_system().data()[i];
+    //    std::cout << std::endl;
     for (int a = 0; a < m_molecule.m_atoms.size(); a++) {
-//            std::cout << "Atom " << a <<": "<< m_molecule.m_atoms[a].position.transpose() << std::endl;
-//            std::cout << "Mapped Atom " << a <<": "<< (**op)(m_molecule.m_atoms[a].position).transpose() << std::endl;
+      //            std::cout << "Atom " << a <<": "<< m_molecule.m_atoms[a].position.transpose() << std::endl;
+      //            std::cout << "Mapped Atom " << a <<": "<< (**op)(m_molecule.m_atoms[a].position).transpose() <<
+      //            std::endl;
       int ai = m_neighbours[op - m_group.begin()][a];
       //      std::cout << "Image " << ai << m_molecule.m_atoms[ai].position.transpose() << std::endl;
       auto dist = ((**op)(m_molecule.m_atoms[a].position) - m_molecule.m_atoms[ai].position).norm();
@@ -43,7 +46,7 @@ double SymmetryMeasure::operator()(int operator_index) const {
       result += 1 - std::exp(-zr) * (1 + zr + zr * zr / 3);
     }
   }
-//  std::cout << "result "<<result<<std::endl;
+  //  std::cout << "result "<<result<<std::endl;
   return result;
 }
 
@@ -58,19 +61,19 @@ CoordinateSystem::parameters_t SymmetryMeasure::coordinate_system_gradient(int o
     //    std::cout << "Operator " << (*op)->name() << std::endl;
     for (int a = 0; a < m_molecule.m_atoms.size(); a++) {
       CoordinateSystem::parameters_t grad_d{0, 0, 0, 0, 0, 0};
-//            std::cout << "Atom " << a << m_molecule.m_atoms[a].position.transpose() << std::endl;
-//            std::cout << "Mapped Atom " << a << (**op)(m_molecule.m_atoms[a].position).transpose() << std::endl;
+      //            std::cout << "Atom " << a << m_molecule.m_atoms[a].position.transpose() << std::endl;
+      //            std::cout << "Mapped Atom " << a << (**op)(m_molecule.m_atoms[a].position).transpose() << std::endl;
       int ai = m_neighbours[op - m_group.begin()][a];
-//            std::cout << "Image " << ai << m_molecule.m_atoms[ai].position.transpose() << std::endl;
+      //            std::cout << "Image " << ai << m_molecule.m_atoms[ai].position.transpose() << std::endl;
       auto d = ((**op)(m_molecule.m_atoms[a].position) - m_molecule.m_atoms[ai].position).eval();
-//      std::cout << "d "<<d.transpose()<<std::endl;
+      //      std::cout << "d "<<d.transpose()<<std::endl;
       auto dist = d.norm();
-//            std::cout << "Atom a dist=" << dist << std::endl;
-      auto opgrad = (**op).operator_gradient(m_molecule.m_atoms[a].position,2,1e-4); // TODO analytic instead
-//      std::cout << "d "<<d.transpose()<<std::endl;
-        if (dist > 0)
+      //            std::cout << "Atom a dist=" << dist << std::endl;
+      auto opgrad = (**op).operator_gradient(m_molecule.m_atoms[a].position, 2, 1e-4); // TODO analytic instead
+      //      std::cout << "d "<<d.transpose()<<std::endl;
+      if (dist > 0)
         for (int i = 0; i < 6; i++) {
-//          std::cout << "opgrad\n"<<opgrad[i]<<std::endl;
+          //          std::cout << "opgrad\n"<<opgrad[i]<<std::endl;
           for (int j = 0; j < 3; j++)
             grad_d[i] += opgrad[i][j] * d[j] / dist;
         }
@@ -97,7 +100,23 @@ std::string SymmetryMeasure::str() const {
   return ss.str();
 }
 
-void SymmetryMeasure::optimise_frame() { std::cout << "optimise_frame" << std::endl; }
+void SymmetryMeasure::optimise_frame(CoordinateSystem& coordinate_system) {
+  using Rvector = CoordinateSystem::parameters_t;
+  std::cout << "optimise_frame" << std::endl;
+//  std::cout << "coordinate_system passed "&c
+  auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector, Rvector>("BFGS","max_size_qspace=4");
+  int nwork=1;
+  for (int iter = 0; iter < 100; iter++) {
+    std::cout <<coordinate_system<<std::endl;
+    auto value = (*this)();
+    auto grad = coordinate_system_gradient();
+    std::cout << "gradient:";for(int i=0;i<6;i++)std::cout<<" "<<grad[i];std::cout<<std::endl;
+    nwork = solver->add_value(coordinate_system.m_parameters,value,grad);
+    nwork = solver->end_iteration(coordinate_system.m_parameters,grad);
+    solver->report();
+    if (nwork<=0) break;
+  }
+}
 
 Group discover_group(const Molecule& molecule, double threshold) {
   Group result;
@@ -105,3 +124,7 @@ Group discover_group(const Molecule& molecule, double threshold) {
 }
 
 } // namespace molpro::point_charge_symmetry
+
+#include <molpro/linalg/itsolv/SolverFactory-implementation.h>
+using Rvector = molpro::point_charge_symmetry::CoordinateSystem::parameters_t;
+template class molpro::linalg::itsolv::SolverFactory<Rvector, Rvector, Rvector>;

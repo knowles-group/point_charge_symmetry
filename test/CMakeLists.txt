@@ -17,4 +17,7 @@ foreach (t test-${PROJECT_NAME})
     endif ()
 endforeach ()
 
-file(COPY h2o.xyz DESTINATION .)
+#file(COPY h2o.xyz DESTINATION .)
+#add_custom_target(h2o.xyz DEPENDS h2o.xyz)
+#add_dependencies(test-${PROJECT_NAME} h2o.xyz)
+configure_file(h2o.xyz h2o.xyz COPYONLY)

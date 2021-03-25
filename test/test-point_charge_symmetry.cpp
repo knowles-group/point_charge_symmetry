@@ -124,7 +124,6 @@ TEST(point_charge_symmetry, Molecule) {
 //  for (int i = 0; i < 6; i++)
 //    std::cout << " " << c2v.coordinate_system().data()[i];
 //  std::cout << std::endl;
-  sm.optimise_frame();
 }
 
 TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
@@ -177,11 +176,10 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
   }
   std::cout << "numerical coordinate system gradient:";
   std::for_each(numerical_gradient.begin(),numerical_gradient.end(),[](const auto& val){std::cout <<" "<<val;});
-//  EXPECT_THAT(
-//      std::vector<double>(ttt.data(), ttt.data() + 3),
-//      ::testing::Pointwise(::testing::DoubleNear(1e-13), std::vector<double>(expected.data(), expected.data() + 3)))
-//          << "original: " << initial.transpose() << "\nOperator: " << op;
+  std::cout << std::endl;
   EXPECT_THAT(
       numerical_gradient,
-      ::testing::Pointwise(::testing::DoubleNear(1e-9), g));
+      ::testing::Pointwise(::testing::DoubleNear(1e-8), g));
+
+  sm.optimise_frame(coordinate_system);
 }

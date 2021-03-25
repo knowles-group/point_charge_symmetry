@@ -2,6 +2,7 @@
 #define NEAR_SYMMETRY__COORDINATESYSTEM_H_
 #include <Eigen/Dense>
 #include <array>
+#include <ostream>
 
 namespace molpro::point_charge_symmetry {
 /*!
@@ -10,7 +11,7 @@ namespace molpro::point_charge_symmetry {
 class CoordinateSystem {
 public:
   using parameters_t = std::array<double,6>;
-protected:
+//protected:
   parameters_t m_parameters;
 
 public:
@@ -25,7 +26,13 @@ public:
   CoordinateSystem(const vec& origin = vec::Zero(), const mat& axes = mat::Identity());
   double* data() { return m_parameters.data(); }
   const double* data() const { return m_parameters.data(); }
+  std::string str() const;
 };
+inline std::ostream& operator<<(std::ostream& os, const CoordinateSystem& op) {
+  os << op.str();
+  return os;
+}
+
 } // namespace molpro::point_charge_symmetry
 
 #endif // NEAR_SYMMETRY__COORDINATESYSTEM_H_

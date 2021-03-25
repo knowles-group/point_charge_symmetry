@@ -1,5 +1,6 @@
 #include "CoordinateSystem.h"
 #include <iostream>
+#include <sstream>
 #include <unsupported/Eigen/MatrixFunctions>
 #include <vector>
 
@@ -41,5 +42,17 @@ const std::array<CoordinateSystem::mat, 3> CoordinateSystem::axes_gradient(int d
       throw std::logic_error("Incorrect differentiation order");
   }
   return result;
+}
+
+std::string CoordinateSystem::str() const {
+  std::stringstream ss;
+  ss << "CoordinateSystem origin =";
+  for (int i = 0; i < 3; i++)
+    ss << " " << m_parameters[i];
+  ss << " axis generators =";
+  for (int i = 0; i < 3; i++)
+    ss << " " << m_parameters[i + 3];
+  ss << "\nAxes:\n" << axes();
+  return ss.str();
 }
 } // namespace molpro::point_charge_symmetry
