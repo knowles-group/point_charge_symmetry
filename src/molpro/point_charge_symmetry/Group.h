@@ -6,16 +6,17 @@
 #include <vector>
 
 namespace molpro::point_charge_symmetry {
+static CoordinateSystem s_group_default_coordinate_system;
 class Group {
 protected:
-  CoordinateSystem m_coordinate_system;
+  const CoordinateSystem& m_coordinate_system;
   std::vector<std::unique_ptr<Operator>> m_members;
   const std::string m_name;
 
 public:
   Group(const CoordinateSystem &coordinate_system = CoordinateSystem(), std::string name = "")
       : m_coordinate_system(coordinate_system), m_name(std::move(name)) {}
-  Group(std::string name) : m_coordinate_system(CoordinateSystem()), m_name(std::move(name)) {}
+  Group(std::string name) : m_coordinate_system(s_group_default_coordinate_system), m_name(std::move(name)) {}
   std::string name() const { return m_name; }
   void add(Identity op) { m_members.emplace_back(new Identity(m_coordinate_system)); }
   void add(Inversion op) { m_members.emplace_back(new Inversion(m_coordinate_system)); }
@@ -30,8 +31,8 @@ public:
   const_iterator begin() const { return m_members.begin(); }
   iterator end() { return m_members.end(); }
   const_iterator end() const { return m_members.end(); }
-  Operator &operator[](size_t index) { return *(m_members[index]); }
-  const Operator &operator[](size_t index) const { return *(m_members[index]); }
+  Operator& operator[](size_t index) { return *(m_members[index]); }
+  const Operator& operator[](size_t index) const { return *(m_members[index]); }
 };
 } // namespace molpro::point_charge_symmetry
 

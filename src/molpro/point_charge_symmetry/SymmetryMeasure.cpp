@@ -27,10 +27,13 @@ double SymmetryMeasure::operator()(int operator_index) const {
   auto start = operator_index < 0 ? m_group.begin() : m_group.begin() + operator_index;
   auto end = operator_index < 0 ? m_group.end() : m_group.begin() + operator_index + 1;
   for (auto op = start; op < end; op++) {
-    //    std::cout << "Operator " << (*op)->name() << std::endl;
+//    std::cout << "Operator " << (*op)->name() << std::endl;
+//    std::cout << "Frame parameters";
+//    for (int i=0; i<6;i++)std::cout<<" "<<(*op)->coordinate_system().data()[i];
+//    std::cout << std::endl;
     for (int a = 0; a < m_molecule.m_atoms.size(); a++) {
-      //      std::cout << "Atom " << a << m_molecule.m_atoms[a].position.transpose() << std::endl;
-      //      std::cout << "Mapped Atom " << a << (**op)(m_molecule.m_atoms[a].position).transpose() << std::endl;
+//            std::cout << "Atom " << a <<": "<< m_molecule.m_atoms[a].position.transpose() << std::endl;
+//            std::cout << "Mapped Atom " << a <<": "<< (**op)(m_molecule.m_atoms[a].position).transpose() << std::endl;
       int ai = m_neighbours[op - m_group.begin()][a];
       //      std::cout << "Image " << ai << m_molecule.m_atoms[ai].position.transpose() << std::endl;
       auto dist = ((**op)(m_molecule.m_atoms[a].position) - m_molecule.m_atoms[ai].position).norm();
@@ -40,6 +43,7 @@ double SymmetryMeasure::operator()(int operator_index) const {
       result += 1 - std::exp(-zr) * (1 + zr + zr * zr / 3);
     }
   }
+//  std::cout << "result "<<result<<std::endl;
   return result;
 }
 
@@ -54,16 +58,21 @@ CoordinateSystem::parameters_t SymmetryMeasure::coordinate_system_gradient(int o
     //    std::cout << "Operator " << (*op)->name() << std::endl;
     for (int a = 0; a < m_molecule.m_atoms.size(); a++) {
       CoordinateSystem::parameters_t grad_d{0, 0, 0, 0, 0, 0};
-      //      std::cout << "Atom " << a << m_molecule.m_atoms[a].position.transpose() << std::endl;
-      //      std::cout << "Mapped Atom " << a << (**op)(m_molecule.m_atoms[a].position).transpose() << std::endl;
+//            std::cout << "Atom " << a << m_molecule.m_atoms[a].position.transpose() << std::endl;
+//            std::cout << "Mapped Atom " << a << (**op)(m_molecule.m_atoms[a].position).transpose() << std::endl;
       int ai = m_neighbours[op - m_group.begin()][a];
-      //      std::cout << "Image " << ai << m_molecule.m_atoms[ai].position.transpose() << std::endl;
-      auto d = ((**op)(m_molecule.m_atoms[a].position) - m_molecule.m_atoms[ai].position);
+//            std::cout << "Image " << ai << m_molecule.m_atoms[ai].position.transpose() << std::endl;
+      auto d = ((**op)(m_molecule.m_atoms[a].position) - m_molecule.m_atoms[ai].position).eval();
+//      std::cout << "d "<<d.transpose()<<std::endl;
       auto dist = d.norm();
-      //      std::cout << "Atom a dist=" << dist << std::endl;
-      if (dist > 0)
-        for (int i = 0; i < 3; i++) {
-          grad_d[i] = (d[i] - (axes * (**op)(axes.transpose() * d))(i)) / dist;
+//            std::cout << "Atom a dist=" << dist << std::endl;
+      auto opgrad = (**op).operator_gradient(m_molecule.m_atoms[a].position,2,1e-4); // TODO analytic instead
+//      std::cout << "d "<<d.transpose()<<std::endl;
+        if (dist > 0)
+        for (int i = 0; i < 6; i++) {
+//          std::cout << "opgrad\n"<<opgrad[i]<<std::endl;
+          for (int j = 0; j < 3; j++)
+            grad_d[i] += opgrad[i][j] * d[j] / dist;
         }
       const auto zr = m_molecule.m_atoms[a].charge * dist;
       //      std::cout << "measure "<< 1 - std::exp(-zr) * (1 + zr + zr * zr / 3)<<std::endl;
