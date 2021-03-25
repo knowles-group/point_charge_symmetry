@@ -5,6 +5,7 @@
 #include <molpro/point_charge_symmetry/Molecule.h>
 #include <molpro/point_charge_symmetry/Operator.h>
 #include <molpro/point_charge_symmetry/SymmetryMeasure.h>
+#include <numeric>
 
 using std::cout;
 using namespace molpro::point_charge_symmetry;
@@ -62,6 +63,44 @@ TEST(point_charge_symmetry, Group) {
   c2v.add(Rotation({0, 0, 1}, 2));
   c2v.add(Reflection({1, 0, 0}));
   c2v.add(Reflection({0, 1, 0}));
+}
+
+TEST(point_charge_symmetry, axes_gradient) {
+  mat axes;
+  //  axes << 0, 1, 0, -1, 0, 0, 0, 0, 1;
+  axes << 1 / std::sqrt(3), 1 / std::sqrt(3), 1 / std::sqrt(3), 2 / std::sqrt(6), -1 / std::sqrt(6), -1 / std::sqrt(6),
+      0, 1 / std::sqrt(2), -1 / std::sqrt(2);
+  CoordinateSystem coords({0, 0, 0}, axes);
+  //  std::cout << "coords.axes():\n" << coords.axes() << std::endl;
+  vec displacement{2e-6, 2e-6, 2e-6};
+  auto coords_minus = coords;
+  coords_minus.axis_generator() -= displacement;
+  auto coords_plus = coords;
+  coords_plus.axis_generator() += displacement;
+  auto reference = ((coords_plus.axes() - coords_minus.axes()) / (2 * displacement.norm())).eval();
+  //  std::cout << "coords.axes():\n" << coords.axes() << std::endl;
+  //  std::cout << "coords_plus.axes():\n" << coords_plus.axes() << std::endl;
+  //  std::cout << "coords_minus.axes():\n" << coords_minus.axes() << std::endl;
+  //    std::cout << "reference:\n" << reference << std::endl;
+  for (int logstep = -7; logstep < 1; logstep++) {
+    std::vector<mat> tested;
+    const auto step = std::pow(double(10), logstep);
+    for (int displacements = 1; displacements < 3; displacements++) {
+      auto axes_gradient = coords.axes_gradient(displacements, step);
+      tested.push_back(mat::Zero());
+      for (int i = 0; i < 3; i++)
+        tested.back() += displacement[i] * axes_gradient[i] / displacement.norm();
+//      std::cout << "tested:\n" << tested.back() << std::endl;
+//      std::cout << "reference-tested:\n" << reference - tested.back() << std::endl;
+      const auto tolerance = std::max(1e-8, std::pow(step, displacements * 2));
+//      std::cout << "step=" << step << " , displacements=" << displacements
+//                << ", reference-tested=" << (reference - tested.back()).norm() << ", tolerance=" << tolerance
+//                << std::endl;
+      EXPECT_LT((reference - tested.back()).norm(), tolerance);
+    }
+    const auto tolerance = std::max(1e-9, std::pow(step, 2));
+    EXPECT_LT((tested[1] - tested[0]).norm(), tolerance);
+  }
 }
 
 TEST(point_charge_symmetry, Molecule) {

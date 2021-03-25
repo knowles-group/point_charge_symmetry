@@ -19,7 +19,7 @@ public:
   Eigen::Map<vec> origin() { return Eigen::Map<vec>(&m_parameters[0]); }
   Eigen::Map<const vec> origin() const { return Eigen::Map<const vec>(&m_parameters[0]); }
   const mat axes() const;
-  const std::array<mat,3> axes_gradient() const;
+  const std::array<mat,3> axes_gradient(int displacements=2, double step=1e-4) const;
   Eigen::Map<const vec> axis_generator() const { return Eigen::Map<const vec>(&m_parameters[3]); }
   Eigen::Map<vec> axis_generator() { return Eigen::Map<vec>(&m_parameters[3]); }
   CoordinateSystem(const vec& origin = vec::Zero(), const mat& axes = mat::Identity());

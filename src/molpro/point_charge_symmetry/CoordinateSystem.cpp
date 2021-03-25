@@ -1,6 +1,7 @@
 #include "CoordinateSystem.h"
 #include <iostream>
 #include <unsupported/Eigen/MatrixFunctions>
+#include <vector>
 
 namespace molpro::point_charge_symmetry {
 
@@ -20,10 +21,25 @@ const CoordinateSystem::mat CoordinateSystem::axes() const {
   Eigen::Matrix3d generator;
   generator << 0, axis_generator()(0), axis_generator()(1), -axis_generator()(0), 0, axis_generator()(2),
       -axis_generator()(1), -axis_generator()(2), 0;
+  //  std::cout << "Generator\n"<<generator<<std::endl;
   return generator.exp();
 }
 
-const std::array<CoordinateSystem::mat,3> CoordinateSystem::axes_gradient() const {
-  throw std::logic_error("unimplemented");
+const std::array<CoordinateSystem::mat, 3> CoordinateSystem::axes_gradient(int displacements, double step) const {
+  std::array<CoordinateSystem::mat, 3> result;
+  for (int i = 0; i < 3; i++) {
+    std::vector<CoordinateSystem> points;
+    for (int displacement = -displacements; displacement <= displacements; displacement++) {
+      points.push_back(*this);
+      points.back().axis_generator()[i] += step * displacement;
+    }
+    if (displacements == 1)
+      result[i] = (points[2].axes() - points[0].axes()) / (2 * step);
+    else if (displacements == 2)
+      result[i] = (-points[4].axes() + 8 * points[3].axes() + points[0].axes() - 8 * points[1].axes()) / (12 * step);
+    else
+      throw std::logic_error("Incorrect differentiation order");
+  }
+  return result;
 }
 } // namespace molpro::point_charge_symmetry
