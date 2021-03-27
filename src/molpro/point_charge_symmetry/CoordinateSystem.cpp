@@ -7,6 +7,7 @@
 namespace molpro::point_charge_symmetry {
 
 CoordinateSystem::CoordinateSystem(const vec& origin, const mat& axes) {
+  std::cout << "CoordinateSystem constructor, axes=\n"<<axes<<std::endl;
   if (std::abs(axes.determinant() - 1) > 1e-14)
     throw std::runtime_error("Axes must be proper rotation");
   auto generator = axes.log();

@@ -48,7 +48,7 @@ TEST(point_charge_symmetry, rotated_operations) {
   CoordinateSystem coords({0, 0, 0}, axes);
   test_operation({1, 1, 1}, Reflection(coords, {0, 0, 1}), {1, 1, -1});
   test_operation({1, 1, 1}, Reflection(coords, {0, 0, -1}), {1, 1, -1});
-  test_operation({1, 1, 1}, Reflection(coords, {-1, -1, -1}), {5 / 3., 1 / 3., 1 / 3.});
+  test_operation({1, 1, 1}, Reflection(coords, {-1, -1, -1}), {1 / 3., 5 / 3., 1 / 3.});
   test_operation({1, 1, 1}, Reflection(coords, {1, -1, 0}), {-1, -1, 1});
   test_operation({1, 1, 1}, Reflection(coords, {-1, 1, 0}), {-1, -1, 1});
   test_operation({-1, -1, 1}, Reflection(coords, {-1, 1, 0}), {1, 1, 1});

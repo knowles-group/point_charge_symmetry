@@ -6,16 +6,16 @@
 #include <memory>
 #include <ostream>
 #include <string>
+
 namespace molpro::point_charge_symmetry {
-static CoordinateSystem s_default_coordinate_system;
 
 class Operator {
 public:
   using vec = CoordinateSystem::vec;
   using mat = CoordinateSystem::mat;
   virtual ~Operator() = default;
-  Operator(const CoordinateSystem& coordinate_system = s_default_coordinate_system)
-      : m_coordinate_system(coordinate_system){};
+  Operator();
+  Operator(const CoordinateSystem& coordinate_system) : m_coordinate_system(coordinate_system){};
   /*!
    * @brief Calculate the action of the operator on a vector in global coordinate space
    * @param v position vector of a point
@@ -34,7 +34,7 @@ public:
   const std::string& name() const { return m_name; };
   virtual Operator* clone() const = 0;
   virtual Operator* clone(const CoordinateSystem& coordinate_system) const = 0;
-  const CoordinateSystem& coordinate_system() const {return m_coordinate_system;}
+  const CoordinateSystem& coordinate_system() const { return m_coordinate_system; }
 
 protected:
   const CoordinateSystem& m_coordinate_system;
@@ -52,22 +52,15 @@ protected:
   vec m_normal;
 
 public:
-  Reflection(vec normal) : Reflection(s_default_coordinate_system, std::move(normal)) {}
-  Reflection(const CoordinateSystem& coordinate_system, vec normal)
-      : Operator(coordinate_system), m_normal(normal.normalized()) {
-    m_name = "sigma";
-    if (m_normal(0) > 0.99)
-      m_name += "_yz";
-    if (m_normal(1) > 0.99)
-      m_name += "_xz";
-    if (m_normal(2) > 0.99)
-      m_name += "_xy";
-  }
+  Reflection(vec normal);
+  Reflection(const CoordinateSystem& coordinate_system, vec normal);
   vec operator_local(vec v) const override;
   std::string str(const std::string& title) const override;
   friend class Group;
   Operator* clone() const override { return new Reflection(*this); }
-  Operator* clone(const CoordinateSystem& coordinate_system) const override { return new Reflection(coordinate_system,m_normal); }
+  Operator* clone(const CoordinateSystem& coordinate_system) const override {
+    return new Reflection(coordinate_system, m_normal);
+  }
 };
 
 class Rotation : public Operator {
@@ -77,29 +70,20 @@ protected:
   bool m_proper = true;
 
 public:
-  Rotation(vec axis, int order = 2, bool proper = true)
-      : Rotation(s_default_coordinate_system, std::move(axis), std::move(order), std::move(proper)) {}
-  Rotation(const CoordinateSystem& coordinate_system, vec axis, int order = 2, bool proper = true)
-      : Operator(coordinate_system), m_axis(axis.normalized()), m_order(std::move(order)), m_proper(std::move(proper)) {
-    m_name = (m_proper ? "C" : "S") + std::to_string(m_order);
-    if (m_axis(0) > 0.99)
-      m_name += "x";
-    if (m_axis(1) > 0.99)
-      m_name += "y";
-    if (m_axis(2) > 0.99)
-      m_name += "z";
-  }
+  Rotation(vec axis, int order = 2, bool proper = true);
+  Rotation(const CoordinateSystem& coordinate_system, vec axis, int order = 2, bool proper = true);
   vec operator_local(vec v) const override;
   friend class Group;
   Operator* clone() const override { return new Rotation(*this); }
-  Operator* clone(const CoordinateSystem& coordinate_system) const override { return new Rotation(coordinate_system,m_axis,m_order,m_proper); }
+  Operator* clone(const CoordinateSystem& coordinate_system) const override {
+    return new Rotation(coordinate_system, m_axis, m_order, m_proper);
+  }
 };
 
 class Inversion : public Operator {
 public:
-  Inversion(const CoordinateSystem& coordinate_system = s_default_coordinate_system) : Operator(coordinate_system) {
-    m_name = "i";
-  }
+  Inversion();
+  Inversion(const CoordinateSystem& coordinate_system);
   vec operator_local(vec v) const override;
   friend class Group;
   Operator* clone() const override { return new Inversion(*this); }
@@ -108,9 +92,8 @@ public:
 
 class Identity : public Operator {
 public:
-  Identity(const CoordinateSystem& coordinate_system = s_default_coordinate_system) : Operator(coordinate_system) {
-    m_name = "E";
-  }
+  Identity();
+  Identity(const CoordinateSystem& coordinate_system);
   vec operator_local(vec v) const override;
   friend class Group;
   Operator* clone() const override { return new Identity(*this); }

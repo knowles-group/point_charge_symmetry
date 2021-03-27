@@ -2,8 +2,12 @@
 #include <memory>
 #include <sstream>
 #include <vector>
-//#include <iostream>
+
 namespace molpro::point_charge_symmetry {
+
+static CoordinateSystem s_default_coordinate_system = CoordinateSystem();
+
+Operator::Operator() : Operator(s_default_coordinate_system) {}
 
 Operator::vec Operator::operator()(vec v) const {
   return m_coordinate_system.origin() +
@@ -25,23 +29,48 @@ std::array<Operator::vec, 6> Operator::operator_gradient(vec v, int numerical, d
         transformed_points.push_back((*points.back())(v).eval());
       }
       if (numerical == 1)
-//        result[i] = ((*points[2])(v) - (*points[0])(v)).eval() / (2 * step);
-      result[i] = (transformed_points[2] - transformed_points[0]) / (2 * step);
+        //        result[i] = ((*points[2])(v) - (*points[0])(v)).eval() / (2 * step);
+        result[i] = (transformed_points[2] - transformed_points[0]) / (2 * step);
       else if (numerical == 2)
-        result[i] = (transformed_points[0]-8*transformed_points[1]+8*transformed_points[3]-transformed_points[4]) / (12 * step);
+        result[i] =
+            (transformed_points[0] - 8 * transformed_points[1] + 8 * transformed_points[3] - transformed_points[4]) /
+            (12 * step);
       else
         throw std::logic_error("Incorrect differentiation order");
     }
-//    std::cout << "result ";
-//    for (int i=0; i<6; i++) std::cout <<" "<<result[i];std::cout<<std::endl;
+    //    std::cout << "result ";
+    //    for (int i=0; i<6; i++) std::cout <<" "<<result[i];std::cout<<std::endl;
     return result;
   }
   return result;
 }
 
+Reflection::Reflection(vec normal) : Reflection(s_default_coordinate_system, std::move(normal)) {}
+Reflection::Reflection(const CoordinateSystem& coordinate_system, vec normal)
+    : Operator(coordinate_system), m_normal(normal.normalized()) {
+  m_name = "sigma";
+  if (m_normal(0) > 0.99)
+    m_name += "_yz";
+  if (m_normal(1) > 0.99)
+    m_name += "_xz";
+  if (m_normal(2) > 0.99)
+    m_name += "_xy";
+}
 Operator::vec Reflection::operator_local(vec v) const {
   v -= 2 * m_normal.dot(v) * m_normal;
   return v;
+}
+Rotation::Rotation(vec axis, int order, bool proper)
+    : Rotation(s_default_coordinate_system, std::move(axis), std::move(order), std::move(proper)) {}
+Rotation::Rotation(const CoordinateSystem& coordinate_system, vec axis, int order, bool proper)
+    : Operator(coordinate_system), m_axis(axis.normalized()), m_order(std::move(order)), m_proper(std::move(proper)) {
+  m_name = (m_proper ? "C" : "S") + std::to_string(m_order);
+  if (m_axis(0) > 0.99)
+    m_name += "x";
+  if (m_axis(1) > 0.99)
+    m_name += "y";
+  if (m_axis(2) > 0.99)
+    m_name += "z";
 }
 Operator::vec Rotation::operator_local(vec v) const {
   double angle = (double)2 * std::acos(double(-1)) / m_order;
@@ -52,8 +81,12 @@ Operator::vec Rotation::operator_local(vec v) const {
   return v;
 }
 
+Inversion::Inversion() : Operator(s_default_coordinate_system) {}
+Inversion::Inversion(const CoordinateSystem& coordinate_system) : Operator(coordinate_system) { m_name = "i"; }
 Operator::vec Inversion::operator_local(vec v) const { return -v; }
 
+Identity::Identity() : Identity(s_default_coordinate_system) {}
+Identity::Identity(const CoordinateSystem& coordinate_system) : Operator(coordinate_system) { m_name = "E"; }
 Operator::vec Identity::operator_local(vec v) const { return v; }
 
 std::string Operator::str(const std::string& title) const {
