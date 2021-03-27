@@ -138,7 +138,7 @@ int SymmetryMeasure::optimise_frame(CoordinateSystem& coordinate_system) {
   //  std::cout << "optimise_frame" << std::endl;
   //  std::cout << "coordinate_system passed "&c
   //  coordinate_system.m_parameters={1.08791,0.778845,0.959933,0.823031,0.622547,0.611889};
-  for (int c = 0; c < 6; c++) { // TODO remove testing only
+  for (int c = 0; c < 0; c++) { // TODO remove testing only
     coordinate_system.m_parameters = {1, 1, 1, 1, 1, 1};
     double step = 1e-3;
     auto value0 = (*this)();
@@ -159,7 +159,7 @@ int SymmetryMeasure::optimise_frame(CoordinateSystem& coordinate_system) {
     std::cout << "analytic=" << grad0[c] << ", numerical=" << (valuep - valuem) / (2 * step) << std::endl;
   }
   auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector, Rvector>(
-      "BFGS", "max_size_qspace=6,convergence_threshold=1e-15");
+      "BFGS", "max_size_qspace=4,convergence_threshold=1e-8");
   int nwork = 1;
   for (int iter = 0; iter < 1000; iter++) {
     //    std::cout << coordinate_system << std::endl;
@@ -204,7 +204,7 @@ int SymmetryMeasure::optimise_frame(CoordinateSystem& coordinate_system) {
       std::cout << std::endl;
       cout << "precondition" << std::endl;
       for (int i = 0; i < 6; i++)
-        grad[i] /= 100;
+        grad[i] /= 1;
     } else if (false){
       std::cout << "LINE SEARCH WAS SPECIFIED" << std::endl;
       auto new_parameters = coordinate_system.m_parameters;
