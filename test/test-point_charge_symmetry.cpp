@@ -129,7 +129,7 @@ TEST(point_charge_symmetry, Molecule) {
 TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
   Molecule water("h2o-nosym.xyz");
   std::cout << water << std::endl;
-  std::cout << "centre of charge: " << water.centre_of_charge().transpose() << std::endl;
+//  std::cout << "centre of charge: " << water.centre_of_charge().transpose() << std::endl;
   std::cout << "inertial axes\n" << water.inertial_axes() << std::endl;
   int best_axis = 0;
   double best_axis_sm = 1e50;
@@ -143,11 +143,16 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
   group.add(Reflection({1, 0, 0}));
   group.add(Reflection({0, 1, 0}));
   for (int principal_axis = 0; principal_axis < 3; principal_axis++) {
-    //    std::cout << "try axes\n" << coordinate_system.axes() << std::endl;
+//        std::cout << "try axes\n" << coordinate_system.axes() << std::endl;
     auto sm = SymmetryMeasure(water, group);
-    //    std::cout << "principal_axis=" << principal_axis << " sm=" << sm() << std::endl;
-    if (sm() < best_axis_sm)
+//    std::cout << "Atomic coordinates in local frame\n" << std::endl;
+//    for (const auto &atom : water.m_atoms)
+//      std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
+//    std::cout << "principal_axis=" << principal_axis << " sm=" << sm() << std::endl;
+    if (sm() < best_axis_sm) {
+      best_axis_sm=sm();
       best_axis = principal_axis;
+    }
     //    std::cout << "axes before cycle\n" << coordinate_system.axes() << std::endl;
     coordinate_system.cycle_axes();
   }
@@ -155,6 +160,9 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
     coordinate_system.cycle_axes();
   }
   std::cout << "chosen initial coordinate system: " << best_axis << "\n" << coordinate_system << std::endl;
+    std::cout << "Atomic coordinates in local frame\n" << std::endl;
+    for (const auto &atom : water.m_atoms)
+      std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
   auto sm = SymmetryMeasure(water, group);
   int i = 0;
   for (const auto &op : group) {
@@ -162,6 +170,7 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
     std::cout << "Operator symmetry measure: " << op->name() << " " << sm(i) << std::endl;
     i++;
   }
+  std::cout <<sm<<std::endl;
   std::cout << group.name() << " symmetry measure: " << sm() << std::endl;
   //  std::cout << "CoordinateSystem data";
   //  for (int i = 0; i < 6; i++)
@@ -202,7 +211,11 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
   }
 
     std::cout << coordinate_system << std::endl;
-    EXPECT_GE(sm.optimise_frame(coordinate_system), 0);
+  std::cout << "Atomic coordinates in local frame\n" << std::endl;
+  for (const auto &atom : water.m_atoms)
+    std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
+
+  EXPECT_GE(sm.optimise_frame(coordinate_system), 0);
     EXPECT_GE(sm.optimise_frame(coordinate_system), 0);
     std::cout << group.name() << " symmetry measure: " << sm() << std::endl;
     std::cout << coordinate_system << std::endl;
