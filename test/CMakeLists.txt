@@ -8,7 +8,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 
 include(GoogleTest)
-foreach (t test-${PROJECT_NAME})
+foreach (t test-${PROJECT_NAME} test-bfgs)
     add_executable(${t} ${t}.cpp)
     target_link_libraries(${t} PUBLIC gmock_main molpro::${PROJECT_NAME})
     if (NOT CMAKE_CROSSCOMPILING)
@@ -21,3 +21,4 @@ endforeach ()
 #add_custom_target(h2o.xyz DEPENDS h2o.xyz)
 #add_dependencies(test-${PROJECT_NAME} h2o.xyz)
 configure_file(h2o.xyz h2o.xyz COPYONLY)
+configure_file(h2o-nosym.xyz h2o-nosym.xyz COPYONLY)

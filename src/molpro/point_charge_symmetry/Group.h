@@ -14,16 +14,24 @@ protected:
   const std::string m_name;
 
 public:
-  Group(const CoordinateSystem &coordinate_system = CoordinateSystem(), std::string name = "")
+  Group(const CoordinateSystem& coordinate_system = CoordinateSystem(), std::string name = "")
       : m_coordinate_system(coordinate_system), m_name(std::move(name)) {}
   Group(std::string name) : m_coordinate_system(s_group_default_coordinate_system), m_name(std::move(name)) {}
+  Group(const CoordinateSystem& coordinate_system, const Group& source)
+      : m_coordinate_system(coordinate_system), m_name(source.m_name) {
+    for (const auto& m : source.m_members) {
+      m_members.emplace_back(m->clone(m_coordinate_system));
+    }
+  }
   std::string name() const { return m_name; }
   void add(Identity op) { m_members.emplace_back(new Identity(m_coordinate_system)); }
   void add(Inversion op) { m_members.emplace_back(new Inversion(m_coordinate_system)); }
   void add(Reflection op) { m_members.emplace_back(new Reflection(m_coordinate_system, op.m_normal)); }
-  void add(Rotation op) { m_members.emplace_back(new Rotation(m_coordinate_system, op.m_axis, op.m_order, op.m_proper)); }
-//  const double *data() const { return m_coordinate_system.data(); }
-//  double *data() { return m_coordinate_system.data(); }
+  void add(Rotation op) {
+    m_members.emplace_back(new Rotation(m_coordinate_system, op.m_axis, op.m_order, op.m_proper));
+  }
+  //  const double *data() const { return m_coordinate_system.data(); }
+  //  double *data() { return m_coordinate_system.data(); }
   const CoordinateSystem coordinate_system() const { return m_coordinate_system; }
   using iterator = std::vector<std::unique_ptr<Operator>>::iterator;
   using const_iterator = std::vector<std::unique_ptr<Operator>>::const_iterator;

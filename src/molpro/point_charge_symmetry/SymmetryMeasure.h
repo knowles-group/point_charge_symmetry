@@ -15,12 +15,12 @@ public:
     }
   }
 
-  double operator()(int operator_index = -1) const ;
-  CoordinateSystem::parameters_t coordinate_system_gradient(int operator_index=-1) const;
+  double operator()(int operator_index = -1, int functional_form=0) const ;
+  CoordinateSystem::parameters_t coordinate_system_gradient(int operator_index=-1, int functional_form=0) const;
   //  SymmetryMeasure(const Molecule& molecule, const Operator& op) : SymmetryMeasure(molecule, Group)
   std::string str() const;
 
-  void optimise_frame(CoordinateSystem& coordinate_system);
+  int optimise_frame(CoordinateSystem& coordinate_system);
 
 protected:
   const Molecule& m_molecule;

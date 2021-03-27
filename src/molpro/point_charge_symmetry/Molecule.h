@@ -20,6 +20,8 @@ public:
   Molecule(const std::string& filename);
   std::string str() const;
   Eigen::Vector3d centre_of_charge() const;
+  Eigen::Matrix3d inertia_tensor() const;
+  Eigen::Matrix3d inertial_axes() const;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Molecule& op) {

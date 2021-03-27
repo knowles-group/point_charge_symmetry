@@ -90,12 +90,12 @@ TEST(point_charge_symmetry, axes_gradient) {
       tested.push_back(mat::Zero());
       for (int i = 0; i < 3; i++)
         tested.back() += displacement[i] * axes_gradient[i] / displacement.norm();
-//      std::cout << "tested:\n" << tested.back() << std::endl;
-//      std::cout << "reference-tested:\n" << reference - tested.back() << std::endl;
+      //      std::cout << "tested:\n" << tested.back() << std::endl;
+      //      std::cout << "reference-tested:\n" << reference - tested.back() << std::endl;
       const auto tolerance = std::max(1e-8, std::pow(step, displacements * 2));
-//      std::cout << "step=" << step << " , displacements=" << displacements
-//                << ", reference-tested=" << (reference - tested.back()).norm() << ", tolerance=" << tolerance
-//                << std::endl;
+      //      std::cout << "step=" << step << " , displacements=" << displacements
+      //                << ", reference-tested=" << (reference - tested.back()).norm() << ", tolerance=" << tolerance
+      //                << std::endl;
       EXPECT_LT((reference - tested.back()).norm(), tolerance);
     }
     const auto tolerance = std::max(1e-9, std::pow(step, 2));
@@ -120,25 +120,42 @@ TEST(point_charge_symmetry, Molecule) {
     i++;
   }
   std::cout << c2v.name() << " symmetry measure: " << sm() << std::endl;
-//  std::cout << "CoordinateSystem data";
-//  for (int i = 0; i < 6; i++)
-//    std::cout << " " << c2v.coordinate_system().data()[i];
-//  std::cout << std::endl;
+  //  std::cout << "CoordinateSystem data";
+  //  for (int i = 0; i < 6; i++)
+  //    std::cout << " " << c2v.coordinate_system().data()[i];
+  //  std::cout << std::endl;
 }
 
 TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
-  Molecule water("h2o.xyz");
-//  std::cout << water << std::endl;
-  CoordinateSystem coordinate_system;
-  Group group(coordinate_system,"C2v");
-//  std::cout << &coordinate_system<<std::endl;
-//  std::cout << &c2v.coordinate_system() << std::endl;
+  Molecule water("h2o-nosym.xyz");
+  std::cout << water << std::endl;
+  std::cout << "centre of charge: " << water.centre_of_charge().transpose() << std::endl;
+  std::cout << "inertial axes\n" << water.inertial_axes() << std::endl;
+  int best_axis = 0;
+  double best_axis_sm = 1e50;
+  auto axes = water.inertial_axes();
+  CoordinateSystem coordinate_system(water.centre_of_charge(), axes);
+  Group group(coordinate_system, "C2v");
+  //  std::cout << &coordinate_system<<std::endl;
+  //  std::cout << &c2v.coordinate_system() << std::endl;
   group.add(Identity());
   group.add(Rotation({0, 0, 1}, 2));
   group.add(Reflection({1, 0, 0}));
   group.add(Reflection({0, 1, 0}));
+  for (int principal_axis = 0; principal_axis < 3; principal_axis++) {
+    //    std::cout << "try axes\n" << coordinate_system.axes() << std::endl;
+    auto sm = SymmetryMeasure(water, group);
+    //    std::cout << "principal_axis=" << principal_axis << " sm=" << sm() << std::endl;
+    if (sm() < best_axis_sm)
+      best_axis = principal_axis;
+    //    std::cout << "axes before cycle\n" << coordinate_system.axes() << std::endl;
+    coordinate_system.cycle_axes();
+  }
+  for (int principal_axis = 0; principal_axis < best_axis; principal_axis++) {
+    coordinate_system.cycle_axes();
+  }
+  std::cout << "chosen initial coordinate system: " << best_axis << "\n" << coordinate_system << std::endl;
   auto sm = SymmetryMeasure(water, group);
-  std::cout << sm << std::endl;
   int i = 0;
   for (const auto &op : group) {
 
@@ -146,40 +163,50 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
     i++;
   }
   std::cout << group.name() << " symmetry measure: " << sm() << std::endl;
-//  std::cout << "CoordinateSystem data";
-//  for (int i = 0; i < 6; i++)
-//    std::cout << " " << group.coordinate_system().data()[i];
-//  std::cout << std::endl;
-  auto g = sm.coordinate_system_gradient();
-  std::cout << "coordinate system gradient:";
-  std::for_each(g.begin(),g.end(),[](const auto& val){std::cout <<" "<<val;});
-  std::cout << std::endl;
+  //  std::cout << "CoordinateSystem data";
+  //  for (int i = 0; i < 6; i++)
+  //    std::cout << " " << group.coordinate_system().data()[i];
+  //  std::cout << std::endl;
+  for (int functional_form = 0; functional_form < 2; functional_form++) {
 
-
-  std::array<double,6> numerical_gradient{0,0,0,0,0,0};
-  for (int i = 0; i < 6; i++) {
-//    std::cout << "Displace "<<i<<std::endl;
-    double* parameters = coordinate_system.data();
-   std::fill(parameters,parameters+6,0);
-   double step=1e-6;
-   parameters[i]=step;
-//    std::cout << "CoordinateSystem data";
-//    for (int i = 0; i < 6; i++)
-//      std::cout << " " << group.coordinate_system().data()[i];
+    auto g = sm.coordinate_system_gradient(-1, functional_form);
+//    std::cout << "functional_form="<<functional_form<<std::endl;
+//    std::cout << "coordinate system gradient:";
+//    std::for_each(g.begin(), g.end(), [](const auto &val) { std::cout << " " << val; });
 //    std::cout << std::endl;
-    auto smp = sm();
-//    std::cout << smp<< std::endl;
-    parameters[i]=-step;
-    auto smm = sm();
-    numerical_gradient[i]=(smp-smm)/(2*step);
-//    std::cout << "displaced "<<i<<" smm="<<smm<<", smp="<<smp<<std::endl;
-  }
-  std::cout << "numerical coordinate system gradient:";
-  std::for_each(numerical_gradient.begin(),numerical_gradient.end(),[](const auto& val){std::cout <<" "<<val;});
-  std::cout << std::endl;
-  EXPECT_THAT(
-      numerical_gradient,
-      ::testing::Pointwise(::testing::DoubleNear(1e-8), g));
 
-  sm.optimise_frame(coordinate_system);
+    std::array<double, 6> numerical_gradient{0, 0, 0, 0, 0, 0};
+    for (int i = 0; i < 6; i++) {
+//      std::cout << "Displace " << i << std::endl;
+      double *parameters = coordinate_system.data();
+      //      std::fill(parameters, parameters + 6, 0);
+      double step = 1e-6;
+      parameters[i] += step;
+      //    std::cout << "CoordinateSystem data";
+      //    for (int i = 0; i < 6; i++)
+      //      std::cout << " " << group.coordinate_system().data()[i];
+      //    std::cout << std::endl;
+      auto smp = sm(-1, functional_form);
+      //          std::cout << smp<< std::endl;
+      parameters[i] -= 2 * step;
+      auto smm = sm(-1, functional_form);
+      parameters[i] += step;
+      numerical_gradient[i] = (smp - smm) / (2 * step);
+//      std::cout << "displaced " << i << " smm=" << smm << ", smp=" << smp << std::endl;
+    }
+//    std::cout << "numerical coordinate system gradient:";
+//    std::for_each(numerical_gradient.begin(), numerical_gradient.end(),
+//                  [](const auto &val) { std::cout << " " << val; });
+//    std::cout << std::endl;
+    EXPECT_THAT(numerical_gradient, ::testing::Pointwise(::testing::DoubleNear(1e-8), g))<<"for functional_form="<<functional_form;
+  }
+
+    std::cout << coordinate_system << std::endl;
+    EXPECT_GE(sm.optimise_frame(coordinate_system), 0);
+    EXPECT_GE(sm.optimise_frame(coordinate_system), 0);
+    std::cout << group.name() << " symmetry measure: " << sm() << std::endl;
+    std::cout << coordinate_system << std::endl;
+    std::cout << "Atomic coordinates in local frame\n" << std::endl;
+    for (const auto &atom : water.m_atoms)
+      std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
 }
