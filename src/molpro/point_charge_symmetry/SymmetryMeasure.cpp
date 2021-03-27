@@ -76,7 +76,7 @@ CoordinateSystem::parameters_t SymmetryMeasure::coordinate_system_gradient(int o
       //      std::cout << "d "<<d.transpose()<<std::endl;
       auto dist = d.norm();
       //            std::cout << "Atom a dist=" << dist << std::endl;
-      auto opgrad = (**op).operator_gradient(m_molecule.m_atoms[a].position, 2, 1e-4); // TODO analytic instead
+      auto opgrad = (**op).operator_gradient(m_molecule.m_atoms[a].position, 2, 1e-3); // TODO analytic instead
       //      std::cout << "d "<<d.transpose()<<std::endl;
       if (dist > 0)
         for (int i = 0; i < 6; i++) {
@@ -159,7 +159,7 @@ int SymmetryMeasure::optimise_frame(CoordinateSystem& coordinate_system) {
     std::cout << "analytic=" << grad0[c] << ", numerical=" << (valuep - valuem) / (2 * step) << std::endl;
   }
   auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector, Rvector>(
-      "BFGS", "max_size_qspace=4,convergence_threshold=1e-8");
+      "BFGS", "max_size_qspace=5,convergence_threshold=1e-8");
   int nwork = 1;
   for (int iter = 0; iter < 1000; iter++) {
     //    std::cout << coordinate_system << std::endl;
