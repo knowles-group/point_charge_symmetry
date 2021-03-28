@@ -9,15 +9,15 @@ namespace molpro::point_charge_symmetry {
 static CoordinateSystem s_group_default_coordinate_system;
 class Group {
 protected:
-  const CoordinateSystem& m_coordinate_system;
+  CoordinateSystem& m_coordinate_system;
   std::vector<std::unique_ptr<Operator>> m_members;
   const std::string m_name;
 
 public:
-  Group(const CoordinateSystem& coordinate_system = CoordinateSystem(), std::string name = "")
+  Group(CoordinateSystem& coordinate_system = s_group_default_coordinate_system, std::string name = "")
       : m_coordinate_system(coordinate_system), m_name(std::move(name)) {}
   Group(std::string name) : m_coordinate_system(s_group_default_coordinate_system), m_name(std::move(name)) {}
-  Group(const CoordinateSystem& coordinate_system, const Group& source)
+  Group(CoordinateSystem& coordinate_system, const Group& source)
       : m_coordinate_system(coordinate_system), m_name(source.m_name) {
     for (const auto& m : source.m_members) {
       m_members.emplace_back(m->clone(m_coordinate_system));
@@ -33,6 +33,7 @@ public:
   //  const double *data() const { return m_coordinate_system.data(); }
   //  double *data() { return m_coordinate_system.data(); }
   const CoordinateSystem coordinate_system() const { return m_coordinate_system; }
+  CoordinateSystem::parameters_t& coordinate_system_parameters() const { return m_coordinate_system.m_parameters; }
   using iterator = std::vector<std::unique_ptr<Operator>>::iterator;
   using const_iterator = std::vector<std::unique_ptr<Operator>>::const_iterator;
   iterator begin() { return m_members.begin(); }

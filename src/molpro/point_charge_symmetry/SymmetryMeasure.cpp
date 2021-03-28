@@ -131,31 +131,30 @@ std::string SymmetryMeasure::str() const {
   return ss.str();
 }
 
-int SymmetryMeasure::optimise_frame(CoordinateSystem& coordinate_system) {
+int SymmetryMeasure::optimise_frame() {
+  auto& parameters = m_group.coordinate_system_parameters();
   const double centre_of_charge_penalty = 0e0;
   const int centre_of_charge_penalty_power = 4;
   using Rvector = CoordinateSystem::parameters_t;
   //  std::cout << "optimise_frame" << std::endl;
-  //  std::cout << "coordinate_system passed "&c
-  //  coordinate_system.m_parameters={1.08791,0.778845,0.959933,0.823031,0.622547,0.611889};
   for (int c = 0; c < 0; c++) { // TODO remove testing only
-    coordinate_system.m_parameters = {1, 1, 1, 1, 1, 1};
+    parameters = {1, 1, 1, 1, 1, 1};
     double step = 1e-3;
     auto value0 = (*this)();
     auto grad0 = coordinate_system_gradient();
-    coordinate_system.m_parameters[c] += step;
+    parameters[c] += step;
     auto valuep = (*this)();
     std::cout << "plus displacement parameters=";
     for (int i = 0; i < 6; i++)
-      std::cout << " " << coordinate_system.m_parameters[i];
+      std::cout << " " << parameters[i];
     std::cout << ", value=" << valuep << std::endl;
-    coordinate_system.m_parameters[c] -= 2 * step;
+    parameters[c] -= 2 * step;
     auto valuem = (*this)();
     std::cout << "minus displacement parameters=";
     for (int i = 0; i < 6; i++)
-      std::cout << " " << coordinate_system.m_parameters[i];
+      std::cout << " " << parameters[i];
     std::cout << ", value=" << valuem << std::endl;
-    coordinate_system.m_parameters[c] += step;
+    parameters[c] += step;
     std::cout << "analytic=" << grad0[c] << ", numerical=" << (valuep - valuem) / (2 * step) << std::endl;
   }
   auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector, Rvector>(
@@ -165,7 +164,7 @@ int SymmetryMeasure::optimise_frame(CoordinateSystem& coordinate_system) {
     //    std::cout << coordinate_system << std::endl;
     auto value = (*this)(-1, 1);
     auto grad = coordinate_system_gradient(-1, 1);
-    auto centre_of_charge_displacement = (coordinate_system.origin() - m_molecule.centre_of_charge()).eval();
+    auto centre_of_charge_displacement = (m_group.coordinate_system().origin() - m_molecule.centre_of_charge()).eval();
     //    std::cout << grad[0]<<std::endl;
     //    std::cout << "coordinate_system.origin() " << coordinate_system.origin().transpose() << std::endl;
     //    std::cout << "m_molecule.centre_of_charge() " << m_molecule.centre_of_charge().transpose() << std::endl;
@@ -195,9 +194,9 @@ int SymmetryMeasure::optimise_frame(CoordinateSystem& coordinate_system) {
     //    "<<coordinate_system.m_parameters[i];std::cout<<std::endl; std::cout << "before add_value "<<nwork;for (int
     //    i=0;i<6;i++)std::cout<<" "<<grad[i];std::cout<<std::endl;
     std::cout << "value=" << value << std::endl;
-    std::cout << "Current parameters " << coordinate_system.m_parameters << std::endl;
-    auto current_parameters = coordinate_system.m_parameters;
-    if (solver->add_value(coordinate_system.m_parameters, value, grad)) {
+    std::cout << "Current parameters " << parameters << std::endl;
+    auto current_parameters = parameters;
+    if (solver->add_value(parameters, value, grad)) {
       std::cout << "after add_value " << nwork;
       for (int i = 0; i < 6; i++)
         std::cout << " " << grad[i];
@@ -207,7 +206,7 @@ int SymmetryMeasure::optimise_frame(CoordinateSystem& coordinate_system) {
         grad[i] /= 1;
     } else if (false){
       std::cout << "LINE SEARCH WAS SPECIFIED" << std::endl;
-      auto new_parameters = coordinate_system.m_parameters;
+      auto new_parameters = parameters;
       std::cout << "Original parameters " << current_parameters << std::endl;
       std::cout << "     New parameters " << new_parameters << std::endl;
       double dist = 0;
@@ -218,12 +217,12 @@ int SymmetryMeasure::optimise_frame(CoordinateSystem& coordinate_system) {
       std::cout << "SCAN" << std::endl;
       for (double x = -0.5; x < 1.1; x += .01) {
         for (int i = 0; i < 6; i++)
-          coordinate_system.m_parameters[i] = (1 - x) * current_parameters[i] + x * new_parameters[i];
+          parameters[i] = (1 - x) * current_parameters[i] + x * new_parameters[i];
         int component = 5;
         auto fi = (*this)(-1, 1);
-        coordinate_system.m_parameters[component] += 1e-2;
+        parameters[component] += 1e-2;
         auto fid = (*this)(-1, 1);
-        coordinate_system.m_parameters[component] -= 1e-2;
+        parameters[component] -= 1e-2;
         auto gradi = coordinate_system_gradient(-1, 1);
         std::cout << "component " << component << " numerical gradient=" << (fi - fid) / 1e-2
                   << ", analytical gradient=" << gradi[component] << std::endl;
@@ -232,12 +231,12 @@ int SymmetryMeasure::optimise_frame(CoordinateSystem& coordinate_system) {
           grad_proj += gradi[i] * (new_parameters[i] - current_parameters[i]);
         std::cout << "x=" << x << " value=" << (*this)(-1, 1) << ", projected gradient " << grad_proj << std::endl;
       }
-      coordinate_system.m_parameters = new_parameters;
+      parameters = new_parameters;
     }
-    nwork = solver->end_iteration(coordinate_system.m_parameters, grad);
+    nwork = solver->end_iteration(parameters, grad);
     std::cout << "after end_iteration " << nwork;
     for (int i = 0; i < 6; i++)
-      std::cout << " " << coordinate_system.m_parameters[i];
+      std::cout << " " << parameters[i];
     std::cout << std::endl;
     solver->report();
     if (nwork <= 0)

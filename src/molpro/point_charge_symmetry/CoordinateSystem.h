@@ -12,7 +12,7 @@ class CoordinateSystem {
 public:
   using parameters_t = std::array<double, 6>;
   // protected:
-  parameters_t m_parameters;
+  mutable parameters_t m_parameters;
 
 public:
   using vec = Eigen::Vector3d;

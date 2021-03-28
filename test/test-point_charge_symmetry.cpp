@@ -215,8 +215,8 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
   for (const auto &atom : water.m_atoms)
     std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
 
-  EXPECT_GE(sm.optimise_frame(coordinate_system), 0);
-    EXPECT_GE(sm.optimise_frame(coordinate_system), 0);
+  EXPECT_GE(sm.optimise_frame(), 0);
+    EXPECT_GE(sm.optimise_frame(), 0);
     std::cout << group.name() << " symmetry measure: " << sm() << std::endl;
     std::cout << coordinate_system << std::endl;
     std::cout << "Atomic coordinates in local frame\n" << std::endl;
