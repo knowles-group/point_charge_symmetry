@@ -68,11 +68,13 @@ protected:
   vec m_axis;
   int m_order;
   bool m_proper = true;
+  int m_count;
 
 public:
-  Rotation(vec axis, int order = 2, bool proper = true);
-  Rotation(const CoordinateSystem& coordinate_system, vec axis, int order = 2, bool proper = true);
+  Rotation(vec axis, int order = 2, bool proper = true, int count = 1);
+  Rotation(const CoordinateSystem& coordinate_system, vec axis, int order = 2, bool proper = true, int count = 1);
   vec operator_local(vec v) const override;
+  std::string str(const std::string& title) const override;
   friend class Group;
   Operator* clone() const override { return new Rotation(*this); }
   Operator* clone(const CoordinateSystem& coordinate_system) const override {

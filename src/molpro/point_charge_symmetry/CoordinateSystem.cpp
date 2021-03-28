@@ -7,7 +7,7 @@
 namespace molpro::point_charge_symmetry {
 
 CoordinateSystem::CoordinateSystem(const vec& origin, const mat& axes) {
-  std::cout << "CoordinateSystem constructor, axes=\n"<<axes<<std::endl;
+//  std::cout << "CoordinateSystem constructor, axes=\n" << axes << std::endl;
   if (std::abs(axes.determinant() - 1) > 1e-14)
     throw std::runtime_error("Axes must be proper rotation");
   auto generator = axes.log();
@@ -23,8 +23,8 @@ const CoordinateSystem::mat CoordinateSystem::axes() const {
   Eigen::Matrix3d generator;
   generator << 0, -axis_generator()(2), -axis_generator()(1), axis_generator()(2), 0, -axis_generator()(0),
       axis_generator()(1), axis_generator()(0), 0;
-//    std::cout << "Generator\n"<<generator<<std::endl;
-//  std::cout << "Generator.exp()\n"<<generator.exp()<<std::endl;
+  //    std::cout << "Generator\n"<<generator<<std::endl;
+  //  std::cout << "Generator.exp()\n"<<generator.exp()<<std::endl;
   return generator.exp();
 }
 
@@ -46,25 +46,38 @@ const std::array<CoordinateSystem::mat, 3> CoordinateSystem::axes_gradient(int d
   return result;
 }
 
-CoordinateSystem::vec CoordinateSystem::to_local(const vec& source) {
+CoordinateSystem::vec CoordinateSystem::to_local(const vec& source) const {
   return (axes().transpose() * (source - origin())).eval();
 }
 
-CoordinateSystem::vec CoordinateSystem::to_global(const vec& source) { return (origin() + axes() * source).eval(); }
+CoordinateSystem::vec CoordinateSystem::to_global(const vec& source) const { return (origin() + axes() * source).eval(); }
 
-void CoordinateSystem::cycle_axes() {
+void CoordinateSystem::cycle_axes() const {
+//  std::cout << "cycle_axes starts with\n" << axes() << std::endl;
+  //  rot90(2);
+  //  std::cout << "cycle_axes after rot90\n"<<axes()<<std::endl;
+  //  if (m_axis_permutation_rot90_next)std::cout << "cycle_axes returns after rotating x,y with\n"<<axes()<<std::endl;
+  //  if (m_axis_permutation_rot90_next) return;
   mat new_axes;
   mat axes = this->axes();
-//  std::cout << "cycle_axes() start\n"<<axes<<std::endl;
-  new_axes.col(0) = axes.col(2);
-  new_axes.col(1) = axes.col(0);
-  new_axes.col(2) = axes.col(1);
-//  std::cout << "cycle_axes() new\n"<<new_axes<<std::endl;
+//  std::cout << "cycle_axes() start\n" << axes << std::endl;
+  if (m_axis_permutation_rot90_next) {
+    new_axes.col(0) = axes.col(1);
+    new_axes.col(1) = -axes.col(0);
+    new_axes.col(2) = axes.col(2);
+  } else {
+    new_axes.col(0) = axes.col(2);
+    new_axes.col(1) = -axes.col(1);
+    new_axes.col(2) = axes.col(0);
+  }
+//  std::cout << "cycle_axes() new\n" << new_axes << std::endl;
   auto generator = new_axes.log();
-//  std::cout << "generator\n"<<generator<<std::endl;
-  axis_generator()(2) = generator(1, 0);
-  axis_generator()(1) = generator(2, 0);
-  axis_generator()(0) = generator(2, 1);
+  //  std::cout << "generator\n"<<generator<<std::endl;
+  m_parameters[5] = generator(1, 0);
+  m_parameters[4] = generator(2, 0);
+  m_parameters[3] = generator(2, 1);
+  m_axis_permutation_rot90_next = not m_axis_permutation_rot90_next;
+//  std::cout << "cycle_axes returns after permuting x,y,z with\n" << this->axes() << std::endl;
 }
 
 void CoordinateSystem::rot90(int axis) {

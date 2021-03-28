@@ -13,6 +13,8 @@ public:
   using parameters_t = std::array<double, 6>;
   // protected:
   mutable parameters_t m_parameters;
+protected:
+  mutable bool m_axis_permutation_rot90_next=false;
 
 public:
   using vec = Eigen::Vector3d;
@@ -27,9 +29,9 @@ public:
   double* data() { return m_parameters.data(); }
   const double* data() const { return m_parameters.data(); }
   std::string str() const;
-  vec to_local(const vec& source);
-  vec to_global(const vec& source);
-  void cycle_axes();
+  vec to_local(const vec& source) const;
+  vec to_global(const vec& source) const;
+  void cycle_axes() const;
   void rot90(int axis);
 };
 

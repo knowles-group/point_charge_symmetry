@@ -8,7 +8,12 @@ namespace molpro::point_charge_symmetry {
 class SymmetryMeasure {
 public:
   SymmetryMeasure(const Molecule& molecule, const Group& group) : m_molecule(molecule), m_group(group) {
-    for (const auto& op : group) {
+    reset_neighbours();
+  }
+
+  void reset_neighbours() {
+    m_neighbours.clear();
+    for (const auto& op : m_group) {
       m_neighbours.emplace_back();
       for (size_t i = 0; i < m_molecule.m_atoms.size(); i++)
         m_neighbours.back().push_back(image_neighbour(i, *op));
@@ -20,6 +25,7 @@ public:
   //  SymmetryMeasure(const Molecule& molecule, const Operator& op) : SymmetryMeasure(molecule, Group)
   std::string str() const;
 
+  void adopt_inertial_axes();
   int optimise_frame();
 
 protected:
@@ -36,6 +42,8 @@ inline std::ostream& operator<<(std::ostream& os, const SymmetryMeasure& sm) {
 }
 
 Group discover_group(const Molecule& molecule, double threshold=1e-10);
+
+Group group_factory(std::string name);
 
 } // namespace molpro::point_charge_symmetry
 

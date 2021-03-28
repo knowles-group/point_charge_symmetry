@@ -1,6 +1,7 @@
 #include "SymmetryMeasure.h"
 #include <molpro/linalg/itsolv/OptimizeBFGS.h>
 #include <molpro/linalg/itsolv/SolverFactory.h>
+#include <regex>
 #include <sstream>
 namespace molpro::point_charge_symmetry {
 Atom SymmetryMeasure::image(const Atom& source, const Operator& op) {
@@ -131,6 +132,54 @@ std::string SymmetryMeasure::str() const {
   return ss.str();
 }
 
+void SymmetryMeasure::adopt_inertial_axes() {
+  auto& coordinate_system = m_group.coordinate_system();
+  auto& parameters = m_group.coordinate_system_parameters();
+  //  std::cout << "adopt_inertial_axes initial\n" << coordinate_system.axes() << std::endl;
+  { // initialise to inertial axes in some orientation or other
+    CoordinateSystem temporary_coordinate_system(m_molecule.centre_of_charge(), m_molecule.inertial_axes());
+    std::copy(temporary_coordinate_system.m_parameters.begin(), temporary_coordinate_system.m_parameters.end(),
+              parameters.begin());
+  }
+  //  std::cout << "adopt_inertial_axes first inertial\n" << coordinate_system.axes() << std::endl;
+  int best_axis = 0;
+  double best_axis_sm = 1e50;
+  for (int principal_axis = 0; principal_axis < 6; principal_axis++) {
+    reset_neighbours();
+    //    std::cout << "try axes\n" << coordinate_system.axes() << std::endl;
+    //    auto sm = SymmetryMeasure(m_molecule, m_group);
+    auto measure = (*this)();
+    //    std::cout << "Atomic coordinates in local frame\n" << std::endl;
+    CoordinateSystem::vec out_of_plane{0, 0, 0};
+    for (const auto& atom : m_molecule.m_atoms) {
+      //      auto coords= coordinate_system.to_local(atom.position);
+      out_of_plane += coordinate_system.to_local(atom.position).cwiseAbs();
+      //      std::cout << coords.transpose()<<std::endl;
+      //      std::cout << coordinate_system.to_local(atom.position).cwiseAbs().transpose()<<std::endl;
+      //      std::cout << out_of_plane.transpose()<<std::endl;
+      //      std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
+    }
+    // TODO implement all recommended tie breakers, such as planar C2v molecules in yz plane
+    auto tie_breaker = out_of_plane.dot(CoordinateSystem::vec{3, 2, 1}) * 1e-6;
+    measure += tie_breaker;
+    //    std::cout << "principal_axis=" << principal_axis << " sm=" << measure << std::endl;
+    //    std::cout << "out_of_plane "<<out_of_plane.transpose()<<std::endl;
+    if (measure < best_axis_sm) {
+      best_axis_sm = measure;
+      best_axis = principal_axis;
+    }
+    //    std::cout << "axes before cycle\n" << coordinate_system.axes() << std::endl;
+    coordinate_system.cycle_axes();
+  }
+  for (int principal_axis = 0; principal_axis < best_axis; principal_axis++)
+    coordinate_system.cycle_axes();
+  reset_neighbours();
+  //  std::cout << "chosen initial coordinate system: " << best_axis << "\n" << coordinate_system << std::endl;
+  //  std::cout << "Atomic coordinates in local frame\n" << std::endl;
+  //  for (const auto &atom : m_molecule.m_atoms)
+  //    std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
+}
+
 int SymmetryMeasure::optimise_frame() {
   auto& parameters = m_group.coordinate_system_parameters();
   const double centre_of_charge_penalty = 0e0;
@@ -193,18 +242,18 @@ int SymmetryMeasure::optimise_frame() {
     //    std::cout << "before add_value "<<nwork;for (int i=0;i<6;i++)std::cout<<"
     //    "<<coordinate_system.m_parameters[i];std::cout<<std::endl; std::cout << "before add_value "<<nwork;for (int
     //    i=0;i<6;i++)std::cout<<" "<<grad[i];std::cout<<std::endl;
-    std::cout << "value=" << value << std::endl;
-    std::cout << "Current parameters " << parameters << std::endl;
+    //    std::cout << "value=" << value << std::endl;
+    //    std::cout << "Current parameters " << parameters << std::endl;
     auto current_parameters = parameters;
     if (solver->add_value(parameters, value, grad)) {
-      std::cout << "after add_value " << nwork;
-      for (int i = 0; i < 6; i++)
-        std::cout << " " << grad[i];
-      std::cout << std::endl;
-      cout << "precondition" << std::endl;
+      //      std::cout << "after add_value " << nwork;
+      //      for (int i = 0; i < 6; i++)
+      //        std::cout << " " << grad[i];
+      //      std::cout << std::endl;
+      //      cout << "precondition" << std::endl;
       for (int i = 0; i < 6; i++)
         grad[i] /= 1;
-    } else if (false){
+    } else if (false) {
       std::cout << "LINE SEARCH WAS SPECIFIED" << std::endl;
       auto new_parameters = parameters;
       std::cout << "Original parameters " << current_parameters << std::endl;
@@ -234,24 +283,88 @@ int SymmetryMeasure::optimise_frame() {
       parameters = new_parameters;
     }
     nwork = solver->end_iteration(parameters, grad);
-    std::cout << "after end_iteration " << nwork;
-    for (int i = 0; i < 6; i++)
-      std::cout << " " << parameters[i];
-    std::cout << std::endl;
-    solver->report();
+    //    std::cout << "after end_iteration " << nwork;
+    //    for (int i = 0; i < 6; i++)
+    //      std::cout << " " << parameters[i];
+    //    std::cout << std::endl;
+    //    solver->report();
     if (nwork <= 0)
       return iter;
   }
   return -1;
 }
 
+static inline bool test_group(const Molecule& molecule, Group& group, double threshold = 1e-6) {
+  SymmetryMeasure sm(molecule, group);
+  sm.adopt_inertial_axes();
+  sm.optimise_frame();
+  return sm() < threshold;
+}
+
 Group discover_group(const Molecule& molecule, double threshold) {
+  using vec = CoordinateSystem::vec;
+  const vec xaxis{1, 0, 0};
+  const vec yaxis{0, 1, 0};
+  const vec zaxis{0, 0, 1};
+  constexpr size_t maximum_axis_order = 6;
   Group result;
+  // linear?
+  Group cinfv("Cinfv");
+  cinfv.add(Rotation(zaxis, 31));
+  if (test_group(molecule, cinfv)) {
+    Group dinfh("Dinfh");
+    dinfh.add(Inversion());
+    if (test_group(molecule, dinfh)) {
+      dinfh.add(Identity());
+      dinfh.add(Reflection(zaxis));
+      dinfh.add(Reflection(xaxis));
+      dinfh.add(Rotation(xaxis, 2));
+      return dinfh;
+    } else {
+      cinfv.add(Identity());
+      cinfv.add(Reflection(xaxis));
+      cinfv.add(Rotation(xaxis, 2));
+      return cinfv;
+    }
+  }
   return result;
 }
 
-} // namespace molpro::point_charge_symmetry
+Group molpro::point_charge_symmetry::group_factory(std::string name) {
+  using vec = CoordinateSystem::vec;
+  const vec xaxis{1, 0, 0};
+  const vec yaxis{0, 1, 0};
+  const vec zaxis{0, 0, 1};
+  Group g(name);
+  g.add(Identity());
+  std::smatch m;
+  if (name == "Ci" or name == "Dinfh" or std::regex_match(name, m, std::regex{"D[2468][hd]"}) or name == "Oh")
+    g.add(Inversion());
+  if (name == "Cs" or std::regex_match(name, m, std::regex{"[CD][2-9][0-9]*h"}))
+    g.add(Reflection(zaxis));
+  if (std::regex_match(name, m, std::regex{"([C])([2-9][0-9]*)([v])"}) or
+      std::regex_match(name, m, std::regex{"([D])([2-9][0-9]*)([h])"})) {
+    auto order = std::stoi(m.str(2));
+    for (double angle = 0; angle < std::acos(double(-1)) - 1e-10; angle += std::acos(double(-1)) / order)
+      g.add(Reflection({std::cos(angle), std::sin(angle), 0}));
+  }
+  if (std::regex_match(name, m, std::regex{"([D])([2-9][0-9]*)([^v])?"})) {
+    auto order = std::stoi(m.str(2));
+    for (double angle = 0; angle < std::acos(double(-1)) - 1e-10; angle += std::acos(double(-1)) / order)
+      g.add(Rotation({std::cos(angle), std::sin(angle), 0}, 2));
+  }
+  if (std::regex_match(name, m, std::regex{"([CD])([2-8])([hvd]*)"})) {
+    auto order = std::stoi(m.str(2));
+    for (int count = 0; count < order; count++) {
+      if (count > 0)
+        g.add(Rotation(zaxis, order, true, count));
+      if (m.str(3) == "h" and count > 0 and count + 1 != order)
+        g.add(Rotation(zaxis, order, false, count));
+      if (m.str(3) == "d" and count * 2 + 1 != order)
+        g.add(Rotation(zaxis, order * 2, false, count * 2 + 1));
+    }
+  }
+  return g;
+}
 
-#include <molpro/linalg/itsolv/SolverFactory-implementation.h>
-using Rvector = molpro::point_charge_symmetry::CoordinateSystem::parameters_t;
-template class molpro::linalg::itsolv::SolverFactory<Rvector, Rvector, Rvector>;
+} // namespace molpro::point_charge_symmetry

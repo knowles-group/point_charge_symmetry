@@ -51,19 +51,22 @@ Reflection::Reflection(const CoordinateSystem& coordinate_system, vec normal)
   m_name = "sigma";
   if (m_normal(0) > 0.99)
     m_name += "_yz";
-  if (m_normal(1) > 0.99)
+  else if (m_normal(1) > 0.99)
     m_name += "_xz";
-  if (m_normal(2) > 0.99)
-    m_name += "_xy";
+  else if (m_normal(2) > 0.99)
+    m_name += "_h";
+  else
+    m_name += "_v";
 }
 Operator::vec Reflection::operator_local(vec v) const {
   v -= 2 * m_normal.dot(v) * m_normal;
   return v;
 }
-Rotation::Rotation(vec axis, int order, bool proper)
-    : Rotation(s_default_coordinate_system, std::move(axis), std::move(order), std::move(proper)) {}
-Rotation::Rotation(const CoordinateSystem& coordinate_system, vec axis, int order, bool proper)
-    : Operator(coordinate_system), m_axis(axis.normalized()), m_order(std::move(order)), m_proper(std::move(proper)) {
+Rotation::Rotation(vec axis, int order, bool proper, int count)
+    : Rotation(s_default_coordinate_system, std::move(axis), std::move(order), std::move(proper), std::move(count)) {}
+Rotation::Rotation(const CoordinateSystem& coordinate_system, vec axis, int order, bool proper, int count)
+    : Operator(coordinate_system), m_axis(axis.normalized()), m_order(std::move(order)), m_proper(std::move(proper)),
+      m_count(std::move(count)) {
   m_name = (m_proper ? "C" : "S") + std::to_string(m_order);
   if (m_axis(0) > 0.99)
     m_name += "x";
@@ -71,10 +74,12 @@ Rotation::Rotation(const CoordinateSystem& coordinate_system, vec axis, int orde
     m_name += "y";
   if (m_axis(2) > 0.99)
     m_name += "z";
+  if (m_count > 1)
+    m_name += std::to_string(m_count);
 }
 Operator::vec Rotation::operator_local(vec v) const {
   double angle = (double)2 * std::acos(double(-1)) / m_order;
-  auto aa = Eigen::AngleAxis<double>((double)2 * std::acos(double(-1)) / m_order, m_axis);
+  auto aa = Eigen::AngleAxis<double>((double)2 * m_count * std::acos(double(-1)) / m_order, m_axis);
   v = aa * v;
   if (not m_proper)
     v -= 2 * m_axis.dot(v) * m_axis;
@@ -101,9 +106,18 @@ std::string Operator::str(const std::string& title) const {
 
 std::string Reflection::str(const std::string& title) const {
   std::stringstream result;
-  result << "ReflectionPlane " << title;
+  result << "Reflection " << title;
   result << Operator::str(title);
   result << "\nlocal plane normal: " << this->m_normal.transpose();
+  return result.str();
+}
+
+std::string Rotation::str(const std::string& title) const {
+  std::stringstream result;
+  result << "Rotation " << title;
+  result << Operator::str(title);
+  result << "\naxis: " << this->m_axis.transpose();
+  result << "\nangle: " << this->m_count*double(360)/m_order;
   return result.str();
 }
 } // namespace molpro::point_charge_symmetry
