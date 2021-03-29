@@ -308,24 +308,17 @@ Group discover_group(const Molecule& molecule, double threshold) {
   const vec zaxis{0, 0, 1};
   constexpr size_t maximum_axis_order = 6;
   Group result;
+  using group_factory = molpro::point_charge_symmetry::group_factory;
   // linear?
-  Group cinfv("Cinfv");
+  Group cinfv = group_factory("Cinfv");
   cinfv.add(Rotation(zaxis, 31));
   if (test_group(molecule, cinfv)) {
-    Group dinfh("Dinfh");
+    Group dinfh = group_factory("Dinfh");
     dinfh.add(Inversion());
     if (test_group(molecule, dinfh)) {
-      dinfh.add(Identity());
-      dinfh.add(Reflection(zaxis));
-      dinfh.add(Reflection(xaxis));
-      dinfh.add(Rotation(xaxis, 2));
       return dinfh;
-    } else {
-      cinfv.add(Identity());
-      cinfv.add(Reflection(xaxis));
-      cinfv.add(Rotation(xaxis, 2));
-      return cinfv;
     }
+    return cinfv;
   }
   return result;
 }
