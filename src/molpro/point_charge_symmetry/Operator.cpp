@@ -2,6 +2,7 @@
 #include <memory>
 #include <sstream>
 #include <vector>
+#include <iostream>
 
 namespace molpro::point_charge_symmetry {
 
@@ -27,9 +28,9 @@ std::array<Operator::vec, 6> Operator::operator_gradient(vec v, int numerical, d
         coordinate_systems.back().data()[i] += step * displacement;
         points.emplace_back(this->clone(coordinate_systems.back()));
         transformed_points.push_back((*points.back())(v).eval());
+//        std::cout << "transformed_points.back() "<<transformed_points.back().transpose()<<std::endl;
       }
       if (numerical == 1)
-        //        result[i] = ((*points[2])(v) - (*points[0])(v)).eval() / (2 * step);
         result[i] = (transformed_points[2] - transformed_points[0]) / (2 * step);
       else if (numerical == 2)
         result[i] =
@@ -78,7 +79,7 @@ Rotation::Rotation(const CoordinateSystem& coordinate_system, vec axis, int orde
     m_name += std::to_string(m_count);
 }
 Operator::vec Rotation::operator_local(vec v) const {
-  double angle = (double)2 * std::acos(double(-1)) / m_order;
+  double angle = (double)2 * m_count * std::acos(double(-1)) / m_order;
   auto aa = Eigen::AngleAxis<double>((double)2 * m_count * std::acos(double(-1)) / m_order, m_axis);
   v = aa * v;
   if (not m_proper)
@@ -117,7 +118,7 @@ std::string Rotation::str(const std::string& title) const {
   result << "Rotation " << title;
   result << Operator::str(title);
   result << "\naxis: " << this->m_axis.transpose();
-  result << "\nangle: " << this->m_count*double(360)/m_order;
+  result << "\nangle: " << this->m_count * double(360) / m_order;
   return result.str();
 }
 } // namespace molpro::point_charge_symmetry

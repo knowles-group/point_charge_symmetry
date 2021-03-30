@@ -77,11 +77,11 @@ CoordinateSystem::parameters_t SymmetryMeasure::coordinate_system_gradient(int o
       //      std::cout << "d "<<d.transpose()<<std::endl;
       auto dist = d.norm();
       //            std::cout << "Atom a dist=" << dist << std::endl;
-      auto opgrad = (**op).operator_gradient(m_molecule.m_atoms[a].position, 2, 1e-3); // TODO analytic instead
+      auto opgrad = (**op).operator_gradient(m_molecule.m_atoms[a].position, 2, 2e-3); // TODO analytic instead
       //      std::cout << "d "<<d.transpose()<<std::endl;
       if (dist > 0)
         for (int i = 0; i < 6; i++) {
-          //          std::cout << "opgrad\n"<<opgrad[i]<<std::endl;
+          //                    std::cout << "opgrad\n"<<opgrad[i].transpose()<<std::endl;
           for (int j = 0; j < 3; j++)
             grad_d[i] += opgrad[i][j] * d[j] / dist;
         }
@@ -207,12 +207,36 @@ int SymmetryMeasure::optimise_frame() {
     std::cout << "analytic=" << grad0[c] << ", numerical=" << (valuep - valuem) / (2 * step) << std::endl;
   }
   auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector, Rvector>(
-      "BFGS", "max_size_qspace=5,convergence_threshold=1e-8");
+      "BFGS", "max_size_qspace=5,convergence_threshold=1e-6");
   int nwork = 1;
-  for (int iter = 0; iter < 1000; iter++) {
+  for (int iter = 0; iter < 20; iter++) {
     //    std::cout << coordinate_system << std::endl;
     auto value = (*this)(-1, 1);
     auto grad = coordinate_system_gradient(-1, 1);
+    if (false) { // test gradient
+      CoordinateSystem::parameters_t vpp, vp, vm, vmm, testgrad;
+      double step = 2e-3;
+      double diff = 0;
+      for (int i = 0; i < 6; i++) {
+        parameters[i] -= 2 * step;
+        vmm[i] = (*this)(-1, 1);
+        parameters[i] += step;
+        vm[i] = (*this)(-1, 1);
+        parameters[i] += 2 * step;
+        vp[i] = (*this)(-1, 1);
+        parameters[i] += step;
+        vpp[i] = (*this)(-1, 1);
+        parameters[i] -= 2 * step;
+        testgrad[i] = (vmm[i] - 8 * vm[i] + 8 * vp[i] - vpp[i]) / (12 * step);
+        diff += std::pow(testgrad[i] - grad[i], 2);
+      }
+      //      std::cout << "calc gradient " << grad << std::endl;
+      //      std::cout << "test gradient " << testgrad << std::endl;
+      diff = std::sqrt(diff);
+      //      std::cout << "diff gradient " << diff << std::endl;
+      if (diff > 1e-7)
+        throw std::runtime_error("differentiation");
+    }
     auto centre_of_charge_displacement = (m_group.coordinate_system().origin() - m_molecule.centre_of_charge()).eval();
     //    std::cout << grad[0]<<std::endl;
     //    std::cout << "coordinate_system.origin() " << coordinate_system.origin().transpose() << std::endl;
@@ -239,9 +263,14 @@ int SymmetryMeasure::optimise_frame() {
     //    for (int i = 0; i < 6; i++)
     //      std::cout << " " << grad[i];
     //    std::cout << std::endl;
-    //    std::cout << "before add_value "<<nwork;for (int i=0;i<6;i++)std::cout<<"
-    //    "<<coordinate_system.m_parameters[i];std::cout<<std::endl; std::cout << "before add_value "<<nwork;for (int
-    //    i=0;i<6;i++)std::cout<<" "<<grad[i];std::cout<<std::endl;
+    //    std::cout << "before add_value " << nwork;
+    //    for (int i = 0; i < 6; i++)
+    //      std::cout << " " << parameters[i];
+    //    std::cout << std::endl;
+    //    std::cout << " before add_value " << nwork;
+    //    for (int i = 0; i < 6; i++)
+    //      std::cout << " " << grad[i];
+    //    std::cout << std::endl;
     //    std::cout << "value=" << value << std::endl;
     //    std::cout << "Current parameters " << parameters << std::endl;
     auto current_parameters = parameters;
@@ -252,7 +281,7 @@ int SymmetryMeasure::optimise_frame() {
       //      std::cout << std::endl;
       //      cout << "precondition" << std::endl;
       for (int i = 0; i < 6; i++)
-        grad[i] /= 1;
+        grad[i] /= 100;
     } else if (false) {
       std::cout << "LINE SEARCH WAS SPECIFIED" << std::endl;
       auto new_parameters = parameters;
@@ -287,51 +316,77 @@ int SymmetryMeasure::optimise_frame() {
     //    for (int i = 0; i < 6; i++)
     //      std::cout << " " << parameters[i];
     //    std::cout << std::endl;
-    //    solver->report();
+//        solver->report();
     if (nwork <= 0)
       return iter;
   }
   return -1;
 }
 
-static inline bool test_group(const Molecule& molecule, Group& group, double threshold = 1e-6) {
+static inline bool test_group(const Molecule& molecule, const Group& group, double threshold = 1e-6) {
   SymmetryMeasure sm(molecule, group);
   sm.adopt_inertial_axes();
+//  std::cout << "initial measure "<<sm()<<std::endl;
+//  if (sm() > threshold*1000) return false;
   sm.optimise_frame();
-  return sm() < threshold;
+  double d = sm();
+  std::cout << "Group " << group.name() << ", measure=" << d << " " << (d < threshold) << " "<<threshold << std::endl;
+  return d < threshold;
 }
 
+static CoordinateSystem s_default_coordinate_system;
+
 Group discover_group(const Molecule& molecule, double threshold) {
+  return discover_group(molecule, s_default_coordinate_system, threshold);
+}
+
+Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_system, double threshold) {
   using vec = CoordinateSystem::vec;
   const vec xaxis{1, 0, 0};
   const vec yaxis{0, 1, 0};
   const vec zaxis{0, 0, 1};
   constexpr size_t maximum_axis_order = 6;
   Group result;
-  using group_factory = molpro::point_charge_symmetry::group_factory;
-  // linear?
-  Group cinfv = group_factory("Cinfv");
-  cinfv.add(Rotation(zaxis, 31));
-  if (test_group(molecule, cinfv)) {
-    Group dinfh = group_factory("Dinfh");
-    dinfh.add(Inversion());
-    if (test_group(molecule, dinfh)) {
-      return dinfh;
+  using molpro::point_charge_symmetry::group_factory;
+  // special?
+  //  for (const auto& n : std::vector<std::string>{"Dinfh", "Cinfv", "Td", "Oh", "Ih"})
+  //    if (test_group(molecule, group_factory(n, coordinate_system)))
+  //      return group_factory(n, coordinate_system);
+
+  // axis?
+  for (int axis_order = maximum_axis_order; axis_order > 1; axis_order--) {
+    auto o = std::to_string(axis_order);
+    if (test_group(molecule, group_factory("C" + o, coordinate_system),threshold)) {
+      for (const auto& n : std::vector<std::string>{"D" + o + "h", "D" + o + "d", "D" + o, "C" + o + "h", "C" + o + "v",
+                                                    "S" + o, "C" + o}) {
+//       std::cout << "explore "<<n<<std::endl;
+        if (n != "S2" and test_group(molecule, group_factory(n, coordinate_system),threshold))
+          return group_factory(n, coordinate_system);
+      }
     }
-    return cinfv;
   }
-  return result;
+  // no axis found
+  for (const auto& n : std::vector<std::string>{"Cs", "Ci", "C1"})
+    if (test_group(molecule, group_factory(n, coordinate_system),threshold))
+      return group_factory(n, coordinate_system);
+  throw std::logic_error("unexpected failure to find point group");
 }
 
-Group molpro::point_charge_symmetry::group_factory(std::string name) {
+Group group_factory(std::string name) { return group_factory(name, s_default_coordinate_system); }
+Group group_factory(std::string name, CoordinateSystem& coordinate_system) {
   using vec = CoordinateSystem::vec;
   const vec xaxis{1, 0, 0};
   const vec yaxis{0, 1, 0};
   const vec zaxis{0, 0, 1};
-  Group g(name);
+  Group g(coordinate_system, name);
   g.add(Identity());
   std::smatch m;
-  if (name == "Ci" or name == "Dinfh" or std::regex_match(name, m, std::regex{"D[2468][hd]"}) or name == "Oh")
+  if (name == "Td" or name == "Oh" or name == "Ih")
+    g.add(Rotation(zaxis, 7)); // TODO implement
+  if (name == "Cinfv" or name == "Dinfh")
+    g.add(Rotation(zaxis, 31));
+  if (name == "S2" or name == "Ci" or name == "Dinfh" or std::regex_match(name, m, std::regex{"D[2468][hd]"}) or
+      name == "Oh")
     g.add(Inversion());
   if (name == "Cs" or std::regex_match(name, m, std::regex{"[CD][2-9][0-9]*h"}))
     g.add(Reflection(zaxis));

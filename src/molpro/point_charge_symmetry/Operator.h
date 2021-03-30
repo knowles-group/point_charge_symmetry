@@ -28,7 +28,7 @@ public:
    * @param v position vector of a point
    * @return The derivatives of operator()(v) with respect to the origin, followed by the axis generator parameters
    */
-  std::array<Operator::vec, 6> operator_gradient(vec v, int numerical = 0, double step = 1e-4) const;
+  std::array<Operator::vec, 6> operator_gradient(vec v, int numerical = 0, double step = 2e-3) const;
   virtual vec operator_local(vec v) const = 0;
   virtual std::string str(const std::string& title) const;
   const std::string& name() const { return m_name; };
@@ -78,7 +78,7 @@ public:
   friend class Group;
   Operator* clone() const override { return new Rotation(*this); }
   Operator* clone(const CoordinateSystem& coordinate_system) const override {
-    return new Rotation(coordinate_system, m_axis, m_order, m_proper);
+    return new Rotation(coordinate_system, m_axis, m_order, m_proper, m_count);
   }
 };
 

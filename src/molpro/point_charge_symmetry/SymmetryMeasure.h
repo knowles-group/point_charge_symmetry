@@ -20,8 +20,8 @@ public:
     }
   }
 
-  double operator()(int operator_index = -1, int functional_form=0) const ;
-  CoordinateSystem::parameters_t coordinate_system_gradient(int operator_index=-1, int functional_form=0) const;
+  double operator()(int operator_index = -1, int functional_form = 0) const;
+  CoordinateSystem::parameters_t coordinate_system_gradient(int operator_index = -1, int functional_form = 0) const;
   //  SymmetryMeasure(const Molecule& molecule, const Operator& op) : SymmetryMeasure(molecule, Group)
   std::string str() const;
 
@@ -41,8 +41,10 @@ inline std::ostream& operator<<(std::ostream& os, const SymmetryMeasure& sm) {
   return os;
 }
 
-Group discover_group(const Molecule& molecule, double threshold=1e-10);
+Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_system, double threshold = 1e-10);
+Group discover_group(const Molecule& molecule, double threshold = 1e-10);
 
+Group group_factory(std::string name, CoordinateSystem& coordinate_system);
 Group group_factory(std::string name);
 
 } // namespace molpro::point_charge_symmetry

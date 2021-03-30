@@ -29,6 +29,8 @@ Molecule::Molecule(const std::string& filename) {
     for (int e = 0; e < N_PERIODIC_TABLE; e++)
       if (upper_string(el) == upper_string(periodic_table[e]))
         q = e + 1;
+    if (q == 0)
+      q = std::stoi(el);
     m_atoms.emplace_back(Eigen::Vector3d{x, y, z}, q, el);
   }
 }
@@ -46,9 +48,9 @@ Eigen::Matrix3d Molecule::inertia_tensor() const {
   auto coc = centre_of_charge();
   for (const auto& atom : m_atoms) {
     result += atom.charge * (atom.position - coc) * (atom.position - coc).transpose();
-//    std::cout << "shifted atom position " << (atom.position - coc).transpose() << std::endl;
+    //    std::cout << "shifted atom position " << (atom.position - coc).transpose() << std::endl;
   }
-//  std::cout << "Inertia tensor\n" << result << std::endl;
+  //  std::cout << "Inertia tensor\n" << result << std::endl;
   return result;
 }
 
@@ -65,8 +67,8 @@ Eigen::Matrix3d Molecule::inertial_axes() const {
     ev.col(2) = ev.col(1);
     ev.col(1) = ev3;
   }
-//  std::cout << "Inertia tensor eigenvalues " << solver.eigenvalues().transpose() << std::endl;
-//  std::cout << "Inertia tensor eigenvectors\n" << ev << std::endl;
+  //  std::cout << "Inertia tensor eigenvalues " << solver.eigenvalues().transpose() << std::endl;
+  //  std::cout << "Inertia tensor eigenvectors\n" << ev << std::endl;
   return ev;
 }
 

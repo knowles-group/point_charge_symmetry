@@ -128,19 +128,21 @@ TEST(point_charge_symmetry, Molecule) {
 
 TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
   Molecule water("h2o-nosym.xyz");
+//  Molecule water("Ferrocene.xyz");
   std::cout << water << std::endl;
   //  std::cout << "centre of charge: " << water.centre_of_charge().transpose() << std::endl;
   std::cout << "inertial axes\n" << water.inertial_axes() << std::endl;
   auto axes = water.inertial_axes();
   //  CoordinateSystem coordinate_system(water.centre_of_charge(), axes);
   CoordinateSystem coordinate_system;
-  Group group(coordinate_system, "C2v");
-  //  std::cout << &coordinate_system<<std::endl;
-  //  std::cout << &c2v.coordinate_system() << std::endl;
-  group.add(Identity());
-  group.add(Rotation({0, 0, 1}, 2));
-  group.add(Reflection({1, 0, 0}));
-  group.add(Reflection({0, 1, 0}));
+//  Group group(coordinate_system, "special");
+//  group.add(Rotation({0, 0, 1}, 5,true,1));
+//  group.add(Rotation({0, 0, 1}, 3,true,1));
+//  group.add(Identity());
+//  group.add(Rotation({0, 0, 1}, 2));
+//  group.add(Reflection({1, 0, 0}));
+//  group.add(Reflection({0, 1, 0}));
+  auto group = group_factory("C3v",coordinate_system);
   //  int best_axis = 0;
   //  double best_axis_sm = 1e50;
   //  for (int principal_axis = 0; principal_axis < 6; principal_axis++) {
@@ -223,24 +225,33 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
 }
 
 TEST(point_charge_symmetry, group_factory) {
-  std::map<std::string,int> orders;
-  orders["C1"]=1;
-  orders["Ci"]=2;
-  orders["Cs"]=2;
-  orders["C2"]=2;
-  orders["C2v"]=4;
-//  orders["C2h"]=4;
-  orders["D2"]=4;
-//  orders["D2d"]=8;
-  orders["D2h"]=8;
-  orders["C3v"]=6;
-//  orders["C3h"]=6;
-//  orders["D3h"]=12;
-//  orders["D3d"]=12;
-//  orders["S4"]=4;
+  std::map<std::string, int> orders;
+  orders["C1"] = 1;
+  orders["Ci"] = 2;
+  orders["Cs"] = 2;
+  orders["C2"] = 2;
+  orders["C2v"] = 4;
+  orders["S2"] = 2;
+  //  orders["C2h"]=4;
+  orders["D2"] = 4;
+  //  orders["D2d"]=8;
+  orders["D2h"] = 8;
+  orders["C3v"] = 6;
+  //  orders["C3h"]=6;
+  //  orders["D3h"]=12;
+  //  orders["D3d"]=12;
+  //  orders["S4"]=4;
   for (const auto &n : orders) {
     auto g = molpro::point_charge_symmetry::group_factory(n.first);
-//    std::cout << g << std::endl;
-    EXPECT_EQ (g.end()-g.begin(),n.second) << "Wrong order for group "<<g;
+    //    std::cout << g << std::endl;
+    EXPECT_EQ(g.end() - g.begin(), n.second) << "Wrong order for group " << g;
+  }
+}
+
+TEST(point_charge_symmetry, discover_group) {
+  for (const auto &n : std::vector<std::string>{"h2o", "h2o-nosym", "Ferrocene"}) {
+    Molecule molecule(n + ".xyz");
+    auto group = molpro::point_charge_symmetry::discover_group(molecule,1e-4);
+    std::cout << n << ": " << group.name() << std::endl;
   }
 }
