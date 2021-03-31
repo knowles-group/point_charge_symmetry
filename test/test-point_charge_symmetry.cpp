@@ -249,9 +249,22 @@ TEST(point_charge_symmetry, group_factory) {
 }
 
 TEST(point_charge_symmetry, discover_group) {
-  for (const auto &n : std::vector<std::string>{"h2o", "h2o-nosym", "Ferrocene"}) {
-    Molecule molecule(n + ".xyz");
-    auto group = molpro::point_charge_symmetry::discover_group(molecule,1e-4);
-    std::cout << n << ": " << group.name() << std::endl;
+  std::map<std::string,std::string> expected_groups;
+  expected_groups["h2o"]="C2v";
+  expected_groups["h2o-nosym"]="C2v";
+  expected_groups["ferrocene"]="D5d";
+  expected_groups["benzene"]="D6h";
+  expected_groups["allene"]="D2d";
+  expected_groups["p4"]="Td";
+//  expected_groups["hexamethylbenzene"]="D3d";
+  expected_groups["buckminsterfullerene"]="Ih";
+  expected_groups["sulfur-hexafluoride"]="Oh";
+  expected_groups["cyclohexane"]="D3d";
+  expected_groups["s8"]="D4h";
+  for (const auto &n : expected_groups) {
+    Molecule molecule(n.first + ".xyz");
+    auto group = molpro::point_charge_symmetry::discover_group(molecule,1e-2);
+    EXPECT_EQ(group.name(),n.second) << n.first << ": " << group.name();
+    std::cout << n.first << ": " << group.name() << std::endl;
   }
 }

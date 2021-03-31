@@ -63,7 +63,7 @@ Eigen::Matrix3d Molecule::inertial_axes() const {
     if (ev(i, i) < 0)
       ev.col(i) = -ev.col(i);
   if (ev.determinant() < 0) {
-    auto ev3 = ev.col(2);
+    Eigen::Vector3d ev3 = ev.col(2).eval();
     ev.col(2) = ev.col(1);
     ev.col(1) = ev3;
   }

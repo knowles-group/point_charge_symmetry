@@ -3,6 +3,7 @@
 #include <molpro/linalg/itsolv/SolverFactory.h>
 #include <regex>
 #include <sstream>
+#include <unsupported/Eigen/MatrixFunctions>
 namespace molpro::point_charge_symmetry {
 Atom SymmetryMeasure::image(const Atom& source, const Operator& op) {
   return Atom(op(source.position), source.charge, source.name);
@@ -30,6 +31,7 @@ double SymmetryMeasure::operator()(int operator_index, int functional_form) cons
   double result = 0;
   auto start = operator_index < 0 ? m_group.begin() : m_group.begin() + operator_index;
   auto end = operator_index < 0 ? m_group.end() : m_group.begin() + operator_index + 1;
+  //  std::cout << "!! SymmetryMeasure() "<<std::endl;
   for (auto op = start; op < end; op++) {
     //    std::cout << "Operator " << (*op)->name() << std::endl;
     //    std::cout << "Frame parameters";
@@ -51,6 +53,7 @@ double SymmetryMeasure::operator()(int operator_index, int functional_form) cons
         result += zr * zr;
       else
         throw std::logic_error("invalid functional_form " + std::to_string(functional_form));
+      //      std::cout << "new result " << result << std::endl;
     }
   }
   //  std::cout << "result "<<result<<std::endl;
@@ -135,21 +138,37 @@ std::string SymmetryMeasure::str() const {
 void SymmetryMeasure::adopt_inertial_axes() {
   auto& coordinate_system = m_group.coordinate_system();
   auto& parameters = m_group.coordinate_system_parameters();
-  //  std::cout << "adopt_inertial_axes initial\n" << coordinate_system.axes() << std::endl;
+  //    std::cout << "adopt_inertial_axes initial, group="<<m_group.name()<<"\n" << coordinate_system.axes() <<
+  //    std::endl;
   { // initialise to inertial axes in some orientation or other
     CoordinateSystem temporary_coordinate_system(m_molecule.centre_of_charge(), m_molecule.inertial_axes());
     std::copy(temporary_coordinate_system.m_parameters.begin(), temporary_coordinate_system.m_parameters.end(),
               parameters.begin());
   }
-  //  std::cout << "adopt_inertial_axes first inertial\n" << coordinate_system.axes() << std::endl;
+  //    std::cout << "adopt_inertial_axes first inertial\n" << coordinate_system.axes() << std::endl;
+  //  std::cout <<"Group: "<<m_group<<std::endl;
   int best_axis = 0;
   double best_axis_sm = 1e50;
+  bool symmetric_top = false;
   for (int principal_axis = 0; principal_axis < 6; principal_axis++) {
     reset_neighbours();
-    //    std::cout << "try axes\n" << coordinate_system.axes() << std::endl;
+    //        std::cout << "try axes\n" << coordinate_system.axes() << std::endl;
     //    auto sm = SymmetryMeasure(m_molecule, m_group);
-    auto measure = (*this)();
-    //    std::cout << "Atomic coordinates in local frame\n" << std::endl;
+    auto local_inertia_tensor =
+        (coordinate_system.axes().transpose() * m_molecule.inertia_tensor() * coordinate_system.axes()).eval();
+    //    std::cout << "local_inertia_tensor\n" << local_inertia_tensor << std::endl;
+    double measure;
+    if (std::abs(local_inertia_tensor(0, 0) - local_inertia_tensor(1, 1)) <
+        1e-5 * std::abs(local_inertia_tensor(0, 0) - local_inertia_tensor(2, 2))) {
+      //      std::cout << local_inertia_tensor(0, 0) << " " << local_inertia_tensor(1, 1) << std::endl;
+      //      std::cout << "Symmetric top with axes\n" << coordinate_system.axes() << std::endl;
+      measure = 0;
+      symmetric_top = true;
+    } else
+      measure = (*this)();
+    //        std::cout << "Atomic coordinates in local frame\n" << std::endl;
+    //    for (const auto &atom : m_molecule.m_atoms)
+    //      std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
     CoordinateSystem::vec out_of_plane{0, 0, 0};
     for (const auto& atom : m_molecule.m_atoms) {
       //      auto coords= coordinate_system.to_local(atom.position);
@@ -173,6 +192,19 @@ void SymmetryMeasure::adopt_inertial_axes() {
   }
   for (int principal_axis = 0; principal_axis < best_axis; principal_axis++)
     coordinate_system.cycle_axes();
+  //      std::cout << "axes before symmetric top adjustment\n" << coordinate_system.axes() << std::endl;
+  if (symmetric_top) { // add random rotation to step off possible maximum
+                       //    coordinate_system.m_parameters[3] += 0*std::acos(double(-1))/4;
+    auto oldaxes = coordinate_system.axes();
+    auto sq2 = std::sqrt(double(0.5));
+    CoordinateSystem::mat transform;
+    transform << sq2, sq2, 0, -sq2, sq2, 0, 0, 0, 1;
+    CoordinateSystem::mat newaxes = (oldaxes * transform).eval();
+    auto generator = newaxes.log();
+    coordinate_system.m_parameters[5] = generator(1, 0);
+    coordinate_system.m_parameters[4] = generator(2, 0);
+    coordinate_system.m_parameters[3] = generator(2, 1);
+  }
   reset_neighbours();
   //  std::cout << "chosen initial coordinate system: " << best_axis << "\n" << coordinate_system << std::endl;
   //  std::cout << "Atomic coordinates in local frame\n" << std::endl;
@@ -316,7 +348,7 @@ int SymmetryMeasure::optimise_frame() {
     //    for (int i = 0; i < 6; i++)
     //      std::cout << " " << parameters[i];
     //    std::cout << std::endl;
-//        solver->report();
+    //        solver->report();
     if (nwork <= 0)
       return iter;
   }
@@ -324,13 +356,15 @@ int SymmetryMeasure::optimise_frame() {
 }
 
 static inline bool test_group(const Molecule& molecule, const Group& group, double threshold = 1e-6) {
+  //  std::cout << "test_group " << group.name() << std::endl;
   SymmetryMeasure sm(molecule, group);
   sm.adopt_inertial_axes();
-//  std::cout << "initial measure "<<sm()<<std::endl;
-//  if (sm() > threshold*1000) return false;
+  //  std::cout << "initial measure "<<sm()<<std::endl;
+  //  if (sm() > threshold*1000) return false;
   sm.optimise_frame();
   double d = sm();
-  std::cout << "Group " << group.name() << ", measure=" << d << " " << (d < threshold) << " "<<threshold << std::endl;
+    std::cout << "Group " << group.name() << ", measure=" << d << " " << (d < threshold) << " " << threshold <<
+    std::endl;
   return d < threshold;
 }
 
@@ -350,24 +384,61 @@ Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_syst
   using molpro::point_charge_symmetry::group_factory;
   // special?
   //  for (const auto& n : std::vector<std::string>{"Dinfh", "Cinfv", "Td", "Oh", "Ih"})
-  //    if (test_group(molecule, group_factory(n, coordinate_system)))
-  //      return group_factory(n, coordinate_system);
+  for (const auto& n : std::vector<std::string>{ "Oh","Td"})
+    if (test_group(molecule, group_factory(n, coordinate_system)))
+        return group_factory(n, coordinate_system);
 
   // axis?
   for (int axis_order = maximum_axis_order; axis_order > 1; axis_order--) {
     auto o = std::to_string(axis_order);
-    if (test_group(molecule, group_factory("C" + o, coordinate_system),threshold)) {
-      for (const auto& n : std::vector<std::string>{"D" + o + "h", "D" + o + "d", "D" + o, "C" + o + "h", "C" + o + "v",
-                                                    "S" + o, "C" + o}) {
-//       std::cout << "explore "<<n<<std::endl;
-        if (n != "S2" and test_group(molecule, group_factory(n, coordinate_system),threshold))
-          return group_factory(n, coordinate_system);
+    Group c2x(coordinate_system, "pseudo-C2x");
+    c2x.add(Rotation(coordinate_system, {0, 0, 1}, axis_order));
+    c2x.add(Rotation(coordinate_system, {std::cos(double(.001)), std::sin(double(.001)), 0}, 2));
+    Group sigma_h(coordinate_system, "pseudo-sigma_h");
+    sigma_h.add(Rotation(coordinate_system, {0, 0, 1}, axis_order));
+    sigma_h.add(Reflection(coordinate_system, {0, 0, 1}));
+    //    std::cout << "explore "
+    //              << "C" + o << std::endl;
+    //    std::cout << "Atomic coordinates in current local frame\n" << std::endl;
+    //    for (const auto& atom : molecule.m_atoms)
+    //      std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
+    if (test_group(molecule, group_factory("C" + o, coordinate_system), threshold)) {
+      //      std::cout << "c2x\n" << c2x << std::endl;
+      //      std::cout << "explore "
+      //                << "c2x" << std::endl;
+      //      std::cout << "Atomic coordinates in current local frame\n" << std::endl;
+      //      for (const auto& atom : molecule.m_atoms)
+      //        std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
+      if (test_group(molecule, c2x, threshold)) {
+        //        std::cout << "test sigma_h: " << test_group(molecule, sigma_h, threshold) << std::endl;
+        //        if (test_group(molecule, sigma_h, threshold)) {
+        auto coordinate_system_save = coordinate_system;
+        if (test_group(molecule, group_factory("D" + o + "h", coordinate_system), threshold)) {
+          return group_factory("D" + o + "h", coordinate_system);
+        } else {
+          coordinate_system = coordinate_system_save;
+          for (const auto& n : std::vector<std::string>{"D" + o + "d", "D" + o}) {
+            //            std::cout << "explore " << n << std::endl;
+            //            std::cout << "Atomic coordinates in current local frame\n" << std::endl;
+            //            for (const auto& atom : molecule.m_atoms)
+            //              std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() <<
+            //              std::endl;
+            if (test_group(molecule, group_factory(n, coordinate_system), threshold))
+              return group_factory(n, coordinate_system);
+          }
+        }
+      } else {
+        for (const auto& n : std::vector<std::string>{"C" + o + "h", "C" + o + "v", "S" + o, "C" + o}) {
+          //       std::cout << "explore "<<n<<std::endl;
+          if (n != "S2" and test_group(molecule, group_factory(n, coordinate_system), threshold))
+            return group_factory(n, coordinate_system);
+        }
       }
     }
   }
   // no axis found
   for (const auto& n : std::vector<std::string>{"Cs", "Ci", "C1"})
-    if (test_group(molecule, group_factory(n, coordinate_system),threshold))
+    if (test_group(molecule, group_factory(n, coordinate_system), threshold))
       return group_factory(n, coordinate_system);
   throw std::logic_error("unexpected failure to find point group");
 }
@@ -381,14 +452,38 @@ Group group_factory(std::string name, CoordinateSystem& coordinate_system) {
   Group g(coordinate_system, name);
   g.add(Identity());
   std::smatch m;
-  if (name == "Td" or name == "Oh" or name == "Ih")
+  if ( name == "Ih")
     g.add(Rotation(zaxis, 7)); // TODO implement
-  if (name == "Cinfv" or name == "Dinfh")
+  if (name == "Oh") {
+    for (int axis = 0; axis < 3; axis++) {
+      for (int count = 0; count < 3; count+=2) {
+        g.add(Rotation(Eigen::Matrix3d::Identity().col(axis), 4, true, count));
+        g.add(Rotation(Eigen::Matrix3d::Identity().col(axis), 4, false, count));
+      }
+      g.add(Rotation(Eigen::Matrix3d::Identity().col(axis), 2, true, 1));
+      g.add(Reflection(Eigen::Matrix3d::Identity().col(axis)));
+    }
+    for (int corner=0; corner<4; corner++) {
+      auto sq2=std::sqrt(1/double(2));
+      g.add(Rotation(vec{std::cos((2*corner+1)*acos(double(-1))/4),std::sin((2*corner+1)*acos(double(-1))/4),sq2},3));
+    }
+  }
+  if (name == "Td") {
+    for (int axis = 0; axis < 3; axis++) {
+      g.add(Rotation(Eigen::Matrix3d::Identity().col(axis), 2, true, 1));
+    }
+    for (int corner=0; corner<4; corner++) {
+      auto sq2=std::sqrt(1/double(2));
+      g.add(Rotation(vec{std::cos((2*corner+1)*acos(double(-1))/4),std::sin((2*corner+1)*acos(double(-1))/4),sq2},3));
+    }
+  }
+  if (name == "Cinfv" or name == "Dinfh") // representative only
     g.add(Rotation(zaxis, 31));
-  if (name == "S2" or name == "Ci" or name == "Dinfh" or std::regex_match(name, m, std::regex{"D[2468][hd]"}) or
-      name == "Oh")
+  if (std::regex_match(name, m, std::regex{"[CD][0-9]*[02468]h"}) or
+      std::regex_match(name, m, std::regex{"D[0-9]*[13579]d"}) or
+      std::regex_match(name, m, std::regex{"Ih|Th|Oh|Dinfh|Ci|S2|S6|S10|S14"}))
     g.add(Inversion());
-  if (name == "Cs" or std::regex_match(name, m, std::regex{"[CD][2-9][0-9]*h"}))
+  if (std::regex_match(name, m, std::regex{"Dinfh|Ih|Cs[CD][2-9][0-9]*h"}))
     g.add(Reflection(zaxis));
   if (std::regex_match(name, m, std::regex{"([C])([2-9][0-9]*)([v])"}) or
       std::regex_match(name, m, std::regex{"([D])([2-9][0-9]*)([h])"})) {

@@ -7,7 +7,7 @@
 namespace molpro::point_charge_symmetry {
 
 CoordinateSystem::CoordinateSystem(const vec& origin, const mat& axes) {
-//  std::cout << "CoordinateSystem constructor, axes=\n" << axes << std::endl;
+  //  std::cout << "CoordinateSystem constructor, axes=\n" << axes << std::endl;
   if (std::abs(axes.determinant() - 1) > 1e-14)
     throw std::runtime_error("Axes must be proper rotation");
   auto generator = axes.log();
@@ -50,7 +50,9 @@ CoordinateSystem::vec CoordinateSystem::to_local(const vec& source) const {
   return (axes().transpose() * (source - origin())).eval();
 }
 
-CoordinateSystem::vec CoordinateSystem::to_global(const vec& source) const { return (origin() + axes() * source).eval(); }
+CoordinateSystem::vec CoordinateSystem::to_global(const vec& source) const {
+  return (origin() + axes() * source).eval();
+}
 
 void CoordinateSystem::cycle_axes() const {
 //  std::cout << "cycle_axes starts with\n" << axes() << std::endl;
@@ -70,12 +72,26 @@ void CoordinateSystem::cycle_axes() const {
     new_axes.col(1) = -axes.col(1);
     new_axes.col(2) = axes.col(0);
   }
-//  std::cout << "cycle_axes() new\n" << new_axes << std::endl;
+  for (int i = 0; i < 2; i++)
+    for (int j = i + 1; j < 3; j++)
+      if (new_axes(i, i) < 0 and new_axes(j, j) < 0) {
+        new_axes.col(i) = -new_axes.col(i);
+        new_axes.col(j) = -new_axes.col(j);
+      }
   auto generator = new_axes.log();
-  //  std::cout << "generator\n"<<generator<<std::endl;
   m_parameters[5] = generator(1, 0);
   m_parameters[4] = generator(2, 0);
   m_parameters[3] = generator(2, 1);
+  if (false) {
+    auto regen_axes = this->axes();
+    if ((regen_axes - new_axes).norm() > 1e-6) {
+      std::cerr << "generator\n" << generator << std::endl;
+      std::cerr << "exp(generator)\n" << generator.exp() << std::endl;
+      std::cerr << "new_axes\n" << new_axes << "\nregen_axes\n" << regen_axes << std::endl;
+      std::cerr << regen_axes - new_axes << std::endl;
+      throw std::runtime_error("axis permutation failed");
+    }
+  }
   m_axis_permutation_rot90_next = not m_axis_permutation_rot90_next;
 //  std::cout << "cycle_axes returns after permuting x,y,z with\n" << this->axes() << std::endl;
 }

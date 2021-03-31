@@ -44,9 +44,9 @@ public:
   const Operator& operator[](size_t index) const { return *(m_members[index]); }
 };
 inline std::ostream& operator<<(std::ostream& os, const Group& g) {
-  os << "Group "<<g.name()<<", order="<<g.end()-g.begin();
+  os << "Group " << g.name() << ", order=" << g.end() - g.begin();
   for (const auto& el : g)
-    os <<"\nMember: "<<*el;
+    os << "\nMember: " << *el;
   return os;
 }
 
