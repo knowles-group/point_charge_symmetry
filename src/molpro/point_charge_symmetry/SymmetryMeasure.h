@@ -20,7 +20,7 @@ public:
     }
   }
 
-  double operator()(int operator_index = -1, int functional_form = 0) const;
+  double operator()(int operator_index = -1, int functional_form = 0, int verbosity = -1) const;
   CoordinateSystem::parameters_t coordinate_system_gradient(int operator_index = -1, int functional_form = 0) const;
   //  SymmetryMeasure(const Molecule& molecule, const Operator& op) : SymmetryMeasure(molecule, Group)
   std::string str() const;
@@ -28,10 +28,26 @@ public:
   void adopt_inertial_axes();
   int optimise_frame();
 
+  bool spherical_top() {
+    constexpr double tol = 1e-3;
+    return (std::abs(m_inertia_principal_values(0) - m_inertia_principal_values(2)) < tol and
+            std::abs(m_inertia_principal_values(1) - m_inertia_principal_values(2)) < tol);
+  }
+
+  bool symmetric_top() {
+    constexpr double tol = 1e-3;
+    return (std::abs(m_inertia_principal_values(0) - m_inertia_principal_values(1)) < tol or
+            std::abs(m_inertia_principal_values(1) - m_inertia_principal_values(2)) < tol or
+            std::abs(m_inertia_principal_values(0) - m_inertia_principal_values(2)) < tol)
+        and not spherical_top();
+  }
+
 protected:
   const Molecule& m_molecule;
   const Group& m_group;
   std::vector<std::vector<size_t>> m_neighbours;
+  CoordinateSystem::vec m_inertia_principal_values ={1,2,3};
+  CoordinateSystem::mat m_inertial_axes;
   Atom image(const Atom& source, const Operator& op);
   size_t image_neighbour(size_t atom_index, const Operator& op);
 };

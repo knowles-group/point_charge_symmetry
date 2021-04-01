@@ -1,8 +1,8 @@
 #include "Operator.h"
+#include <iostream>
 #include <memory>
 #include <sstream>
 #include <vector>
-#include <iostream>
 
 namespace molpro::point_charge_symmetry {
 
@@ -28,7 +28,7 @@ std::array<Operator::vec, 6> Operator::operator_gradient(vec v, int numerical, d
         coordinate_systems.back().data()[i] += step * displacement;
         points.emplace_back(this->clone(coordinate_systems.back()));
         transformed_points.push_back((*points.back())(v).eval());
-//        std::cout << "transformed_points.back() "<<transformed_points.back().transpose()<<std::endl;
+        //        std::cout << "transformed_points.back() "<<transformed_points.back().transpose()<<std::endl;
       }
       if (numerical == 1)
         result[i] = (transformed_points[2] - transformed_points[0]) / (2 * step);
@@ -50,13 +50,13 @@ Reflection::Reflection(vec normal) : Reflection(s_default_coordinate_system, std
 Reflection::Reflection(const CoordinateSystem& coordinate_system, vec normal)
     : Operator(coordinate_system), m_normal(normal.normalized()) {
   m_name = "sigma";
-  if (m_normal(0) > 0.99)
+  if (std::abs(m_normal(0)) > 0.99)
     m_name += "_yz";
-  else if (m_normal(1) > 0.99)
+  else if (std::abs(m_normal(1)) > 0.99)
     m_name += "_xz";
-  else if (m_normal(2) > 0.99)
+  else if (std::abs(m_normal(2)) > 0.99)
     m_name += "_h";
-  else
+  else if (std::abs(m_normal(1)) < 0.01)
     m_name += "_v";
 }
 Operator::vec Reflection::operator_local(vec v) const {
@@ -76,7 +76,7 @@ Rotation::Rotation(const CoordinateSystem& coordinate_system, vec axis, int orde
   if (m_axis(2) > 0.99)
     m_name += "z";
   if (m_count > 1)
-    m_name += std::to_string(m_count);
+    m_name += "^" + std::to_string(m_count);
 }
 Operator::vec Rotation::operator_local(vec v) const {
   double angle = (double)2 * m_count * std::acos(double(-1)) / m_order;
