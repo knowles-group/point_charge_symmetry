@@ -6,6 +6,7 @@
 #include <molpro/point_charge_symmetry/Operator.h>
 #include <molpro/point_charge_symmetry/SymmetryMeasure.h>
 #include <numeric>
+#include <molpro/Profiler.h>
 
 using std::cout;
 using namespace molpro::point_charge_symmetry;
@@ -249,6 +250,7 @@ TEST(point_charge_symmetry, group_factory) {
 }
 
 TEST(point_charge_symmetry, discover_group) {
+  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Discover groups");
   std::map<std::string,std::string> expected_groups;
   expected_groups["h2o"]="C2v";
   expected_groups["h2o-nosym"]="C2v";
@@ -269,4 +271,5 @@ TEST(point_charge_symmetry, discover_group) {
     EXPECT_EQ(group.name(),n.second) << n.first << ": " << group.name();
     std::cout << n.first << ": " << group.name() << std::endl;
   }
+  std::cout << *prof << std::endl;
 }

@@ -4,6 +4,7 @@
 #include <regex>
 #include <sstream>
 #include <unsupported/Eigen/MatrixFunctions>
+#include <molpro/Profiler.h>
 namespace molpro::point_charge_symmetry {
 Atom SymmetryMeasure::image(const Atom& source, const Operator& op) {
   return Atom(op(source.position), source.charge, source.name);
@@ -28,6 +29,7 @@ size_t SymmetryMeasure::image_neighbour(size_t atom_index, const Operator& op) {
 }
 
 double SymmetryMeasure::operator()(int operator_index, int functional_form, int verbosity) const {
+  auto p = molpro::Profiler::single()->push("SymmetryMeasure()");
   constexpr bool use_neighbour_list = true;
   double result = 0;
   auto start = operator_index < 0 ? m_group.begin() : m_group.begin() + operator_index;
@@ -72,6 +74,7 @@ double SymmetryMeasure::operator()(int operator_index, int functional_form, int 
 
 CoordinateSystem::parameters_t SymmetryMeasure::coordinate_system_gradient(int operator_index,
                                                                            int functional_form) const {
+  auto p = molpro::Profiler::single()->push("SymmetryMeasure::coordinate_system_gradient()");
   CoordinateSystem::parameters_t result{0, 0, 0, 0, 0, 0};
   const auto origin = m_group.coordinate_system().origin();
   const auto axes = m_group.coordinate_system().axes();
@@ -385,6 +388,7 @@ int SymmetryMeasure::optimise_frame() {
 
 static inline bool test_group(const Molecule& molecule, const Group& group, double threshold = 1e-6) {
     std::cout << "test_group " << group.name() << std::endl;
+  auto p = molpro::Profiler::single()->push("SymmetryMeasure::test_group("+group.name()+")");
   SymmetryMeasure sm(molecule, group);
   sm.adopt_inertial_axes();
 //  std::cout << "initial measure " << sm() << std::endl;
@@ -392,7 +396,7 @@ static inline bool test_group(const Molecule& molecule, const Group& group, doub
 //  std::cout << "Atomic coordinates in current local frame\n" << std::endl;
   // scan
   if (sm.spherical_top()) {
-    const int nscan = 10;
+    const int nscan = 5;
     double best_measure = 1e50;
     double pi = std::acos(double(-1));
     CoordinateSystem::parameters_t best_parameters;
@@ -444,6 +448,7 @@ Group discover_group(const Molecule& molecule, double threshold) {
 }
 
 Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_system, double threshold) {
+  auto p = molpro::Profiler::single()->push("SymmetryMeasure::discover_group("+molecule.m_title+")");
   using vec = CoordinateSystem::vec;
   const vec xaxis{1, 0, 0};
   const vec yaxis{0, 1, 0};

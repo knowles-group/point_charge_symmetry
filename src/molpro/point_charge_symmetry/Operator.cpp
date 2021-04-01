@@ -1,6 +1,7 @@
 #include "Operator.h"
 #include <iostream>
 #include <memory>
+#include <molpro/Profiler.h>
 #include <sstream>
 #include <vector>
 
@@ -16,6 +17,7 @@ Operator::vec Operator::operator()(vec v) const {
              operator_local((m_coordinate_system.axes().transpose() * (v - m_coordinate_system.origin()))).eval();
 }
 std::array<Operator::vec, 6> Operator::operator_gradient(vec v, int numerical, double step) const {
+  auto p = molpro::Profiler::single()->push("Operator::operator_gradient()");
   std::array<Operator::vec, 6> result;
   if (numerical > 0) {
     CoordinateSystem coordinate_system(m_coordinate_system);
