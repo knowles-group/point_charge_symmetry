@@ -60,8 +60,8 @@ inline std::ostream& operator<<(std::ostream& os, const SymmetryMeasure& sm) {
 Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_system, double threshold = 1e-10);
 Group discover_group(const Molecule& molecule, double threshold = 1e-10);
 
-Group group_factory(std::string name, CoordinateSystem& coordinate_system);
-Group group_factory(std::string name);
+Group group_factory(CoordinateSystem& coordinate_system, std::string name, bool generators_only=false);
+Group group_factory(std::string name, bool generators_only=false);
 
 } // namespace molpro::point_charge_symmetry
 

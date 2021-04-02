@@ -1,12 +1,12 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <iostream>
+#include <molpro/Profiler.h>
 #include <molpro/point_charge_symmetry/Group.h>
 #include <molpro/point_charge_symmetry/Molecule.h>
 #include <molpro/point_charge_symmetry/Operator.h>
 #include <molpro/point_charge_symmetry/SymmetryMeasure.h>
 #include <numeric>
-#include <molpro/Profiler.h>
 
 using std::cout;
 using namespace molpro::point_charge_symmetry;
@@ -129,21 +129,21 @@ TEST(point_charge_symmetry, Molecule) {
 
 TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
   Molecule water("h2o-nosym.xyz");
-//  Molecule water("Ferrocene.xyz");
+  //  Molecule water("Ferrocene.xyz");
   std::cout << water << std::endl;
   //  std::cout << "centre of charge: " << water.centre_of_charge().transpose() << std::endl;
   std::cout << "inertial axes\n" << water.inertial_axes() << std::endl;
   auto axes = water.inertial_axes();
   //  CoordinateSystem coordinate_system(water.centre_of_charge(), axes);
   CoordinateSystem coordinate_system;
-//  Group group(coordinate_system, "special");
-//  group.add(Rotation({0, 0, 1}, 5,true,1));
-//  group.add(Rotation({0, 0, 1}, 3,true,1));
-//  group.add(Identity());
-//  group.add(Rotation({0, 0, 1}, 2));
-//  group.add(Reflection({1, 0, 0}));
-//  group.add(Reflection({0, 1, 0}));
-  auto group = group_factory("C3v",coordinate_system);
+  //  Group group(coordinate_system, "special");
+  //  group.add(Rotation({0, 0, 1}, 5,true,1));
+  //  group.add(Rotation({0, 0, 1}, 3,true,1));
+  //  group.add(Identity());
+  //  group.add(Rotation({0, 0, 1}, 2));
+  //  group.add(Reflection({1, 0, 0}));
+  //  group.add(Reflection({0, 1, 0}));
+  auto group = group_factory(coordinate_system, "C3v");
   //  int best_axis = 0;
   //  double best_axis_sm = 1e50;
   //  for (int principal_axis = 0; principal_axis < 6; principal_axis++) {
@@ -226,6 +226,7 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
 }
 
 TEST(point_charge_symmetry, group_factory) {
+  //  std::cout<<"D5h generators\n" << molpro::point_charge_symmetry::group_factory("D5h",true)<<std::endl;
   std::map<std::string, int> orders;
   orders["C1"] = 1;
   orders["Ci"] = 2;
@@ -233,15 +234,18 @@ TEST(point_charge_symmetry, group_factory) {
   orders["C2"] = 2;
   orders["C2v"] = 4;
   orders["S2"] = 2;
-  //  orders["C2h"]=4;
+  orders["C2h"] = 4;
   orders["D2"] = 4;
-  //  orders["D2d"]=8;
+  orders["D4"] = 8;
+  orders["D2d"] = 8;
+  orders["D4d"] = 16;
   orders["D2h"] = 8;
   orders["C3v"] = 6;
-  //  orders["C3h"]=6;
-  //  orders["D3h"]=12;
-  //  orders["D3d"]=12;
-  //  orders["S4"]=4;
+  orders["C3h"] = 6;
+  orders["D3h"] = 12;
+  orders["D3d"] = 12;
+  orders["S4"] = 4;
+  orders["S12"] = 12;
   for (const auto &n : orders) {
     auto g = molpro::point_charge_symmetry::group_factory(n.first);
     //    std::cout << g << std::endl;
@@ -251,24 +255,25 @@ TEST(point_charge_symmetry, group_factory) {
 
 TEST(point_charge_symmetry, discover_group) {
   std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Discover groups");
-  std::map<std::string,std::string> expected_groups;
-  expected_groups["h2o"]="C2v";
-  expected_groups["h2o-nosym"]="C2v";
-  expected_groups["ferrocene"]="D5d";
-  expected_groups["benzene"]="D6h";
-  expected_groups["allene"]="D2d";
-  expected_groups["ch4"]="Td";
-  expected_groups["methane"]="Td";
-  expected_groups["p4"]="Td";
-//  expected_groups["hexamethylbenzene"]="D3d";
-//  expected_groups["buckminsterfullerene"]="Ih";
-//  expected_groups["sulfur-hexafluoride"]="Oh";
-  expected_groups["cyclohexane"]="D3d";
-  expected_groups["s8"]="D4h";
+  std::map<std::string, std::string> expected_groups;
+  expected_groups["n2"] = "Dinfh";
+  expected_groups["h2o"] = "C2v";
+  expected_groups["h2o-nosym"] = "C2v";
+  expected_groups["ferrocene"] = "D5d";
+  expected_groups["benzene"] = "D6h";
+  expected_groups["allene"] = "D2d";
+  expected_groups["ch4"] = "Td";
+  expected_groups["methane"] = "Td";
+  expected_groups["p4"] = "Td";
+  //  expected_groups["hexamethylbenzene"]="D3d";
+  //  expected_groups["buckminsterfullerene"]="Ih";
+  //  expected_groups["sulfur-hexafluoride"]="Oh";
+  expected_groups["cyclohexane"] = "D3d";
+  expected_groups["s8"] = "D4h";
   for (const auto &n : expected_groups) {
     Molecule molecule(n.first + ".xyz");
-    auto group = molpro::point_charge_symmetry::discover_group(molecule,1e-2);
-    EXPECT_EQ(group.name(),n.second) << n.first << ": " << group.name();
+    auto group = molpro::point_charge_symmetry::discover_group(molecule, 1e-2);
+    EXPECT_EQ(group.name(), n.second) << n.first << ": " << group.name();
     std::cout << n.first << ": " << group.name() << std::endl;
   }
   std::cout << *prof << std::endl;
