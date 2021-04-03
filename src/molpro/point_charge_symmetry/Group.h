@@ -11,7 +11,7 @@ class Group {
 protected:
   CoordinateSystem& m_coordinate_system;
   std::vector<std::unique_ptr<Operator>> m_members;
-  const std::string m_name;
+  std::string m_name;
 
 public:
   Group(CoordinateSystem& coordinate_system = s_group_default_coordinate_system, std::string name = "")
@@ -24,6 +24,7 @@ public:
     }
   }
   std::string name() const { return m_name; }
+  std::string& name() { return m_name; }
   void add(Identity op) { m_members.emplace_back(new Identity(m_coordinate_system)); }
   void add(Inversion op) { m_members.emplace_back(new Inversion(m_coordinate_system)); }
   void add(Reflection op) { m_members.emplace_back(new Reflection(m_coordinate_system, op.m_normal)); }

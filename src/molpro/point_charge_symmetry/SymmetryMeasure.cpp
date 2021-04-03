@@ -462,7 +462,7 @@ Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_syst
   // special?
   //  for (const auto& n : std::vector<std::string>{"Dinfh", "Cinfv", "Td", "Oh", "Ih"})
   //  for (const auto& n : std::vector<std::string>{"Oh", "Td"})
-  for (const auto& n : std::vector<std::string>{"Dinfh","Cinfv","Td"})
+  for (const auto& n : std::vector<std::string>{"Dinfh", "Cinfv", "Td"})
     if (test_group(molecule, group_factory(coordinate_system, n, true)))
       return group_factory(coordinate_system, n);
 
@@ -575,27 +575,28 @@ Group group_factory(CoordinateSystem& coordinate_system, std::string name, bool 
                        3, true, count));
     }
   }
-  if (name == "Cinfv") // representative only
-    return group_factory(coordinate_system,"C11v",generators_only);
-  if (name == "Dinfh") // representative only
-    return group_factory(coordinate_system,"D11h",generators_only);
+  if (name == "Cinfv" or name == "Dinfh") { // representative only
+    auto g = group_factory(coordinate_system, name.replace(1, 3, "11"), generators_only);
+    g.name() = name;
+    return g;
+  }
 
   if (std::regex_match(name, m, std::regex{"[CD][0-9]*[02468]h"}) or
       std::regex_match(name, m, std::regex{"D[0-9]*[13579]d"}) or
       std::regex_match(name, m, std::regex{"Ih|Th|Oh|Dinfh|Ci"}))
     g.add(Inversion());
 
-  if (std::regex_match(name, m, std::regex{"Dinfh|Ih|Cs|[CD][2-9][0-9]*h"}))
+  if (std::regex_match(name, m, std::regex{"Dinfh|Ih|Cs|[CD][1-9][0-9]*h"}))
     g.add(Reflection(zaxis));
 
-  if (std::regex_match(name, m, std::regex{"([C])([2-9][0-9]*)([v])"}) or
-      std::regex_match(name, m, std::regex{"([D])([2-9][0-9]*)([hd])"})) {
+  if (std::regex_match(name, m, std::regex{"([C])([1-9][0-9]*)([v])"}) or
+      std::regex_match(name, m, std::regex{"([D])([1-9][0-9]*)([hd])"})) {
     auto order = std::stoi(m.str(2));
     for (double angle = 0; angle < std::acos(double(-1)) - 1e-10; angle += std::acos(double(-1)) / order)
       g.add(Reflection({std::cos(angle), std::sin(angle), 0}));
   }
 
-  if (std::regex_match(name, m, std::regex{"([D])([2-9][0-9]*)([^v])?"})) {
+  if (std::regex_match(name, m, std::regex{"([D])([1-9][0-9]*)([^v])?"})) {
     auto order = std::stoi(m.str(2));
     //    for (double angle = 0; angle < std::acos(double(-1)) - 1e-10; angle += std::acos(double(-1)) / order)
     for (int count = 0; count < (all ? order : 2); count++) {
@@ -604,7 +605,7 @@ Group group_factory(CoordinateSystem& coordinate_system, std::string name, bool 
     }
   }
 
-  if (std::regex_match(name, m, std::regex{"([CD])([0-9]*[2-9])([hvd]*)"})) {
+  if (std::regex_match(name, m, std::regex{"([CD])([1-9][0-9]*)([hvd]*)"})) {
     auto order = std::stoi(m.str(2));
     for (int count = 1; count < order; count++)
       g.add(Rotation(zaxis, order, true, count));
@@ -614,10 +615,10 @@ Group group_factory(CoordinateSystem& coordinate_system, std::string name, bool 
     for (int count = 0; count < order / 2; count++)
       if (count * 2 + 1 != order / 2)
         g.add(Rotation(zaxis, order, false, count * 2 + 1));
-    if (order > 2) {
-      g.add(Rotation(zaxis, order / 2, false, 1));
-      g.add(Rotation(zaxis, order / 2, false, order - 1)); // not sure if this is correct beyond order=8
-    }
+    if (order > 2)
+      for (int count = 0; count < ((order % 4) ? order / 2 : order / 4); count++)
+        if (count * 2 + 1 != ((order % 4) ? order / 2 : order / 4))
+          g.add(Rotation(zaxis, order / 2, false, count * 2 + 1));
   }
   if (std::regex_match(name, m, std::regex{"([CD])([0-9]*[13579])(h)"})) {
     auto order = std::stoi(m.str(2));
@@ -625,13 +626,16 @@ Group group_factory(CoordinateSystem& coordinate_system, std::string name, bool 
       if (count != (order - 1) / 2)
         g.add(Rotation(zaxis, order, false, count * 2 + 1));
   }
-  if (std::regex_match(name, m, std::regex{"([D])([0-9]*[0-9])(d)"})) {
+  if (std::regex_match(name, m, std::regex{"([D])([1-9][0-9]*)(d)"})) {
     auto order = std::stoi(m.str(2));
     for (int count = 0; count < order; count++)
       if (2 * count != (order - 1))
         g.add(Rotation(zaxis, 2 * order, false, count * 2 + 1));
   }
-  if (std::regex_match(name, m, std::regex{"([S])([0-9]*[02468])"})) { // could be done more prettily with explicit proper rotations and inversion
+  if (std::regex_match(
+          name, m,
+          std::regex{
+              "([S])([0-9]*[02468])"})) { // could be done more prettily with explicit proper rotations and inversion
     auto order = std::stoi(m.str(2));
     for (int count = 1; count < order; count++)
       g.add(Rotation(zaxis, order, false, count));

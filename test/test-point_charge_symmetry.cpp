@@ -228,24 +228,27 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
 TEST(point_charge_symmetry, group_factory) {
   //  std::cout<<"D5h generators\n" << molpro::point_charge_symmetry::group_factory("D5h",true)<<std::endl;
   std::map<std::string, int> orders;
+  orders["Dinfh"] = 44;
+  orders["Cinfv"] = 22;
   orders["C1"] = 1;
   orders["Ci"] = 2;
   orders["Cs"] = 2;
-  orders["C2"] = 2;
-  orders["C2v"] = 4;
-  orders["S2"] = 2;
-  orders["C2h"] = 4;
-  orders["D2"] = 4;
-  orders["D4"] = 8;
-  orders["D2d"] = 8;
-  orders["D4d"] = 16;
-  orders["D2h"] = 8;
-  orders["C3v"] = 6;
-  orders["C3h"] = 6;
-  orders["D3h"] = 12;
-  orders["D3d"] = 12;
-  orders["S4"] = 4;
-  orders["S12"] = 12;
+  orders["Td"] = 24;
+//  orders["Th"] = 24;
+//  orders["T"] = 12;
+//  orders["Oh"] = 48;
+//  orders["O"] = 24;
+//  orders["Ih"] = 120;
+//  orders["I"] = 60;
+  for (int i = 2; i < 12; i++) {
+    orders[std::string{"S"} + std::to_string(2 * i)] = i * 2;
+    orders[std::string{"D"} + std::to_string(i) + "h"] = i * 4;
+    orders[std::string{"D"} + std::to_string(i) + "d"] = i * 4;
+    orders[std::string{"D"} + std::to_string(i)] = i * 2;
+    orders[std::string{"C"} + std::to_string(i) + "h"] = i * 2;
+    orders[std::string{"C"} + std::to_string(i) + "v"] = i * 2;
+    orders[std::string{"C"} + std::to_string(i)] = i;
+  }
   for (const auto &n : orders) {
     auto g = molpro::point_charge_symmetry::group_factory(n.first);
     //    std::cout << g << std::endl;
