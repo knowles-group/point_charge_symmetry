@@ -29,7 +29,7 @@ public:
   Eigen::Map<const vec> axis_generator() const { return Eigen::Map<const vec>(&m_parameters[3]); }
   Eigen::Map<vec> axis_generator() { return Eigen::Map<vec>(&m_parameters[3]); }
   CoordinateSystem(const vec& origin = vec::Zero(), const mat& axes = mat::Identity());
-  void from_axes(const mat& axes = mat::Identity());
+  void from_axes(const mat& axes = mat::Identity()) const;
   double* data() { return m_parameters.data(); }
   const double* data() const { return m_parameters.data(); }
   std::string str() const;

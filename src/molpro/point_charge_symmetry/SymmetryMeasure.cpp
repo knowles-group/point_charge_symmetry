@@ -214,11 +214,7 @@ void SymmetryMeasure::adopt_inertial_axes() {
     auto sq2 = std::sqrt(double(0.5));
     CoordinateSystem::mat transform;
     transform << sq2, sq2, 0, -sq2, sq2, 0, 0, 0, 1;
-    CoordinateSystem::mat newaxes = (oldaxes * transform).eval();
-    auto generator = newaxes.log();
-    coordinate_system.m_parameters[5] = generator(1, 0);
-    coordinate_system.m_parameters[4] = generator(2, 0);
-    coordinate_system.m_parameters[3] = generator(2, 1);
+    coordinate_system.from_axes((oldaxes * transform).eval());
   }
   reset_neighbours();
   //  std::cout << "chosen initial coordinate system: " << best_axis << "\n" << coordinate_system << std::endl;

@@ -14,15 +14,15 @@ CoordinateSystem::CoordinateSystem(const vec& origin, const mat& axes) {
   from_axes(axes);
 }
 
-void CoordinateSystem::from_axes(const mat& axes) {
+void CoordinateSystem::from_axes(const mat& axes) const {
   if (std::abs(axes.determinant() - 1) > 1e-14)
     throw std::runtime_error("Axes must be proper rotation");
   switch (m_rotation_parameter_type) {
   case RotationParameterType::Log: {
     auto generator = axes.log();
-    axis_generator()(2) = generator(1, 0);
-    axis_generator()(1) = generator(2, 0);
-    axis_generator()(0) = generator(2, 1);
+    m_parameters[3 + 2] = generator(1, 0);
+    m_parameters[3 + 1] = generator(2, 0);
+    m_parameters[3 + 0] = generator(2, 1);
   } break;
   case RotationParameterType::Euler:
     throw std::logic_error("unimplemented");
@@ -102,13 +102,11 @@ void CoordinateSystem::cycle_axes() const {
         new_axes.col(i) = -new_axes.col(i);
         new_axes.col(j) = -new_axes.col(j);
       }
-  auto generator = new_axes.log();
-  m_parameters[5] = generator(1, 0);
-  m_parameters[4] = generator(2, 0);
-  m_parameters[3] = generator(2, 1);
+  from_axes(new_axes);
   if (false) {
     auto regen_axes = this->axes();
     if ((regen_axes - new_axes).norm() > 1e-6) {
+      auto generator = new_axes.log();
       std::cerr << "generator\n" << generator << std::endl;
       std::cerr << "exp(generator)\n" << generator.exp() << std::endl;
       std::cerr << "new_axes\n" << new_axes << "\nregen_axes\n" << regen_axes << std::endl;
@@ -126,10 +124,7 @@ void CoordinateSystem::rot90(int axis) {
   new_axes.col(axis) = axes.col(axis);
   new_axes.col((axis + 1) % 3) = axes.col((axis + 2) % 3);
   new_axes.col((axis + 2) % 3) = -axes.col((axis + 1) % 3);
-  auto generator = new_axes.log();
-  axis_generator()(2) = generator(1, 0);
-  axis_generator()(1) = generator(2, 0);
-  axis_generator()(0) = generator(2, 1);
+  from_axes(new_axes);
 }
 
 std::string CoordinateSystem::str() const {
