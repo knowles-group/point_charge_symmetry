@@ -259,12 +259,12 @@ TEST(point_charge_symmetry, group_factory) {
 TEST(point_charge_symmetry, discover_group) {
   std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Discover groups");
   std::map<std::string, std::string> expected_groups;
-  expected_groups["n2"] = "Dinfh";
+//  expected_groups["n2"] = "Dinfh";
   expected_groups["h2o"] = "C2v";
   expected_groups["h2o-nosym"] = "C2v";
   expected_groups["ferrocene"] = "D5d";
   expected_groups["benzene"] = "D6h";
-  expected_groups["allene"] = "D2d";
+//  expected_groups["allene"] = "D2d";
   expected_groups["ch4"] = "Td";
   expected_groups["methane"] = "Td";
   expected_groups["p4"] = "Td";
@@ -275,9 +275,16 @@ TEST(point_charge_symmetry, discover_group) {
   expected_groups["s8"] = "D4h";
   for (const auto &n : expected_groups) {
     Molecule molecule(n.first + ".xyz");
-    auto group = molpro::point_charge_symmetry::discover_group(molecule, 1e-2);
+    auto group = molpro::point_charge_symmetry::discover_group(molecule, 1e-2,-1);
     EXPECT_EQ(group.name(), n.second) << n.first << ": " << group.name();
     std::cout << n.first << ": " << group.name() << std::endl;
   }
   std::cout << *prof << std::endl;
+}
+TEST(point_charge_symmetry, allene45) {
+  Molecule allene("allene45.xyz");
+  SymmetryMeasure sm(allene,group_factory("D2d"));
+  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Check SymmetryMeasure");
+  EXPECT_LE(sm(),1e-16);
+  std::cout << sm.coordinate_system_gradient() << std::endl;
 }

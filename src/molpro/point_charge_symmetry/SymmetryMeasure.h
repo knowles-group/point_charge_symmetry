@@ -38,15 +38,15 @@ public:
     constexpr double tol = 1e-3;
     return (std::abs(m_inertia_principal_values(0) - m_inertia_principal_values(1)) < tol or
             std::abs(m_inertia_principal_values(1) - m_inertia_principal_values(2)) < tol or
-            std::abs(m_inertia_principal_values(0) - m_inertia_principal_values(2)) < tol)
-        and not spherical_top();
+            std::abs(m_inertia_principal_values(0) - m_inertia_principal_values(2)) < tol) and
+           not spherical_top();
   }
 
 protected:
   const Molecule& m_molecule;
   const Group& m_group;
   std::vector<std::vector<size_t>> m_neighbours;
-  CoordinateSystem::vec m_inertia_principal_values ={1,2,3};
+  CoordinateSystem::vec m_inertia_principal_values = {1, 2, 3};
   CoordinateSystem::mat m_inertial_axes;
   Atom image(const Atom& source, const Operator& op);
   size_t image_neighbour(size_t atom_index, const Operator& op);
@@ -57,11 +57,12 @@ inline std::ostream& operator<<(std::ostream& os, const SymmetryMeasure& sm) {
   return os;
 }
 
-Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_system, double threshold = 1e-10);
-Group discover_group(const Molecule& molecule, double threshold = 1e-10);
+Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_system, double threshold = 1e-10,
+                     int verbosity = -1);
+Group discover_group(const Molecule& molecule, double threshold = 1e-10, int verbosity = -1);
 
-Group group_factory(CoordinateSystem& coordinate_system, std::string name, bool generators_only=false);
-Group group_factory(std::string name, bool generators_only=false);
+Group group_factory(CoordinateSystem& coordinate_system, std::string name, bool generators_only = false);
+Group group_factory(std::string name, bool generators_only = false);
 
 } // namespace molpro::point_charge_symmetry
 

@@ -8,24 +8,48 @@ namespace molpro::point_charge_symmetry {
 
 CoordinateSystem::CoordinateSystem(const vec& origin, const mat& axes) {
   //  std::cout << "CoordinateSystem constructor, axes=\n" << axes << std::endl;
-  if (std::abs(axes.determinant() - 1) > 1e-14)
-    throw std::runtime_error("Axes must be proper rotation");
-  auto generator = axes.log();
-  axis_generator()(2) = generator(1, 0);
-  axis_generator()(1) = generator(2, 0);
-  axis_generator()(0) = generator(2, 1);
   this->origin()(0) = origin(0);
   this->origin()(1) = origin(1);
   this->origin()(2) = origin(2);
+  from_axes(axes);
+}
+
+void CoordinateSystem::from_axes(const mat& axes) {
+  if (std::abs(axes.determinant() - 1) > 1e-14)
+    throw std::runtime_error("Axes must be proper rotation");
+  switch (m_rotation_parameter_type) {
+  case RotationParameterType::Log: {
+    auto generator = axes.log();
+    axis_generator()(2) = generator(1, 0);
+    axis_generator()(1) = generator(2, 0);
+    axis_generator()(0) = generator(2, 1);
+  } break;
+  case RotationParameterType::Euler:
+    throw std::logic_error("unimplemented");
+    break;
+  case RotationParameterType::Quaternion:
+    throw std::logic_error("unimplemented");
+    break;
+  }
 }
 
 const CoordinateSystem::mat CoordinateSystem::axes() const {
-  Eigen::Matrix3d generator;
-  generator << 0, -axis_generator()(2), -axis_generator()(1), axis_generator()(2), 0, -axis_generator()(0),
-      axis_generator()(1), axis_generator()(0), 0;
-  //    std::cout << "Generator\n"<<generator<<std::endl;
-  //  std::cout << "Generator.exp()\n"<<generator.exp()<<std::endl;
-  return generator.exp();
+  switch (m_rotation_parameter_type) {
+  case RotationParameterType::Log: {
+    Eigen::Matrix3d generator;
+    generator << 0, -axis_generator()(2), -axis_generator()(1), axis_generator()(2), 0, -axis_generator()(0),
+        axis_generator()(1), axis_generator()(0), 0;
+    //    std::cout << "Generator\n"<<generator<<std::endl;
+    //  std::cout << "Generator.exp()\n"<<generator.exp()<<std::endl;
+    return generator.exp();
+  } break;
+  case RotationParameterType::Euler:
+    throw std::logic_error("unimplemented");
+    break;
+  case RotationParameterType::Quaternion:
+    throw std::logic_error("unimplemented");
+    break;
+  }
 }
 
 const std::array<CoordinateSystem::mat, 3> CoordinateSystem::axes_gradient(int displacements, double step) const {
@@ -55,14 +79,14 @@ CoordinateSystem::vec CoordinateSystem::to_global(const vec& source) const {
 }
 
 void CoordinateSystem::cycle_axes() const {
-//  std::cout << "cycle_axes starts with\n" << axes() << std::endl;
+  //  std::cout << "cycle_axes starts with\n" << axes() << std::endl;
   //  rot90(2);
   //  std::cout << "cycle_axes after rot90\n"<<axes()<<std::endl;
-  //  if (m_axis_permutation_rot90_next)std::cout << "cycle_axes returns after rotating x,y with\n"<<axes()<<std::endl;
-  //  if (m_axis_permutation_rot90_next) return;
+  //  if (m_axis_permutation_rot90_next)std::cout << "cycle_axes returns after rotating x,y
+  //  with\n"<<axes()<<std::endl; if (m_axis_permutation_rot90_next) return;
   mat new_axes;
   mat axes = this->axes();
-//  std::cout << "cycle_axes() start\n" << axes << std::endl;
+  //  std::cout << "cycle_axes() start\n" << axes << std::endl;
   if (m_axis_permutation_rot90_next) {
     new_axes.col(0) = axes.col(1);
     new_axes.col(1) = -axes.col(0);
@@ -93,7 +117,7 @@ void CoordinateSystem::cycle_axes() const {
     }
   }
   m_axis_permutation_rot90_next = not m_axis_permutation_rot90_next;
-//  std::cout << "cycle_axes returns after permuting x,y,z with\n" << this->axes() << std::endl;
+  //  std::cout << "cycle_axes returns after permuting x,y,z with\n" << this->axes() << std::endl;
 }
 
 void CoordinateSystem::rot90(int axis) {

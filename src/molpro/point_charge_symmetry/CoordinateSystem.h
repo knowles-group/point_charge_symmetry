@@ -5,6 +5,7 @@
 #include <ostream>
 
 namespace molpro::point_charge_symmetry {
+enum class RotationParameterType { Log, Euler, Quaternion };
 /*!
  * @brief Hold the definition of a coordinate system - origin and axes
  */
@@ -13,8 +14,10 @@ public:
   using parameters_t = std::array<double, 6>;
   // protected:
   mutable parameters_t m_parameters;
+  RotationParameterType m_rotation_parameter_type = RotationParameterType::Log;
+
 protected:
-  mutable bool m_axis_permutation_rot90_next=false;
+  mutable bool m_axis_permutation_rot90_next = false;
 
 public:
   using vec = Eigen::Vector3d;
@@ -26,6 +29,7 @@ public:
   Eigen::Map<const vec> axis_generator() const { return Eigen::Map<const vec>(&m_parameters[3]); }
   Eigen::Map<vec> axis_generator() { return Eigen::Map<vec>(&m_parameters[3]); }
   CoordinateSystem(const vec& origin = vec::Zero(), const mat& axes = mat::Identity());
+  void from_axes(const mat& axes = mat::Identity());
   double* data() { return m_parameters.data(); }
   const double* data() const { return m_parameters.data(); }
   std::string str() const;

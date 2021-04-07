@@ -232,6 +232,7 @@ int SymmetryMeasure::optimise_frame() {
   auto& parameters = m_group.coordinate_system_parameters();
   const double centre_of_charge_penalty = 0e0;
   const int centre_of_charge_penalty_power = 4;
+  const int verbosity = -1;
   using Rvector = CoordinateSystem::parameters_t;
   //  std::cout << "optimise_frame" << std::endl;
   for (int c = 0; c < 0; c++) { // TODO remove testing only
@@ -257,14 +258,16 @@ int SymmetryMeasure::optimise_frame() {
   auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector, Rvector>(
       "BFGS", "max_size_qspace=3,convergence_threshold=1e-6");
   int nwork = 1;
-  std::cout << "initial";
-  for (int i = 0; i < 6; i++)
-    std::cout << " " << parameters[i];
-  std::cout << std::endl;
-  std::cout << m_group.coordinate_system().axes() << std::endl;
-  std::cout << "Atomic coordinates in current local frame\n" << std::endl;
-  for (const auto& atom : m_molecule.m_atoms)
-    std::cout << atom.name << ": " << m_group.coordinate_system().to_local(atom.position).transpose() << std::endl;
+  if (verbosity > 0) {
+    std::cout << "initial";
+    for (int i = 0; i < 6; i++)
+      std::cout << " " << parameters[i];
+    std::cout << std::endl;
+    std::cout << m_group.coordinate_system().axes() << std::endl;
+    std::cout << "Atomic coordinates in current local frame\n" << std::endl;
+    for (const auto& atom : m_molecule.m_atoms)
+      std::cout << atom.name << ": " << m_group.coordinate_system().to_local(atom.position).transpose() << std::endl;
+  }
   for (int iter = 0; iter < 200; iter++) {
     //    std::cout << coordinate_system << std::endl;
     reset_neighbours();
@@ -294,12 +297,15 @@ int SymmetryMeasure::optimise_frame() {
       if (diff > 1e-7)
         throw std::runtime_error("differentiation");
     }
-    if (not optimize_origin) std::fill(grad.begin(),grad.begin()+3,0);
+    if (not optimize_origin)
+      std::fill(grad.begin(), grad.begin() + 3, 0);
     auto centre_of_charge_displacement = (m_group.coordinate_system().origin() - m_molecule.centre_of_charge()).eval();
-    std::cout << "grad " << grad << std::endl;
-    std::cout << "coordinate_system.origin() " << m_group.coordinate_system().origin().transpose() << std::endl;
-    std::cout << "m_molecule.centre_of_charge() " << m_molecule.centre_of_charge().transpose() << std::endl;
-    std::cout << "centre_of_charge_displacement " << centre_of_charge_displacement.transpose() << std::endl;
+    if (verbosity > 1) {
+      std::cout << "grad " << grad << std::endl;
+      std::cout << "coordinate_system.origin() " << m_group.coordinate_system().origin().transpose() << std::endl;
+      std::cout << "m_molecule.centre_of_charge() " << m_molecule.centre_of_charge().transpose() << std::endl;
+      std::cout << "centre_of_charge_displacement " << centre_of_charge_displacement.transpose() << std::endl;
+    }
     //        value=0; std::fill(grad.begin(),grad.end(),0);
     //    std::fill(grad.begin() + 3, grad.end(), 0);
     //    for (int i = 0; i < 3; i++)
@@ -336,11 +342,13 @@ int SymmetryMeasure::optimise_frame() {
     //    grad[1] = 0;
     //    grad[2] = 0;
     if (solver->add_value(parameters, value, grad)) {
-      std::cout << "after add_value " << nwork;
-      for (int i = 0; i < 6; i++)
-        std::cout << " " << grad[i];
-      std::cout << std::endl;
-      cout << "precondition" << std::endl;
+      if (verbosity > 1) {
+        std::cout << "after add_value " << nwork;
+        for (int i = 0; i < 6; i++)
+          std::cout << " " << grad[i];
+        std::cout << std::endl;
+        cout << "precondition" << std::endl;
+      }
       for (int i = 0; i < 6; i++)
         grad[i] /= 100;
     } else if (false) {
@@ -373,30 +381,38 @@ int SymmetryMeasure::optimise_frame() {
       parameters = new_parameters;
     }
     nwork = solver->end_iteration(parameters, grad);
-    std::cout << "after end_iteration " << nwork;
-    for (int i = 0; i < 6; i++)
-      std::cout << " " << parameters[i];
-    std::cout << std::endl;
-    std::cout << m_group.coordinate_system().axes() << std::endl;
-    std::cout << "Atomic coordinates in current local frame\n" << std::endl;
-    for (const auto& atom : m_molecule.m_atoms)
-      std::cout << atom.name << ": " << m_group.coordinate_system().to_local(atom.position).transpose() << std::endl;
-    solver->report();
+    if (verbosity > 1) {
+      std::cout << "after end_iteration " << nwork;
+      for (int i = 0; i < 6; i++)
+        std::cout << " " << parameters[i];
+      std::cout << std::endl;
+      std::cout << m_group.coordinate_system().axes() << std::endl;
+      std::cout << "Atomic coordinates in current local frame\n" << std::endl;
+      for (const auto& atom : m_molecule.m_atoms)
+        std::cout << atom.name << ": " << m_group.coordinate_system().to_local(atom.position).transpose() << std::endl;
+    }
+    if (verbosity > 0)
+      solver->report();
     if (nwork <= 0)
       return iter;
   }
   return -1;
 }
 
-static inline bool test_group(const Molecule& molecule, const Group& group, double threshold = 1e-6) {
-  std::cout << "test_group " << group.name() << std::endl;
-  std::cout << "test_group " << group << std::endl;
+static inline bool test_group(const Molecule& molecule, const Group& group, double threshold = 1e-6,
+                              int verbosity = -1) {
+  if (verbosity >= 0)
+    std::cout << "test_group " << group.name() << std::endl;
+  if (verbosity > 0)
+    std::cout << "test_group " << group << std::endl;
   auto p = molpro::Profiler::single()->push("SymmetryMeasure::test_group(" + group.name() + ")");
   SymmetryMeasure sm(molecule, group);
   sm.adopt_inertial_axes();
-  std::cout << "initial measure " << sm() << std::endl;
-  std::cout << group.coordinate_system().axes() << std::endl;
-  //    std::cout << "Atomic coordinates in current local frame\n" << std::endl;
+  if (verbosity > 0) {
+    std::cout << "initial measure " << sm() << std::endl;
+    std::cout << group.coordinate_system().axes() << std::endl;
+    std::cout << "Atomic coordinates in current local frame\n" << std::endl;
+  }
   // scan
   if (sm.spherical_top()) {
     const int nscan = 5;
@@ -441,18 +457,19 @@ static inline bool test_group(const Molecule& molecule, const Group& group, doub
   //  if (sm() > threshold*1000) return false;
   sm.optimise_frame();
   double d = sm();
-  std::cout << "end of test_group() for " << group.name() << ", measure=" << d << " " << (d < threshold) << " "
-            << threshold << std::endl;
+  if (verbosity >= 0)
+    std::cout << "end of test_group() for " << group.name() << ", measure=" << d << " " << (d < threshold) << " "
+              << threshold << std::endl;
   return d < threshold;
 }
 
 static CoordinateSystem s_default_coordinate_system;
 
-Group discover_group(const Molecule& molecule, double threshold) {
-  return discover_group(molecule, s_default_coordinate_system, threshold);
+Group discover_group(const Molecule& molecule, double threshold, int verbosity) {
+  return discover_group(molecule, s_default_coordinate_system, threshold, verbosity);
 }
 
-Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_system, double threshold) {
+Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_system, double threshold, int verbosity) {
   auto p = molpro::Profiler::single()->push("SymmetryMeasure::discover_group(" + molecule.m_title + ")");
   using vec = CoordinateSystem::vec;
   const vec xaxis{1, 0, 0};
@@ -466,7 +483,7 @@ Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_syst
   //  for (const auto& n : std::vector<std::string>{"Dinfh", "Cinfv", "Td", "Oh", "Ih"})
   //  for (const auto& n : std::vector<std::string>{"Oh", "Td"})
   for (const auto& n : std::vector<std::string>{"Dinfh", "Cinfv", "Td"})
-    if (test_group(molecule, group_factory(coordinate_system, n, generators_only)))
+    if (test_group(molecule, group_factory(coordinate_system, n, generators_only), threshold, verbosity))
       return group_factory(coordinate_system, n);
 
   // axis?
@@ -483,34 +500,38 @@ Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_syst
     //    std::cout << "Atomic coordinates in current local frame\n" << std::endl;
     //    for (const auto& atom : molecule.m_atoms)
     //      std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
-    if (test_group(molecule, group_factory(coordinate_system, "C" + o, generators_only), threshold)) {
+    if (test_group(molecule, group_factory(coordinate_system, "C" + o, generators_only), threshold, verbosity)) {
       //      std::cout << "c2x\n" << c2x << std::endl;
       //      std::cout << "explore "
       //                << "c2x" << std::endl;
       //      std::cout << "Atomic coordinates in current local frame\n" << std::endl;
       //      for (const auto& atom : molecule.m_atoms)
       //        std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
-      if (test_group(molecule, c2x, threshold)) {
-        //        std::cout << "test sigma_h: " << test_group(molecule, sigma_h, threshold) << std::endl;
-        //        if (test_group(molecule, sigma_h, threshold)) {
+      if (test_group(molecule, c2x, threshold, verbosity)) {
+        //        std::cout << "test sigma_h: " << test_group(molecule, sigma_h, threshold,verbosity) << std::endl;
+        //        if (test_group(molecule, sigma_h, threshold,verbosity)) {
         auto coordinate_system_save = coordinate_system;
-        if (test_group(molecule, group_factory(coordinate_system, "D" + o + "h", generators_only), threshold)) {
+        if (test_group(molecule, group_factory(coordinate_system, "D" + o + "h", generators_only), threshold,
+                       verbosity)) {
           return group_factory(coordinate_system, "D" + o + "h");
         } else {
           coordinate_system = coordinate_system_save;
           for (const auto& n : std::vector<std::string>{"D" + o + "d", "D" + o}) {
-            std::cout << "explore " << n << std::endl;
-            std::cout << "Atomic coordinates in current local frame\n" << std::endl;
-            for (const auto& atom : molecule.m_atoms)
-              std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
-            if (test_group(molecule, group_factory(coordinate_system, n, generators_only), threshold))
+            if (verbosity > 1) {
+              std::cout << "explore " << n << std::endl;
+              std::cout << "Atomic coordinates in current local frame\n" << std::endl;
+              for (const auto& atom : molecule.m_atoms)
+                std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
+            }
+            if (test_group(molecule, group_factory(coordinate_system, n, generators_only), threshold, verbosity))
               return group_factory(coordinate_system, n);
           }
         }
       } else {
         for (const auto& n : std::vector<std::string>{"C" + o + "h", "C" + o + "v", "S" + o, "C" + o}) {
           //       std::cout << "explore "<<n<<std::endl;
-          if (n != "S2" and test_group(molecule, group_factory(coordinate_system, n, generators_only), threshold))
+          if (n != "S2" and
+              test_group(molecule, group_factory(coordinate_system, n, generators_only), threshold, verbosity))
             return group_factory(coordinate_system, n);
         }
       }
@@ -518,7 +539,7 @@ Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_syst
   }
   // no axis found
   for (const auto& n : std::vector<std::string>{"Cs", "Ci", "C1"})
-    if (test_group(molecule, group_factory(coordinate_system, n, generators_only), threshold))
+    if (test_group(molecule, group_factory(coordinate_system, n, generators_only), threshold, verbosity))
       return group_factory(coordinate_system, n);
   throw std::logic_error("unexpected failure to find point group");
 }
