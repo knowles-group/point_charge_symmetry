@@ -1,3 +1,4 @@
+#include <array>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <iostream>
@@ -7,11 +8,36 @@
 #include <molpro/point_charge_symmetry/Operator.h>
 #include <molpro/point_charge_symmetry/SymmetryMeasure.h>
 #include <numeric>
+#include <vector>
 
 using std::cout;
 using namespace molpro::point_charge_symmetry;
 using vec = Operator::vec;
 using mat = Operator::mat;
+
+TEST(point_charge_symmetry, Euler) {
+  CoordinateSystem cs;
+  cs.m_rotation_parameter_type = RotationParameterType::Euler;
+  std::vector<std::array<double, 3>> parameters;
+  parameters.push_back({1, 0, 0});
+  parameters.push_back({0, 1, 0});
+  parameters.push_back({0, 0, 1});
+  parameters.push_back({1, 1, 0});
+  parameters.push_back({0.1, 0.2, 0.3});
+  for (const auto &p : parameters) {
+    for (int i = 0; i < 3; i++)
+      cs.m_parameters[3 + i] = p[i];
+//    cout << cs << std::endl;
+    auto u = cs.axes();
+    cs.from_axes(u);
+    auto pnew = std::array<double, 3>{cs.m_parameters[3], cs.m_parameters[4], cs.m_parameters[5]};
+    if (std::abs(pnew[1]) > 1e-10)
+      EXPECT_THAT(pnew, ::testing::Pointwise(::testing::DoubleNear(1e-13), p));
+//    cout << cs << std::endl;
+    auto unew = cs.axes();
+    EXPECT_THAT(std::vector<double>(&unew(0,0),&unew(0,0)+9),::testing::Pointwise(::testing::DoubleNear(1e-13),std::vector<double>(&u(0,0),&u(0,0)+9)));
+  }
+}
 
 void test_operation(const vec &initial, const Operator &op, const vec &expected) {
   auto ttt = op(initial);
@@ -234,12 +260,12 @@ TEST(point_charge_symmetry, group_factory) {
   orders["Ci"] = 2;
   orders["Cs"] = 2;
   orders["Td"] = 24;
-//  orders["Th"] = 24;
-//  orders["T"] = 12;
-//  orders["Oh"] = 48;
-//  orders["O"] = 24;
-//  orders["Ih"] = 120;
-//  orders["I"] = 60;
+  //  orders["Th"] = 24;
+  //  orders["T"] = 12;
+  //  orders["Oh"] = 48;
+  //  orders["O"] = 24;
+  //  orders["Ih"] = 120;
+  //  orders["I"] = 60;
   for (int i = 2; i < 12; i++) {
     orders[std::string{"S"} + std::to_string(2 * i)] = i * 2;
     orders[std::string{"D"} + std::to_string(i) + "h"] = i * 4;
@@ -259,12 +285,12 @@ TEST(point_charge_symmetry, group_factory) {
 TEST(point_charge_symmetry, discover_group) {
   std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Discover groups");
   std::map<std::string, std::string> expected_groups;
-//  expected_groups["n2"] = "Dinfh";
+  //  expected_groups["n2"] = "Dinfh";
   expected_groups["h2o"] = "C2v";
   expected_groups["h2o-nosym"] = "C2v";
   expected_groups["ferrocene"] = "D5d";
   expected_groups["benzene"] = "D6h";
-//  expected_groups["allene"] = "D2d";
+  //  expected_groups["allene"] = "D2d";
   expected_groups["ch4"] = "Td";
   expected_groups["methane"] = "Td";
   expected_groups["p4"] = "Td";
@@ -275,7 +301,7 @@ TEST(point_charge_symmetry, discover_group) {
   expected_groups["s8"] = "D4h";
   for (const auto &n : expected_groups) {
     Molecule molecule(n.first + ".xyz");
-    auto group = molpro::point_charge_symmetry::discover_group(molecule, 1e-2,-1);
+    auto group = molpro::point_charge_symmetry::discover_group(molecule, 1e-2, -1);
     EXPECT_EQ(group.name(), n.second) << n.first << ": " << group.name();
     std::cout << n.first << ": " << group.name() << std::endl;
   }
@@ -283,8 +309,8 @@ TEST(point_charge_symmetry, discover_group) {
 }
 TEST(point_charge_symmetry, allene45) {
   Molecule allene("allene45.xyz");
-  SymmetryMeasure sm(allene,group_factory("D2d"));
+  SymmetryMeasure sm(allene, group_factory("D2d"));
   std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Check SymmetryMeasure");
-  EXPECT_LE(sm(),1e-16);
+  EXPECT_LE(sm(), 1e-16);
   std::cout << sm.coordinate_system_gradient() << std::endl;
 }

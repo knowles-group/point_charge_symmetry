@@ -24,9 +24,25 @@ void CoordinateSystem::from_axes(const mat& axes) const {
     m_parameters[3 + 1] = generator(2, 0);
     m_parameters[3 + 0] = generator(2, 1);
   } break;
-  case RotationParameterType::Euler:
-    throw std::logic_error("unimplemented");
-    break;
+  case RotationParameterType::Euler: {
+    const auto& u = axes;
+    auto& alpha = m_parameters[3 + 0];
+    auto& beta = m_parameters[3 + 1];
+    auto& gamma = m_parameters[3 + 2];
+    beta = std::acos(u(2, 2));
+    if (beta < 1e-6) {
+      alpha = std::atan2(u(1, 0), u(0, 0));
+      gamma = 0;
+    } else {
+      alpha = std::atan2(u(1, 2), u(0, 2));
+      gamma = std::atan2(u(2, 1), -u(2, 0));
+      auto pi = std::acos(double(-1));
+//      std::cout << "gamma - pi "<<gamma-pi<<std::endl;
+      if (gamma >= pi)
+        gamma -= pi;
+    }
+//    std::cout << "alpha="<<alpha<<", beta="<<beta<<", gamma="<<gamma<<std::endl;
+  } break;
   case RotationParameterType::Quaternion:
     throw std::logic_error("unimplemented");
     break;
@@ -43,9 +59,24 @@ const CoordinateSystem::mat CoordinateSystem::axes() const {
     //  std::cout << "Generator.exp()\n"<<generator.exp()<<std::endl;
     return generator.exp();
   } break;
-  case RotationParameterType::Euler:
-    throw std::logic_error("unimplemented");
-    break;
+  case RotationParameterType::Euler: {
+    auto c1 = std::cos(axis_generator()(0));
+    auto s1 = std::sin(axis_generator()(0));
+    auto c2 = std::cos(axis_generator()(1));
+    auto s2 = std::sin(axis_generator()(1));
+    auto c3 = std::cos(axis_generator()(2));
+    auto s3 = std::sin(axis_generator()(2));
+    Eigen::Matrix3d result;
+    //    result << c1*c2 , s1*c2, -s2,
+    //    s3*s2*c1-c3*s1, s3*s2*s1+c3*c1, s3*c2,
+    //        c3*s2*c1+s3*s1, c3*s2*s1-s3*c1, c3*c2;
+    //    result << c3*c1-c2*s1*s3, c3*s1-c2*c1*s3, s3*s2,
+    //        -s3*c1-c2*s1*c3, -s3*s1+c2*c1*c3,c3*s2,
+    //        s2*s1,-s2*c1,c2;
+    result << c1 * c2 * c3 - s1 * s3, -c3 * s1 - c1 * c2 * s3, c1 * s2, c2 * c3 * s1 + c1 * s3, c1 * c3 - c2 * s1 * s3,
+        s1 * s2, -c3 * s2, s2 * s3, c2;
+    return result;
+  } break;
   case RotationParameterType::Quaternion:
     throw std::logic_error("unimplemented");
     break;
