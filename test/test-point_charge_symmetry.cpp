@@ -40,7 +40,7 @@ TEST(point_charge_symmetry, Euler) {
     auto u = cs.axes();
     cs.from_axes(u);
     auto pnew = std::array<double, 3>{cs.m_parameters[3], cs.m_parameters[4], cs.m_parameters[5]};
-    if (std::abs(pnew[1]) > 1e-12)
+    if (std::abs(p[1]) > 1e-12)
       EXPECT_THAT(pnew, ::testing::Pointwise(::testing::DoubleNear(1e-10), p));
 //    cout << cs << std::endl;
     auto unew = cs.axes();
@@ -140,6 +140,7 @@ TEST(point_charge_symmetry, axes_gradient) {
 }
 
 TEST(point_charge_symmetry, Molecule) {
+  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Discover groups");
   Molecule water("h2o.xyz");
   std::cout << water << std::endl;
   Group c2v("C2v");
@@ -163,6 +164,7 @@ TEST(point_charge_symmetry, Molecule) {
 }
 
 TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
+  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Discover groups");
   Molecule water("h2o-nosym.xyz");
   //  Molecule water("Ferrocene.xyz");
   std::cout << water << std::endl;
@@ -317,9 +319,11 @@ TEST(point_charge_symmetry, discover_group) {
   std::cout << *prof << std::endl;
 }
 TEST(point_charge_symmetry, allene45) {
+  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Discover groups");
   Molecule allene("allene45.xyz");
-  SymmetryMeasure sm(allene, group_factory("D2d"));
-  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Check SymmetryMeasure");
+  CoordinateSystem cs;
+  const Group group = group_factory(cs, "D2d");
+  SymmetryMeasure sm(allene, group);
   EXPECT_LE(sm(), 1e-16);
   std::cout << sm.coordinate_system_gradient() << std::endl;
 }
