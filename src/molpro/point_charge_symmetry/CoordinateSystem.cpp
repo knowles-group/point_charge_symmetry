@@ -30,18 +30,21 @@ void CoordinateSystem::from_axes(const mat& axes) const {
     auto& beta = m_parameters[3 + 1];
     auto& gamma = m_parameters[3 + 2];
     beta = std::acos(u(2, 2));
-    if (beta < 1e-6) {
+    if (beta < 1e-6)
+      beta = std::asin(std::sqrt(std::pow(u(0, 2), 2) + std::pow(u(1, 2), 2)));
+    if (beta < 1e-12) {
+//      std::cout << "taking low beta branch " << beta << std::endl;
       alpha = std::atan2(u(1, 0), u(0, 0));
       gamma = 0;
     } else {
       alpha = std::atan2(u(1, 2), u(0, 2));
       gamma = std::atan2(u(2, 1), -u(2, 0));
       auto pi = std::acos(double(-1));
-//      std::cout << "gamma - pi "<<gamma-pi<<std::endl;
+      //      std::cout << "gamma - pi "<<gamma-pi<<std::endl;
       if (gamma >= pi)
         gamma -= pi;
     }
-//    std::cout << "alpha="<<alpha<<", beta="<<beta<<", gamma="<<gamma<<std::endl;
+    //    std::cout << "alpha="<<alpha<<", beta="<<beta<<", gamma="<<gamma<<std::endl;
   } break;
   case RotationParameterType::Quaternion:
     throw std::logic_error("unimplemented");

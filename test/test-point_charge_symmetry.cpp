@@ -22,20 +22,29 @@ TEST(point_charge_symmetry, Euler) {
   parameters.push_back({1, 0, 0});
   parameters.push_back({0, 1, 0});
   parameters.push_back({0, 0, 1});
+  parameters.push_back({0, 1e-13, 1});
+  parameters.push_back({0, 1e-12, 1});
+  parameters.push_back({0, 1e-11, 1});
+  parameters.push_back({0, 1e-10, 1});
+  parameters.push_back({0, 1e-9, 1});
+  parameters.push_back({0, 1e-8, 1});
+  parameters.push_back({0, 1e-7, 1});
+  parameters.push_back({0, 1e-6, 1});
   parameters.push_back({1, 1, 0});
   parameters.push_back({0.1, 0.2, 0.3});
   for (const auto &p : parameters) {
+//    cout << "test "<<p[0]<<", "<<p[1]<<", "<<p[2]<<std::endl;
     for (int i = 0; i < 3; i++)
       cs.m_parameters[3 + i] = p[i];
 //    cout << cs << std::endl;
     auto u = cs.axes();
     cs.from_axes(u);
     auto pnew = std::array<double, 3>{cs.m_parameters[3], cs.m_parameters[4], cs.m_parameters[5]};
-    if (std::abs(pnew[1]) > 1e-10)
-      EXPECT_THAT(pnew, ::testing::Pointwise(::testing::DoubleNear(1e-13), p));
+    if (std::abs(pnew[1]) > 1e-12)
+      EXPECT_THAT(pnew, ::testing::Pointwise(::testing::DoubleNear(1e-10), p));
 //    cout << cs << std::endl;
     auto unew = cs.axes();
-    EXPECT_THAT(std::vector<double>(&unew(0,0),&unew(0,0)+9),::testing::Pointwise(::testing::DoubleNear(1e-13),std::vector<double>(&u(0,0),&u(0,0)+9)));
+    EXPECT_THAT(std::vector<double>(&unew(0,0),&unew(0,0)+9),::testing::Pointwise(::testing::DoubleNear(1e-10),std::vector<double>(&u(0,0),&u(0,0)+9)));
   }
 }
 
