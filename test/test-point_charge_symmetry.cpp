@@ -33,18 +33,19 @@ TEST(point_charge_symmetry, Euler) {
   parameters.push_back({1, 1, 0});
   parameters.push_back({0.1, 0.2, 0.3});
   for (const auto &p : parameters) {
-//    cout << "test "<<p[0]<<", "<<p[1]<<", "<<p[2]<<std::endl;
+    //    cout << "test "<<p[0]<<", "<<p[1]<<", "<<p[2]<<std::endl;
     for (int i = 0; i < 3; i++)
       cs.m_parameters[3 + i] = p[i];
-//    cout << cs << std::endl;
+    //    cout << cs << std::endl;
     auto u = cs.axes();
     cs.from_axes(u);
     auto pnew = std::array<double, 3>{cs.m_parameters[3], cs.m_parameters[4], cs.m_parameters[5]};
     if (std::abs(p[1]) > 1e-12)
       EXPECT_THAT(pnew, ::testing::Pointwise(::testing::DoubleNear(1e-10), p));
-//    cout << cs << std::endl;
+    //    cout << cs << std::endl;
     auto unew = cs.axes();
-    EXPECT_THAT(std::vector<double>(&unew(0,0),&unew(0,0)+9),::testing::Pointwise(::testing::DoubleNear(1e-10),std::vector<double>(&u(0,0),&u(0,0)+9)));
+    EXPECT_THAT(std::vector<double>(&unew(0, 0), &unew(0, 0) + 9),
+                ::testing::Pointwise(::testing::DoubleNear(1e-10), std::vector<double>(&u(0, 0), &u(0, 0) + 9)));
   }
 }
 
@@ -55,7 +56,6 @@ void test_operation(const vec &initial, const Operator &op, const vec &expected)
       ::testing::Pointwise(::testing::DoubleNear(1e-13), std::vector<double>(expected.data(), expected.data() + 3)))
       << "original: " << initial.transpose() << "\nOperator: " << op;
 }
-
 
 TEST(point_charge_symmetry, local_operations) {
   test_operation({1, 1, 1}, Reflection({0, 0, 1}), {1, 1, -1});
@@ -120,7 +120,7 @@ TEST(point_charge_symmetry, axes_gradient) {
   //  std::cout << "coords.axes():\n" << coords.axes() << std::endl;
   //  std::cout << "coords_plus.axes():\n" << coords_plus.axes() << std::endl;
   //  std::cout << "coords_minus.axes():\n" << coords_minus.axes() << std::endl;
-//      std::cout << "reference:\n" << reference << std::endl;
+  //      std::cout << "reference:\n" << reference << std::endl;
   for (int logstep = -7; logstep < 1; logstep++) {
     std::vector<mat> tested;
     const auto step = std::pow(double(10), logstep);
@@ -129,15 +129,14 @@ TEST(point_charge_symmetry, axes_gradient) {
       tested.push_back(mat::Zero());
       for (int i = 0; i < 3; i++)
         tested.back() += displacement[i] * axes_gradient[i] / displacement.norm();
-//            std::cout << "tested:\n" << tested.back() << std::endl;
-//            std::cout << "reference-tested:\n" << reference - tested.back() << std::endl;
-      const auto tolerance = std::max(1e-8, 2*std::pow(step, displacements * 2));
+      //            std::cout << "tested:\n" << tested.back() << std::endl;
+      //            std::cout << "reference-tested:\n" << reference - tested.back() << std::endl;
+      const auto tolerance = std::max(1e-8, 2 * std::pow(step, displacements * 2));
       EXPECT_LT((reference - tested.back()).norm(), tolerance)
-      << "step=" << step << " , displacements=" << displacements
-                << ", reference-tested=" << (reference - tested.back()).norm() << ", tolerance=" << tolerance
-                << std::endl;
+          << "step=" << step << " , displacements=" << displacements
+          << ", reference-tested=" << (reference - tested.back()).norm() << ", tolerance=" << tolerance << std::endl;
     }
-    const auto tolerance = std::max(2e-9, 2*std::pow(step, 2));
+    const auto tolerance = std::max(2e-9, 2 * std::pow(step, 2));
     EXPECT_LT((tested[1] - tested[0]).norm(), tolerance);
   }
 }
@@ -169,7 +168,7 @@ TEST(point_charge_symmetry, Molecule) {
 TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
   std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("SymmetryMeasure_gradient");
   Molecule water("h2o-nosym.xyz");
-//  Molecule water("h2o.xyz");
+  //  Molecule water("h2o.xyz");
   //  Molecule water("Ferrocene.xyz");
   std::cout << water << std::endl;
   //  std::cout << "centre of charge: " << water.centre_of_charge().transpose() << std::endl;
@@ -225,10 +224,10 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
   for (int functional_form = 0; functional_form < 2; functional_form++) {
 
     auto g = sm.coordinate_system_gradient(-1, functional_form);
-        std::cout << "functional_form="<<functional_form<<std::endl;
-        std::cout << "coordinate system gradient:";
-        std::for_each(g.begin(), g.end(), [](const auto &val) { std::cout << " " << val; });
-        std::cout << std::endl;
+    std::cout << "functional_form=" << functional_form << std::endl;
+    std::cout << "coordinate system gradient:";
+    std::for_each(g.begin(), g.end(), [](const auto &val) { std::cout << " " << val; });
+    std::cout << std::endl;
 
     std::array<double, 6> numerical_gradient{0, 0, 0, 0, 0, 0};
     for (int i = 0; i < 6; i++) {
@@ -249,10 +248,10 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
       numerical_gradient[i] = (smp - smm) / (2 * step);
       //      std::cout << "displaced " << i << " smm=" << smm << ", smp=" << smp << std::endl;
     }
-        std::cout << "numerical coordinate system gradient:";
-        std::for_each(numerical_gradient.begin(), numerical_gradient.end(),
-                      [](const auto &val) { std::cout << " " << val; });
-        std::cout << std::endl;
+    std::cout << "numerical coordinate system gradient:";
+    std::for_each(numerical_gradient.begin(), numerical_gradient.end(),
+                  [](const auto &val) { std::cout << " " << val; });
+    std::cout << std::endl;
     EXPECT_THAT(numerical_gradient, ::testing::Pointwise(::testing::DoubleNear(1e-8), g))
         << "for functional_form=" << functional_form;
   }
@@ -306,7 +305,7 @@ TEST(point_charge_symmetry, discover_group) {
   expected_groups["h2o-nosym"] = "C2v";
   expected_groups["ferrocene"] = "D5d";
   expected_groups["benzene"] = "D6h";
-  //  expected_groups["allene"] = "D2d";
+    expected_groups["allene"] = "D2d";
   expected_groups["ch4"] = "Td";
   expected_groups["methane"] = "Td";
   expected_groups["p4"] = "Td";
@@ -326,9 +325,15 @@ TEST(point_charge_symmetry, discover_group) {
 TEST(point_charge_symmetry, allene45) {
   std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("allene45");
   Molecule allene("allene45.xyz");
-  CoordinateSystem cs;
+  //  std::cout << allene<<std::endl;
+  CoordinateSystem::mat axes;
+  axes << 0, 0, 1, 1, 0, 0, 0, 1, 0;
+  CoordinateSystem cs(vec::Zero(), axes);
+  //  std::cout << cs<<std::endl;
   const Group group = group_factory(cs, "D2d");
+  //  std::cout << group << std::endl;
   SymmetryMeasure sm(allene, group);
-  EXPECT_LE(sm(), 1e-16);
-  std::cout << sm.coordinate_system_gradient() << std::endl;
+  EXPECT_LE(sm(-1, 0, -1), 1e-14);
+  auto grad = sm.coordinate_system_gradient();
+  EXPECT_LE(std::inner_product(grad.begin(), grad.end(), grad.begin(), 0), 1e-14) ;//<< "Gradient: " << grad;
 }

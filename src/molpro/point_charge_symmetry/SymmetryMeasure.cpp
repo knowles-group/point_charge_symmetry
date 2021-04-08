@@ -619,7 +619,7 @@ Group group_factory(CoordinateSystem& coordinate_system, std::string name, bool 
     auto order = std::stoi(m.str(2));
     //    for (double angle = 0; angle < std::acos(double(-1)) - 1e-10; angle += std::acos(double(-1)) / order)
     for (int count = 0; count < (all ? order : 2); count++) {
-      double angle = count * std::acos(double(-1)) / order;
+      double angle = (std::regex_match(name,m,std::regex{"D[0-9]*[02468]d"}) ? (count + 0.5) : count) * std::acos(double(-1)) / order;
       g.add(Rotation({std::cos(angle), std::sin(angle), 0}, 2));
     }
   }
