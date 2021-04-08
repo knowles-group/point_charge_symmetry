@@ -3,6 +3,7 @@
 #include <sstream>
 #include <unsupported/Eigen/MatrixFunctions>
 #include <vector>
+#include <molpro/Profiler.h>
 
 namespace molpro::point_charge_symmetry {
 
@@ -33,7 +34,7 @@ void CoordinateSystem::from_axes(const mat& axes) const {
     if (beta < 1e-6)
       beta = std::asin(std::sqrt(std::pow(u(0, 2), 2) + std::pow(u(1, 2), 2)));
     if (beta < 1e-12) {
-//      std::cout << "taking low beta branch " << beta << std::endl;
+      //      std::cout << "taking low beta branch " << beta << std::endl;
       alpha = std::atan2(u(1, 0), u(0, 0));
       gamma = 0;
     } else {
@@ -88,18 +89,36 @@ const CoordinateSystem::mat CoordinateSystem::axes() const {
 
 const std::array<CoordinateSystem::mat, 3> CoordinateSystem::axes_gradient(int displacements, double step) const {
   std::array<CoordinateSystem::mat, 3> result;
-  for (int i = 0; i < 3; i++) {
-    std::vector<CoordinateSystem> points;
-    for (int displacement = -displacements; displacement <= displacements; displacement++) {
-      points.push_back(*this);
-      points.back().axis_generator()[i] += step * displacement;
+//  auto p = molpro::Profiler::single()->push("CoordinateSystem::axes_gradient()");
+  if (displacements == 0) { // analytic
+    if (m_rotation_parameter_type == RotationParameterType::Euler) {
+      auto c1 = std::cos(axis_generator()(0));
+      auto s1 = std::sin(axis_generator()(0));
+      auto c2 = std::cos(axis_generator()(1));
+      auto s2 = std::sin(axis_generator()(1));
+      auto c3 = std::cos(axis_generator()(2));
+      auto s3 = std::sin(axis_generator()(2));
+      result[0] << -c2 * c3 * s1 - c1 * s3, -c1 * c3 + c2 * s1 * s3, -s1 * s2, c1 * c2 * c3 - s1 * s3,
+          -c3 * s1 - c1 * c2 * s3, c1 * s2, 0, 0, 0;
+      result[1] << -c1 * c3 * s2, c1 * s2 * s3, c1 * c2, -c3 * s1 * s2, s1 * s2 * s3, c2 * s1, -c2 * c3, c2 * s3, -s2;
+      result[2] << -c3 * s1 - c1 * c2 * s3, -c1 * c2 * c3 + s1 * s3, 0, c1 * c3 - c2 * s1 * s3, -c2 * c3 * s1 - c1 * s3,
+          0, s2 * s3, c3 * s2, 0;
+    } else
+      throw std::logic_error("Unimplemented");
+  } else {
+    for (int i = 0; i < 3; i++) {
+      std::vector<CoordinateSystem> points;
+      for (int displacement = -displacements; displacement <= displacements; displacement++) {
+        points.push_back(*this);
+        points.back().axis_generator()[i] += step * displacement;
+      }
+      if (displacements == 1)
+        result[i] = (points[2].axes() - points[0].axes()) / (2 * step);
+      else if (displacements == 2)
+        result[i] = (-points[4].axes() + 8 * points[3].axes() + points[0].axes() - 8 * points[1].axes()) / (12 * step);
+      else
+        throw std::logic_error("Incorrect differentiation order");
     }
-    if (displacements == 1)
-      result[i] = (points[2].axes() - points[0].axes()) / (2 * step);
-    else if (displacements == 2)
-      result[i] = (-points[4].axes() + 8 * points[3].axes() + points[0].axes() - 8 * points[1].axes()) / (12 * step);
-    else
-      throw std::logic_error("Incorrect differentiation order");
   }
   return result;
 }

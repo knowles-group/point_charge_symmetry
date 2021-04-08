@@ -17,7 +17,7 @@ Operator::vec Operator::operator()(vec v) const {
              operator_local((m_coordinate_system.axes().transpose() * (v - m_coordinate_system.origin()))).eval();
 }
 std::array<Operator::vec, 6> Operator::operator_gradient(vec v, int numerical, double step) const {
-  auto p = molpro::Profiler::single()->push("Operator::operator_gradient()");
+//  auto p = molpro::Profiler::single()->push("Operator::operator_gradient()");
   std::array<Operator::vec, 6> result;
   if (numerical > 0) {
     CoordinateSystem coordinate_system(m_coordinate_system);
@@ -41,10 +41,19 @@ std::array<Operator::vec, 6> Operator::operator_gradient(vec v, int numerical, d
       else
         throw std::logic_error("Incorrect differentiation order");
     }
-    //    std::cout << "result ";
-    //    for (int i=0; i<6; i++) std::cout <<" "<<result[i];std::cout<<std::endl;
-    return result;
+  } else { // analytic differentation
+    auto u = m_coordinate_system.axes();
+    auto du = m_coordinate_system.axes_gradient();
+    auto vshift = v - m_coordinate_system.origin();
+    for (int i = 0; i < 3; i++) {
+      result[i] = mat::Identity().col(i)-u * operator_local(u.transpose()*mat::Identity().col(i));
+      result[3 + i] = u * operator_local(du[i].transpose() * vshift) + du[i] * operator_local(u.transpose() * vshift);
+    }
   }
+//  std::cout << "result ";
+//  for (int i = 0; i < 6; i++)
+//    std::cout << " {" << result[i].transpose()<<"}";
+//  std::cout << std::endl;
   return result;
 }
 

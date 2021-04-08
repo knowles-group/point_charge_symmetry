@@ -93,7 +93,7 @@ CoordinateSystem::parameters_t SymmetryMeasure::coordinate_system_gradient(int o
       //      std::cout << "d "<<d.transpose()<<std::endl;
       auto dist = d.norm();
       //            std::cout << "Atom a dist=" << dist << std::endl;
-      auto opgrad = (**op).operator_gradient(m_molecule.m_atoms[a].position, 2, 2e-3); // TODO analytic instead
+      auto opgrad = (**op).operator_gradient(m_molecule.m_atoms[a].position, 0, 2e-3); // TODO analytic instead
       //      std::cout << "d "<<d.transpose()<<std::endl;
       if (dist > 0)
         for (int i = 0; i < 6; i++) {

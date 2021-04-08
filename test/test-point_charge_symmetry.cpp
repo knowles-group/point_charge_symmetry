@@ -55,6 +55,8 @@ void test_operation(const vec &initial, const Operator &op, const vec &expected)
       ::testing::Pointwise(::testing::DoubleNear(1e-13), std::vector<double>(expected.data(), expected.data() + 3)))
       << "original: " << initial.transpose() << "\nOperator: " << op;
 }
+
+
 TEST(point_charge_symmetry, local_operations) {
   test_operation({1, 1, 1}, Reflection({0, 0, 1}), {1, 1, -1});
   test_operation({1, 1, 1}, Reflection({0, 0, -1}), {1, 1, -1});
@@ -102,6 +104,7 @@ TEST(point_charge_symmetry, Group) {
 }
 
 TEST(point_charge_symmetry, axes_gradient) {
+  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("axes_gradient");
   mat axes;
   //  axes << 0, 1, 0, -1, 0, 0, 0, 0, 1;
   axes << 1 / std::sqrt(3), 1 / std::sqrt(3), 1 / std::sqrt(3), 2 / std::sqrt(6), -1 / std::sqrt(6), -1 / std::sqrt(6),
@@ -117,30 +120,30 @@ TEST(point_charge_symmetry, axes_gradient) {
   //  std::cout << "coords.axes():\n" << coords.axes() << std::endl;
   //  std::cout << "coords_plus.axes():\n" << coords_plus.axes() << std::endl;
   //  std::cout << "coords_minus.axes():\n" << coords_minus.axes() << std::endl;
-  //    std::cout << "reference:\n" << reference << std::endl;
+//      std::cout << "reference:\n" << reference << std::endl;
   for (int logstep = -7; logstep < 1; logstep++) {
     std::vector<mat> tested;
     const auto step = std::pow(double(10), logstep);
-    for (int displacements = 1; displacements < 3; displacements++) {
+    for (int displacements = 0; displacements < 3; displacements++) {
       auto axes_gradient = coords.axes_gradient(displacements, step);
       tested.push_back(mat::Zero());
       for (int i = 0; i < 3; i++)
         tested.back() += displacement[i] * axes_gradient[i] / displacement.norm();
-      //      std::cout << "tested:\n" << tested.back() << std::endl;
-      //      std::cout << "reference-tested:\n" << reference - tested.back() << std::endl;
-      const auto tolerance = std::max(1e-8, std::pow(step, displacements * 2));
-      //      std::cout << "step=" << step << " , displacements=" << displacements
-      //                << ", reference-tested=" << (reference - tested.back()).norm() << ", tolerance=" << tolerance
-      //                << std::endl;
-      EXPECT_LT((reference - tested.back()).norm(), tolerance);
+//            std::cout << "tested:\n" << tested.back() << std::endl;
+//            std::cout << "reference-tested:\n" << reference - tested.back() << std::endl;
+      const auto tolerance = std::max(1e-8, 2*std::pow(step, displacements * 2));
+      EXPECT_LT((reference - tested.back()).norm(), tolerance)
+      << "step=" << step << " , displacements=" << displacements
+                << ", reference-tested=" << (reference - tested.back()).norm() << ", tolerance=" << tolerance
+                << std::endl;
     }
-    const auto tolerance = std::max(1e-9, std::pow(step, 2));
+    const auto tolerance = std::max(2e-9, 2*std::pow(step, 2));
     EXPECT_LT((tested[1] - tested[0]).norm(), tolerance);
   }
 }
 
 TEST(point_charge_symmetry, Molecule) {
-  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Discover groups");
+  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Molecule");
   Molecule water("h2o.xyz");
   std::cout << water << std::endl;
   Group c2v("C2v");
@@ -164,8 +167,9 @@ TEST(point_charge_symmetry, Molecule) {
 }
 
 TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
-  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Discover groups");
+  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("SymmetryMeasure_gradient");
   Molecule water("h2o-nosym.xyz");
+//  Molecule water("h2o.xyz");
   //  Molecule water("Ferrocene.xyz");
   std::cout << water << std::endl;
   //  std::cout << "centre of charge: " << water.centre_of_charge().transpose() << std::endl;
@@ -221,10 +225,10 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
   for (int functional_form = 0; functional_form < 2; functional_form++) {
 
     auto g = sm.coordinate_system_gradient(-1, functional_form);
-    //    std::cout << "functional_form="<<functional_form<<std::endl;
-    //    std::cout << "coordinate system gradient:";
-    //    std::for_each(g.begin(), g.end(), [](const auto &val) { std::cout << " " << val; });
-    //    std::cout << std::endl;
+        std::cout << "functional_form="<<functional_form<<std::endl;
+        std::cout << "coordinate system gradient:";
+        std::for_each(g.begin(), g.end(), [](const auto &val) { std::cout << " " << val; });
+        std::cout << std::endl;
 
     std::array<double, 6> numerical_gradient{0, 0, 0, 0, 0, 0};
     for (int i = 0; i < 6; i++) {
@@ -245,10 +249,10 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
       numerical_gradient[i] = (smp - smm) / (2 * step);
       //      std::cout << "displaced " << i << " smm=" << smm << ", smp=" << smp << std::endl;
     }
-    //    std::cout << "numerical coordinate system gradient:";
-    //    std::for_each(numerical_gradient.begin(), numerical_gradient.end(),
-    //                  [](const auto &val) { std::cout << " " << val; });
-    //    std::cout << std::endl;
+        std::cout << "numerical coordinate system gradient:";
+        std::for_each(numerical_gradient.begin(), numerical_gradient.end(),
+                      [](const auto &val) { std::cout << " " << val; });
+        std::cout << std::endl;
     EXPECT_THAT(numerical_gradient, ::testing::Pointwise(::testing::DoubleNear(1e-8), g))
         << "for functional_form=" << functional_form;
   }
@@ -295,6 +299,7 @@ TEST(point_charge_symmetry, group_factory) {
 
 TEST(point_charge_symmetry, discover_group) {
   std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Discover groups");
+  prof->set_max_depth(1);
   std::map<std::string, std::string> expected_groups;
   //  expected_groups["n2"] = "Dinfh";
   expected_groups["h2o"] = "C2v";
@@ -319,7 +324,7 @@ TEST(point_charge_symmetry, discover_group) {
   std::cout << *prof << std::endl;
 }
 TEST(point_charge_symmetry, allene45) {
-  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Discover groups");
+  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("allene45");
   Molecule allene("allene45.xyz");
   CoordinateSystem cs;
   const Group group = group_factory(cs, "D2d");
