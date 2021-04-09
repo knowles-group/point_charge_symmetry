@@ -108,29 +108,11 @@ CoordinateSystem::parameters_t SymmetryMeasure::coordinate_system_gradient(int o
         factor = std::exp(-zr) * m_molecule.m_atoms[a].charge * zr * (1 + zr) / 3;
       else if (functional_form == 1)
         factor = 2 * m_molecule.m_atoms[a].charge * zr;
+      else
+        throw std::logic_error("impossible functional form");
       std::transform(grad_d.begin(), grad_d.end(), result.begin(), result.begin(),
                      [factor](const double& a, const double& b) { return b + a * factor; });
     }
-  }
-  constexpr bool numerical = false;
-  if (numerical) {
-    const double step = 1e-4;
-    auto cs = m_group.coordinate_system();
-    auto g = Group(cs, m_group);
-    auto sm = SymmetryMeasure(m_molecule, g);
-    CoordinateSystem::parameters_t resultn{0, 0, 0, 0, 0, 0};
-    for (int i = 0; i < resultn.size(); i++) {
-      cs.m_parameters[i] -= step;
-      auto smm = sm(-1, functional_form);
-      cs.m_parameters[i] += 2 * step;
-      auto smp = sm(-1, functional_form);
-      cs.m_parameters[i] -= step;
-      resultn[i] = (smp - smm) / (2 * step);
-    }
-    std::cout << "*this " << *this << std::endl;
-    std::cout << "sm " << sm << std::endl;
-    std::cout << "resultn " << resultn << std::endl;
-    std::cout << "result  " << result << std::endl;
   }
   return result;
 }
@@ -160,30 +142,12 @@ std::vector<CoordinateSystem::vec> SymmetryMeasure::atom_gradient(int operator_i
           factor = std::exp(-zr) * m_molecule.m_atoms[a].charge * zr * (1 + zr) / 3;
         else if (functional_form == 1)
           factor = 2 * m_molecule.m_atoms[a].charge * zr;
+        else
+          throw std::logic_error("impossible functional form");
         factor /= dist;
         //      result[a] += factor * axes * m_group.op
       }
     }
-  }
-  constexpr bool numerical = false;
-  if (numerical) {
-    const double step = 1e-4;
-    auto cs = m_group.coordinate_system();
-    auto g = Group(cs, m_group);
-    auto sm = SymmetryMeasure(m_molecule, g);
-    CoordinateSystem::parameters_t resultn{0, 0, 0, 0, 0, 0};
-    for (int i = 0; i < resultn.size(); i++) {
-      cs.m_parameters[i] -= step;
-      auto smm = sm(-1, functional_form);
-      cs.m_parameters[i] += 2 * step;
-      auto smp = sm(-1, functional_form);
-      cs.m_parameters[i] -= step;
-      resultn[i] = (smp - smm) / (2 * step);
-    }
-    std::cout << "*this " << *this << std::endl;
-    std::cout << "sm " << sm << std::endl;
-    std::cout << "resultn " << resultn << std::endl;
-    //    std::cout << "result  " << result << std::endl;
   }
   return result;
 }
@@ -260,15 +224,6 @@ void SymmetryMeasure::adopt_inertial_axes() {
   }
   for (int principal_axis = 0; principal_axis < best_axis; principal_axis++)
     coordinate_system.cycle_axes();
-  //      std::cout << "axes before symmetric top adjustment\n" << coordinate_system.axes() << std::endl;
-  if (false and symmetric_top) { // add random rotation to step off possible maximum
-                                 //    coordinate_system.m_parameters[3] += 0*std::acos(double(-1))/4;
-    auto oldaxes = coordinate_system.axes();
-    auto sq2 = std::sqrt(double(0.5));
-    CoordinateSystem::mat transform;
-    transform << sq2, sq2, 0, -sq2, sq2, 0, 0, 0, 1;
-    coordinate_system.from_axes((oldaxes * transform).eval());
-  }
   reset_neighbours();
   //  std::cout << "chosen initial coordinate system: " << best_axis << "\n" << coordinate_system << std::endl;
   //  std::cout << "Atomic coordinates in local frame\n" << std::endl;
@@ -400,34 +355,6 @@ int SymmetryMeasure::optimise_frame() {
       }
       for (int i = 0; i < 6; i++)
         grad[i] /= 100;
-    } else if (false) {
-      std::cout << "LINE SEARCH WAS SPECIFIED" << std::endl;
-      auto new_parameters = parameters;
-      std::cout << "Original parameters " << current_parameters << std::endl;
-      std::cout << "     New parameters " << new_parameters << std::endl;
-      double dist = 0;
-      for (int i = 0; i < 6; i++)
-        dist += std::pow(current_parameters[i] - new_parameters[i], 2);
-      dist = std::sqrt(dist);
-      std::cout << "Distance " << dist << std::endl;
-      std::cout << "SCAN" << std::endl;
-      for (double x = -0.5; x < 1.1; x += .01) {
-        for (int i = 0; i < 6; i++)
-          parameters[i] = (1 - x) * current_parameters[i] + x * new_parameters[i];
-        int component = 5;
-        auto fi = (*this)(-1, 1);
-        parameters[component] += 1e-2;
-        auto fid = (*this)(-1, 1);
-        parameters[component] -= 1e-2;
-        auto gradi = coordinate_system_gradient(-1, 1);
-        std::cout << "component " << component << " numerical gradient=" << (fi - fid) / 1e-2
-                  << ", analytical gradient=" << gradi[component] << std::endl;
-        double grad_proj = 0;
-        for (int i = 0; i < 6; i++)
-          grad_proj += gradi[i] * (new_parameters[i] - current_parameters[i]);
-        std::cout << "x=" << x << " value=" << (*this)(-1, 1) << ", projected gradient " << grad_proj << std::endl;
-      }
-      parameters = new_parameters;
     }
     nwork = solver->end_iteration(parameters, grad);
     if (verbosity > 1) {
@@ -603,10 +530,10 @@ Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_syst
   throw std::logic_error("unexpected failure to find point group");
 }
 
-Group group_factory(std::string name, bool generators_only) {
+Group group_factory(const std::string& name, bool generators_only) {
   return group_factory(s_default_coordinate_system, name, generators_only);
 }
-Group group_factory(CoordinateSystem& coordinate_system, std::string name, bool generators_only) {
+Group group_factory(CoordinateSystem& coordinate_system, const std::string& name, bool generators_only) {
   using vec = CoordinateSystem::vec;
   const vec xaxis{1, 0, 0};
   const vec yaxis{0, 1, 0};
@@ -660,9 +587,9 @@ Group group_factory(CoordinateSystem& coordinate_system, std::string name, bool 
   if (name == "Cinfv" or name == "Dinfh") { // representative only
     auto newname = name;
     newname.replace(1,3,"11");
-    auto g = group_factory(coordinate_system, newname, generators_only);
-    g.name() = name;
-    return g;
+    auto gg = group_factory(coordinate_system, newname, generators_only);
+    gg.name() = name;
+    return gg;
   }
 
   if (std::regex_match(name, m, std::regex{"[CD][0-9]*[02468]h"}) or
@@ -676,8 +603,9 @@ Group group_factory(CoordinateSystem& coordinate_system, std::string name, bool 
   if (std::regex_match(name, m, std::regex{"([C])([1-9][0-9]*)([v])"}) or
       std::regex_match(name, m, std::regex{"([D])([1-9][0-9]*)([hd])"})) {
     auto order = std::stoi(m.str(2));
-    for (double angle = 0; angle < std::acos(double(-1)) - 1e-10; angle += std::acos(double(-1)) / order)
-      g.add(Reflection({std::cos(angle), std::sin(angle), 0}));
+    auto angle = std::acos(double(-1))/order;
+    for (int count=0; count < order; count++)
+      g.add(Reflection({std::cos(count * angle), std::sin(count * angle), 0}));
   }
 
   if (std::regex_match(name, m, std::regex{"([D])([1-9][0-9]*)([^v])?"})) {

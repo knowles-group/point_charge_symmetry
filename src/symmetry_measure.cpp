@@ -2,7 +2,6 @@
 #include <molpro/Profiler.h>
 #include <molpro/point_charge_symmetry/CoordinateSystem.h>
 #include <molpro/point_charge_symmetry/Molecule.h>
-#include <molpro/point_charge_symmetry/Operator.h>
 #include <molpro/point_charge_symmetry/SymmetryMeasure.h>
 #include <tclap/CmdLine.h>
 
@@ -11,21 +10,21 @@ int main(int argc, char* argv[]) {
     TCLAP::CmdLine cmd("symmetry_measure", ' ');
     TCLAP::ValueArg<double> tolerance("t", "tolerance", "Maximum symmetry measure for acceptance in group discovery",
                                       false, 1e-4, "tolerance", cmd);
-    TCLAP::UnlabeledValueArg<std::string> xyzfile("file", "Name of xyz file containing structure", true, "", "string",
+    TCLAP::UnlabeledValueArg<std::string> input_file("file", "Name of xyz file containing structure", true, "", "string",
                                                   cmd);
     TCLAP::MultiSwitchArg verbose("v", "verbose", "show detail", cmd);
     TCLAP::SwitchArg quiet("q", "quiet", "Suppress output", cmd);
     TCLAP::SwitchArg refine("r", "refine", "Refine structure to conform with discovered point group", cmd);
-    TCLAP::ValueArg<std::string> output("o", "output", "Name of file to contain modified xyz geometry", false, "",
+    TCLAP::ValueArg<std::string> output_file("o", "output", "Name of file to contain modified xyz geometry", false, "",
                                         "filename", cmd);
     cmd.parse(argc, argv);
     std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("symmetry_measure");
     prof->set_max_depth(1);
     using namespace molpro::point_charge_symmetry;
     if (not quiet.getValue())
-      std::cout << "Look for symmetry in " << xyzfile.getValue() << " with acceptance threshold "
+      std::cout << "Look for symmetry in " << input_file.getValue() << " with acceptance threshold "
                 << tolerance.getValue() << std::endl;
-    Molecule molecule(xyzfile.getValue());
+    Molecule molecule(input_file.getValue());
     if (not quiet.getValue() and verbose.getValue() > 0)
       std::cout << molecule << std::endl;
     CoordinateSystem cs;
@@ -44,10 +43,10 @@ int main(int argc, char* argv[]) {
         std::cout << "Refined symmetry measure = " << SymmetryMeasure(molecule, group)() << std::endl;
     }
 
-    if (output.isSet()) {
+    if (output_file.isSet()) {
       if (not quiet.getValue())
-        std::cout << "Write geometry to " << output.getValue() << std::endl;
-      molecule_localised(cs,molecule).write(output.getValue());
+        std::cout << "Write geometry to " << output_file.getValue() << std::endl;
+      molecule_localised(cs,molecule).write(output_file.getValue());
     }
 
   } catch (TCLAP::ArgException& e) // catch any exceptions
