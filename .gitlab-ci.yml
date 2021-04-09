@@ -15,20 +15,20 @@ build:
     - git reset --hard
     - procs=$(lscpu -p | egrep -v '^#' | wc -l ) || procs=$(sysctl -n hw.physicalcpu) || procs=1; echo $procs processors available
     - cd $TOP; BUILD=build; mkdir -p $BUILD && cd $BUILD && pwd && cmake -DFORTRAN=0 $TOP ; cmake --build . -- -j ${procs} ;  (ctest -j ${procs} || ctest -V)
-    - mkdir -p $TOP/public
-    - mkdir -p $TOP/$BUILD/docs/$PROJECT_NAME/html/DoxygenTagFiles && cp $TOP/$BUILD/docs/$PROJECT_NAME/$PROJECT_NAME.tag $TOP/$BUILD/docs/$PROJECT_NAME/html/DoxygenTagFiles
-    - . $TOP/$BUILD/project_version.sh ; rsync -a --delete $TOP/$BUILD/docs/*/html/ $TOP/public/${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-    - rm -f  $TOP/public/${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}/${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-    - git describe --tags --abbrev=0 --always origin/master
-    - git describe --tags --abbrev=0 --always HEAD
-    - if [ $(git describe --tags --abbrev=0 --always HEAD) = $(git describe --tags --abbrev=0 --always origin/master) ]; then cd $TOP/public; rm -f latest; ln -s ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR} latest ; rm -f ./index.html; fi
-    - echo '<head><meta http-equiv="refresh" content="0; URL=latest"></head>' > $TOP/public/index.html
-pages:
-  stage: deploy
-  only:
-    - tags
-  script:
-    - echo nothing
-  artifacts:
-    paths:
-      - public
+#    - mkdir -p $TOP/public
+#    - mkdir -p $TOP/$BUILD/docs/$PROJECT_NAME/html/DoxygenTagFiles && cp $TOP/$BUILD/docs/$PROJECT_NAME/$PROJECT_NAME.tag $TOP/$BUILD/docs/$PROJECT_NAME/html/DoxygenTagFiles
+#    - . $TOP/$BUILD/project_version.sh ; rsync -a --delete $TOP/$BUILD/docs/*/html/ $TOP/public/${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+#    - rm -f  $TOP/public/${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}/${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+#    - git describe --tags --abbrev=0 --always origin/master
+#    - git describe --tags --abbrev=0 --always HEAD
+#    - if [ $(git describe --tags --abbrev=0 --always HEAD) = $(git describe --tags --abbrev=0 --always origin/master) ]; then cd $TOP/public; rm -f latest; ln -s ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR} latest ; rm -f ./index.html; fi
+#    - echo '<head><meta http-equiv="refresh" content="0; URL=latest"></head>' > $TOP/public/index.html
+#pages:
+#  stage: deploy
+#  only:
+#    - tags
+#  script:
+#    - echo nothing
+#  artifacts:
+#    paths:
+#      - public
