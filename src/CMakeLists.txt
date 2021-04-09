@@ -11,3 +11,18 @@ LibraryManager_Add(point_charge_symmetry NAMESPACE molpro)
 
 add_subdirectory(molpro)
 LibraryManager_Install(point_charge_symmetry)
+
+include(FetchContent)
+FetchContent_Declare(tclap GIT_REPOSITORY https://gitlab+deploy-token-103300:HKsBK8FZcZZshqAa_yyx@gitlab.com/molpro/tclap.git )
+FetchContent_GetProperties(tclap)
+if (NOT tclap_POPULATED)
+    FetchContent_Populate(tclap)
+endif ()
+
+add_executable(program symmetry_measure.cpp)
+target_link_libraries(program PRIVATE molpro::point_charge_symmetry)
+target_include_directories(program PRIVATE ${tclap_SOURCE_DIR}/include)
+set_target_properties(program PROPERTIES OUTPUT_NAME point_charge_symmetry)
+set_target_properties(program PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+set_target_properties(program PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+install(TARGETS program RUNTIME DESTINATION bin)
