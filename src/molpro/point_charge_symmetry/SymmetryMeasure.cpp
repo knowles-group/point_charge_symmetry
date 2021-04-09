@@ -535,7 +535,7 @@ Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_syst
   const vec yaxis{0, 1, 0};
   const vec zaxis{0, 0, 1};
   const bool generators_only = false;
-  constexpr size_t maximum_axis_order = 8;
+  constexpr size_t maximum_axis_order = 10;
   Group result;
   using molpro::point_charge_symmetry::group_factory;
   // special?

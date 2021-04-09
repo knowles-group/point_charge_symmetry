@@ -315,7 +315,7 @@ TEST(point_charge_symmetry, discover_group) {
   //  expected_groups["buckminsterfullerene"]="Ih";
   //  expected_groups["sulfur-hexafluoride"]="Oh";
   expected_groups["cyclohexane"] = "D3d";
-  expected_groups["s8"] = "D4h";
+  expected_groups["s8"] = "D8h";
   expected_groups["phloroglucinol"] = "C3h";
   for (const auto &n : expected_groups) {
     Molecule molecule(n.first + ".xyz");
