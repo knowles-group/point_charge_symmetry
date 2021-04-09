@@ -667,4 +667,12 @@ Group group_factory(CoordinateSystem& coordinate_system, std::string name, bool 
   return g;
 }
 
+Molecule molecule_localised(const CoordinateSystem& coordinate_system, const Molecule& source) {
+  Molecule result (source);
+  for (auto& atom : result.m_atoms) {
+    atom.position = coordinate_system.to_local(atom.position);
+  }
+  return result;
+}
+
 } // namespace molpro::point_charge_symmetry

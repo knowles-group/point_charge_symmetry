@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
     if (output.isSet()) {
       if (not quiet.getValue())
         std::cout << "Write geometry to " << output.getValue() << std::endl;
-      molecule.write(output.getValue());
+      molecule_localised(cs,molecule).write(output.getValue());
     }
 
   } catch (TCLAP::ArgException& e) // catch any exceptions

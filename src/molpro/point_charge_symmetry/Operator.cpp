@@ -17,7 +17,7 @@ Operator::vec Operator::operator()(vec v) const {
              operator_local((m_coordinate_system.axes().transpose() * (v - m_coordinate_system.origin()))).eval();
 }
 std::array<Operator::vec, 6> Operator::operator_gradient(vec v, int numerical, double step) const {
-//  auto p = molpro::Profiler::single()->push("Operator::operator_gradient()");
+  //  auto p = molpro::Profiler::single()->push("Operator::operator_gradient()");
   std::array<Operator::vec, 6> result;
   if (numerical > 0) {
     CoordinateSystem coordinate_system(m_coordinate_system);
@@ -46,14 +46,14 @@ std::array<Operator::vec, 6> Operator::operator_gradient(vec v, int numerical, d
     auto du = m_coordinate_system.axes_gradient();
     auto vshift = v - m_coordinate_system.origin();
     for (int i = 0; i < 3; i++) {
-      result[i] = mat::Identity().col(i)-u * operator_local(u.transpose()*mat::Identity().col(i));
+      result[i] = mat::Identity().col(i) - u * operator_local(u.transpose() * mat::Identity().col(i));
       result[3 + i] = u * operator_local(du[i].transpose() * vshift) + du[i] * operator_local(u.transpose() * vshift);
     }
   }
-//  std::cout << "result ";
-//  for (int i = 0; i < 6; i++)
-//    std::cout << " {" << result[i].transpose()<<"}";
-//  std::cout << std::endl;
+  //  std::cout << "result ";
+  //  for (int i = 0; i < 6; i++)
+  //    std::cout << " {" << result[i].transpose()<<"}";
+  //  std::cout << std::endl;
   return result;
 }
 
@@ -106,30 +106,45 @@ Identity::Identity() : Identity(s_default_coordinate_system) {}
 Identity::Identity(const CoordinateSystem& coordinate_system) : Operator(coordinate_system) { m_name = "E"; }
 Operator::vec Identity::operator_local(vec v) const { return v; }
 
-std::string Operator::str(const std::string& title) const {
+std::string Operator::str(const std::string& title, bool coordinate_frame) const {
   std::stringstream result;
-  result << "SymmetryOperator " + m_name;
+  result << m_name;
   if (!title.empty())
     result << " " << title;
-  result << "\norigin: " << this->m_coordinate_system.origin().transpose();
-  result << "\naxes:\n" << this->m_coordinate_system.axes();
+  if (coordinate_frame) {
+    result << ", origin: " << this->m_coordinate_system.origin().transpose();
+    result << ", axes:\n" << this->m_coordinate_system.axes();
+  }
   return result.str();
 }
 
-std::string Reflection::str(const std::string& title) const {
+std::string Reflection::str(const std::string& title, bool coordinate_frame) const {
   std::stringstream result;
   result << "Reflection " << title;
-  result << Operator::str(title);
-  result << "\nlocal plane normal: " << this->m_normal.transpose();
+  result << Operator::str(title, coordinate_frame);
+  result << ", normal: " << this->m_normal.transpose();
   return result.str();
 }
 
-std::string Rotation::str(const std::string& title) const {
+std::string Rotation::str(const std::string& title, bool coordinate_frame) const {
   std::stringstream result;
-  result << "Rotation " << title;
-  result << Operator::str(title);
-  result << "\naxis: " << this->m_axis.transpose();
-  result << "\nangle: " << this->m_count * double(360) / m_order;
+  result << (m_proper ? "R" : "Improper r") << "otation " << title;
+  result << Operator::str(title, coordinate_frame);
+  result << ", axis: " << this->m_axis.transpose();
+  result << ", angle: " << this->m_count * double(360) / m_order;
+  return result.str();
+}
+
+std::string Inversion::str(const std::string& title, bool coordinate_frame) const {
+  std::stringstream result;
+  result << "Inversion " << title;
+  result << Operator::str(title, coordinate_frame);
+  return result.str();
+}
+std::string Identity::str(const std::string& title, bool coordinate_frame) const {
+  std::stringstream result;
+  result << "Identity " << title;
+  result << Operator::str(title, coordinate_frame);
   return result.str();
 }
 } // namespace molpro::point_charge_symmetry

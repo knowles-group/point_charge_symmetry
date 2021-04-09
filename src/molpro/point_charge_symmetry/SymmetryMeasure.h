@@ -66,6 +66,8 @@ Group discover_group(const Molecule& molecule, double threshold = 1e-10, int ver
 Group group_factory(CoordinateSystem& coordinate_system, std::string name, bool generators_only = false);
 Group group_factory(std::string name, bool generators_only = false);
 
+Molecule molecule_localised(const CoordinateSystem& coordinate_system, const Molecule& source);
+
 } // namespace molpro::point_charge_symmetry
 
 #endif // POINT_CHARGE_SYMMETRY_SRC_MOLPRO_POINT_CHARGE_SYMMETRY_SYMMETRYMEASURE_H_

@@ -30,7 +30,7 @@ public:
    */
   std::array<Operator::vec, 6> operator_gradient(vec v, int numerical = 0, double step = 2e-3) const;
   virtual vec operator_local(vec v) const = 0;
-  virtual std::string str(const std::string& title) const;
+  virtual std::string str(const std::string& title, bool coordinate_frame = false) const;
   const std::string& name() const { return m_name; };
   virtual Operator* clone() const = 0;
   virtual Operator* clone(const CoordinateSystem& coordinate_system) const = 0;
@@ -55,7 +55,7 @@ public:
   Reflection(vec normal);
   Reflection(const CoordinateSystem& coordinate_system, vec normal);
   vec operator_local(vec v) const override;
-  std::string str(const std::string& title) const override;
+  std::string str(const std::string& title, bool coordinate_frame = false) const override;
   friend class Group;
   Operator* clone() const override { return new Reflection(*this); }
   Operator* clone(const CoordinateSystem& coordinate_system) const override {
@@ -74,7 +74,7 @@ public:
   Rotation(vec axis, int order = 2, bool proper = true, int count = 1);
   Rotation(const CoordinateSystem& coordinate_system, vec axis, int order = 2, bool proper = true, int count = 1);
   vec operator_local(vec v) const override;
-  std::string str(const std::string& title) const override;
+  std::string str(const std::string& title, bool coordinate_frame = false) const override;
   friend class Group;
   Operator* clone() const override { return new Rotation(*this); }
   Operator* clone(const CoordinateSystem& coordinate_system) const override {
@@ -90,6 +90,7 @@ public:
   friend class Group;
   Operator* clone() const override { return new Inversion(*this); }
   Operator* clone(const CoordinateSystem& coordinate_system) const override { return new Inversion(coordinate_system); }
+  std::string str(const std::string& title, bool coordinate_frame = false) const override;
 };
 
 class Identity : public Operator {
@@ -100,6 +101,7 @@ public:
   friend class Group;
   Operator* clone() const override { return new Identity(*this); }
   Operator* clone(const CoordinateSystem& coordinate_system) const override { return new Identity(coordinate_system); }
+  std::string str(const std::string& title, bool coordinate_frame = false) const override;
 };
 
 } // namespace molpro::point_charge_symmetry
