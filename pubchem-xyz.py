@@ -5,8 +5,6 @@ name = sys.argv[1]
 filename = name
 if (len(sys.argv) > 2):
     filename = sys.argv[2]
-# name = 'ferrocene'
-# name = "allene"
 results = pubchempy.get_compounds(name,'name',record_type='3d')
 for result in results:
     for coord in result.record['coords']:
