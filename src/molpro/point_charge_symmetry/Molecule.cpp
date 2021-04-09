@@ -55,7 +55,7 @@ Eigen::Matrix3d Molecule::inertia_tensor() const {
   Eigen::Matrix3d result = Eigen::Matrix3d::Zero();
   auto coc = centre_of_charge();
   for (const auto& atom : m_atoms) {
-    result += atom.charge * (atom.position - coc) * (atom.position - coc).transpose();
+    result += atom.charge * ((atom.position-coc).dot(atom.position-coc)*Eigen::Matrix3d::Identity()-(atom.position - coc) * (atom.position - coc).transpose());
     //    std::cout << "shifted atom position " << (atom.position - coc).transpose() << std::endl;
   }
   //  std::cout << "Inertia tensor\n" << result << std::endl;

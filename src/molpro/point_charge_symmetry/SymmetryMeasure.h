@@ -22,16 +22,23 @@ public:
 
   double operator()(int operator_index = -1, int functional_form = 0, int verbosity = -1) const;
   CoordinateSystem::parameters_t coordinate_system_gradient(int operator_index = -1, int functional_form = 0) const;
+  std::vector<CoordinateSystem::vec> atom_gradient(int operator_index = -1, int functional_form = 0) const;
   //  SymmetryMeasure(const Molecule& molecule, const Operator& op) : SymmetryMeasure(molecule, Group)
   std::string str() const;
 
   void adopt_inertial_axes();
   int optimise_frame();
+  int optimise_coordinates();
 
   bool spherical_top() {
     constexpr double tol = 1e-3;
-    return (std::abs(m_inertia_principal_values(0) - m_inertia_principal_values(2)) < tol and
-            std::abs(m_inertia_principal_values(1) - m_inertia_principal_values(2)) < tol);
+    double large=0,small=1e20;
+    for (int i=0; i<3; i++ ){
+      large=std::max(large,m_inertia_principal_values(i));
+      small=std::min(small,m_inertia_principal_values(i));
+    }
+    if (large==0) return true;
+    return (1-small/large) < tol;
   }
 
   bool symmetric_top() {
@@ -43,6 +50,7 @@ public:
   }
 
   Molecule refine() const;
+  CoordinateSystem::vec inertia_principal_values() const {return m_inertia_principal_values;}
 
 protected:
   const Molecule& m_molecule;

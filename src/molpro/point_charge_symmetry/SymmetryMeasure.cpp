@@ -135,6 +135,59 @@ CoordinateSystem::parameters_t SymmetryMeasure::coordinate_system_gradient(int o
   return result;
 }
 
+std::vector<CoordinateSystem::vec> SymmetryMeasure::atom_gradient(int operator_index, int functional_form) const {
+  auto p = molpro::Profiler::single()->push("SymmetryMeasure::atom_gradient()");
+  std::vector<CoordinateSystem::vec> result(m_molecule.m_atoms.size(), {0, 0, 0});
+  const auto origin = m_group.coordinate_system().origin();
+  const auto axes = m_group.coordinate_system().axes();
+  auto start = operator_index < 0 ? m_group.begin() : m_group.begin() + operator_index;
+  auto end = operator_index < 0 ? m_group.end() : m_group.begin() + operator_index + 1;
+  for (auto op = start; op < end; op++) {
+    //    std::cout << "Operator " << (*op)->name() << std::endl;
+    for (int a = 0; a < m_molecule.m_atoms.size(); a++) {
+      //            std::cout << "Atom " << a << m_molecule.m_atoms[a].position.transpose() << std::endl;
+      //            std::cout << "Mapped Atom " << a << (**op)(m_molecule.m_atoms[a].position).transpose() << std::endl;
+      int ai = m_neighbours[op - m_group.begin()][a];
+      //            std::cout << "Image " << ai << m_molecule.m_atoms[ai].position.transpose() << std::endl;
+      auto d = ((**op)(m_molecule.m_atoms[a].position) - m_molecule.m_atoms[ai].position).eval();
+      //      std::cout << "d "<<d.transpose()<<std::endl;
+      auto dist = d.norm();
+      //            std::cout << "Atom a dist=" << dist << std::endl;
+      if (dist > 0) {
+        const auto zr = m_molecule.m_atoms[a].charge * dist;
+        double factor;
+        if (functional_form == 0)
+          factor = std::exp(-zr) * m_molecule.m_atoms[a].charge * zr * (1 + zr) / 3;
+        else if (functional_form == 1)
+          factor = 2 * m_molecule.m_atoms[a].charge * zr;
+        factor /= dist;
+        //      result[a] += factor * axes * m_group.op
+      }
+    }
+  }
+  constexpr bool numerical = false;
+  if (numerical) {
+    const double step = 1e-4;
+    auto cs = m_group.coordinate_system();
+    auto g = Group(cs, m_group);
+    auto sm = SymmetryMeasure(m_molecule, g);
+    CoordinateSystem::parameters_t resultn{0, 0, 0, 0, 0, 0};
+    for (int i = 0; i < resultn.size(); i++) {
+      cs.m_parameters[i] -= step;
+      auto smm = sm(-1, functional_form);
+      cs.m_parameters[i] += 2 * step;
+      auto smp = sm(-1, functional_form);
+      cs.m_parameters[i] -= step;
+      resultn[i] = (smp - smm) / (2 * step);
+    }
+    std::cout << "*this " << *this << std::endl;
+    std::cout << "sm " << sm << std::endl;
+    std::cout << "resultn " << resultn << std::endl;
+    //    std::cout << "result  " << result << std::endl;
+  }
+  return result;
+}
+
 std::string SymmetryMeasure::str() const {
   std::stringstream ss;
   ss << "SymmetryMeasure Group=" << m_group.name() << "\n";
@@ -409,10 +462,15 @@ static inline bool test_group(const Molecule& molecule, const Group& group, doub
   auto p = molpro::Profiler::single()->push("SymmetryMeasure::test_group(" + group.name() + ")");
   SymmetryMeasure sm(molecule, group);
   sm.adopt_inertial_axes();
+  if ((group.name() == "Dinfh" or group.name() == "Cinfv") and
+      std::min({sm.inertia_principal_values()(0), sm.inertia_principal_values()(1), sm.inertia_principal_values()(2)}) >
+          1e-3) {
+//    std::cout << "abandoning testing linear, inertial principal values " << sm.inertia_principal_values().transpose() << std::endl;
+    return false;
+  }
   if (verbosity > 0) {
     std::cout << "initial measure " << sm() << std::endl;
     std::cout << group.coordinate_system().axes() << std::endl;
-    std::cout << "Atomic coordinates in current local frame\n" << std::endl;
   }
   // scan
   if (sm.spherical_top()) {
@@ -600,7 +658,9 @@ Group group_factory(CoordinateSystem& coordinate_system, std::string name, bool 
     }
   }
   if (name == "Cinfv" or name == "Dinfh") { // representative only
-    auto g = group_factory(coordinate_system, name.replace(1, 3, "11"), generators_only);
+    auto newname = name;
+    newname.replace(1,3,"11");
+    auto g = group_factory(coordinate_system, newname, generators_only);
     g.name() = name;
     return g;
   }
@@ -624,7 +684,8 @@ Group group_factory(CoordinateSystem& coordinate_system, std::string name, bool 
     auto order = std::stoi(m.str(2));
     //    for (double angle = 0; angle < std::acos(double(-1)) - 1e-10; angle += std::acos(double(-1)) / order)
     for (int count = 0; count < (all ? order : 2); count++) {
-      double angle = (std::regex_match(name,m,std::regex{"D[0-9]*[02468]d"}) ? (count + 0.5) : count) * std::acos(double(-1)) / order;
+      double angle = (std::regex_match(name, m, std::regex{"D[0-9]*[02468]d"}) ? (count + 0.5) : count) *
+                     std::acos(double(-1)) / order;
       g.add(Rotation({std::cos(angle), std::sin(angle), 0}, 2));
     }
   }
@@ -668,7 +729,7 @@ Group group_factory(CoordinateSystem& coordinate_system, std::string name, bool 
 }
 
 Molecule molecule_localised(const CoordinateSystem& coordinate_system, const Molecule& source) {
-  Molecule result (source);
+  Molecule result(source);
   for (auto& atom : result.m_atoms) {
     atom.position = coordinate_system.to_local(atom.position);
   }

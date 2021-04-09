@@ -310,11 +310,13 @@ TEST(point_charge_symmetry, discover_group) {
   expected_groups["ethane"] = "D3d";
   expected_groups["methane"] = "Td";
   expected_groups["p4"] = "Td";
+  expected_groups["adamantane"] = "Td";
   //  expected_groups["hexamethylbenzene"]="D3d";
   //  expected_groups["buckminsterfullerene"]="Ih";
   //  expected_groups["sulfur-hexafluoride"]="Oh";
   expected_groups["cyclohexane"] = "D3d";
   expected_groups["s8"] = "D4h";
+  expected_groups["phloroglucinol"] = "C3h";
   for (const auto &n : expected_groups) {
     Molecule molecule(n.first + ".xyz");
     auto group = molpro::point_charge_symmetry::discover_group(molecule, 1e-2, -1);

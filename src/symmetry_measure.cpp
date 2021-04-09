@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
     if (not quiet.getValue() and verbose.getValue() > 0)
       std::cout << molecule << std::endl;
     CoordinateSystem cs;
-    auto group = discover_group(molecule, cs, tolerance.getValue());
+    auto group = discover_group(molecule, cs, tolerance.getValue(), verbose.getValue()-1);
     if (not quiet.getValue()) {
       std::cout << group.name() << ": " << SymmetryMeasure(molecule, group)() << std::endl;
       if (verbose.getValue() > 1)
