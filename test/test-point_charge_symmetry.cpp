@@ -307,6 +307,7 @@ TEST(point_charge_symmetry, discover_group) {
   expected_groups["benzene"] = "D6h";
     expected_groups["allene"] = "D2d";
   expected_groups["ch4"] = "Td";
+  expected_groups["ethane"] = "D3d";
   expected_groups["methane"] = "Td";
   expected_groups["p4"] = "Td";
   //  expected_groups["hexamethylbenzene"]="D3d";
