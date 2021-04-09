@@ -4,12 +4,12 @@ cache:
     - public
     - build
 build:
-  image: ${CI_REGISTRY}/molpro/${CI_PROJECT_NAME}
+  image: ${CI_REGISTRY}/molpro/LinearAlgebra
   #  only:
   #    - merge_requests
   script:
     - TOP=$PWD
-    - PROJECT_NAME=utilities
+    - PROJECT_NAME=$CI_PROJECT_NAME
     - git checkout $CI_COMMIT_SHA # because of cache
     - git fetch --tags
     - git reset --hard
