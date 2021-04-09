@@ -22,6 +22,7 @@ public:
   Eigen::Vector3d centre_of_charge() const;
   Eigen::Matrix3d inertia_tensor() const;
   Eigen::Matrix3d inertial_axes() const;
+  void write(const std::string& filename, const std::string& title="", const std::string& format="xyz");
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Molecule& op) {

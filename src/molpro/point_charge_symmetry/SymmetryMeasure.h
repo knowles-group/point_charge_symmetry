@@ -42,6 +42,8 @@ public:
            not spherical_top();
   }
 
+  Molecule refine() const;
+
 protected:
   const Molecule& m_molecule;
   const Group& m_group;

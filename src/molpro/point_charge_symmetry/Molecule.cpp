@@ -1,4 +1,5 @@
 #include "Molecule.h"
+#include <iostream>
 #include <numeric>
 #include <sstream>
 #define N_PERIODIC_TABLE 105
@@ -33,6 +34,13 @@ Molecule::Molecule(const std::string& filename) {
       q = std::stoi(el);
     m_atoms.emplace_back(Eigen::Vector3d{x, y, z}, q, el);
   }
+}
+
+void Molecule::write(const std::string& filename, const std::string& title, const std::string& format) {
+  std::ofstream f(filename);
+  f << m_atoms.size() << "\n" << (title.empty() ? m_title : title) << "\n";
+  for (const auto& atom : m_atoms)
+    f << atom.name << " " << atom.position.transpose() << std::endl;
 }
 
 Eigen::Vector3d Molecule::centre_of_charge() const {

@@ -395,6 +395,11 @@ int SymmetryMeasure::optimise_frame() {
   return -1;
 }
 
+Molecule SymmetryMeasure::refine() const {
+  auto result = m_molecule;
+  return result;
+}
+
 static inline bool test_group(const Molecule& molecule, const Group& group, double threshold = 1e-6,
                               int verbosity = -1) {
   if (verbosity >= 0)

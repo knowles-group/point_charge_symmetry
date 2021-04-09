@@ -318,7 +318,7 @@ TEST(point_charge_symmetry, discover_group) {
     Molecule molecule(n.first + ".xyz");
     auto group = molpro::point_charge_symmetry::discover_group(molecule, 1e-2, -1);
     EXPECT_EQ(group.name(), n.second) << n.first << ": " << group.name();
-    std::cout << n.first << ": " << group.name() << std::endl;
+    std::cout << n.first << ": " << group.name() << ", measure="<<SymmetryMeasure(molecule,group)()<<std::endl;
   }
   std::cout << *prof << std::endl;
 }
