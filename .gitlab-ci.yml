@@ -4,7 +4,7 @@ cache:
     - public
     - build
 build:
-  image: ${CI_REGISTRY}/molpro/LinearAlgebra
+  image: ${CI_REGISTRY}/molpro/linearalgebra
   #  only:
   #    - merge_requests
   script:
