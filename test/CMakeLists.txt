@@ -17,6 +17,6 @@ foreach (t test-${PROJECT_NAME} test-bfgs)
     endif ()
 endforeach ()
 
-foreach (molecule adamantane phloroglucinol ethane benzene ferrocene h2o h2o-nosym allene buckminsterfullerene hexamethylbenzene p4 sulfur-hexafluoride cyclohexane s8 methane ch4 allene45 n2)
+foreach (molecule adamantane n2-displaced phloroglucinol ethane benzene ferrocene h2o h2o-nosym allene buckminsterfullerene hexamethylbenzene p4 sulfur-hexafluoride cyclohexane s8 methane ch4 allene45 n2)
     configure_file(${molecule}.xyz . COPYONLY)
 endforeach ()

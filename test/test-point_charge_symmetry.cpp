@@ -126,7 +126,7 @@ TEST(point_charge_symmetry, axes_gradient) {
     const auto step = std::pow(double(10), logstep);
     for (int displacements = 0; displacements < 3; displacements++) {
       auto axes_gradient = coords.axes_gradient(displacements, step);
-      tested.push_back(mat::Zero());
+      tested.emplace_back(mat::Zero());
       for (int i = 0; i < 3; i++)
         tested.back() += displacement[i] * axes_gradient[i] / displacement.norm();
       //            std::cout << "tested:\n" << tested.back() << std::endl;
@@ -209,12 +209,6 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
   std::cout << "Atomic coordinates in local frame\n" << std::endl;
   for (const auto &atom : water.m_atoms)
     std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
-  int i = 0;
-  for (const auto &op : group) {
-
-    std::cout << "Operator symmetry measure: " << op->name() << " " << sm(i) << std::endl;
-    i++;
-  }
   std::cout << sm << std::endl;
   std::cout << group.name() << " symmetry measure: " << sm() << std::endl;
   //  std::cout << "CoordinateSystem data";
@@ -305,7 +299,7 @@ TEST(point_charge_symmetry, discover_group) {
   expected_groups["h2o-nosym"] = "C2v";
   expected_groups["ferrocene"] = "D5d";
   expected_groups["benzene"] = "D6h";
-    expected_groups["allene"] = "D2d";
+  expected_groups["allene"] = "D2d";
   expected_groups["ch4"] = "Td";
   expected_groups["ethane"] = "D3d";
   expected_groups["methane"] = "Td";
@@ -321,7 +315,7 @@ TEST(point_charge_symmetry, discover_group) {
     Molecule molecule(n.first + ".xyz");
     auto group = molpro::point_charge_symmetry::discover_group(molecule, 1e-2, -1);
     EXPECT_EQ(group.name(), n.second) << n.first << ": " << group.name();
-    std::cout << n.first << ": " << group.name() << ", measure="<<SymmetryMeasure(molecule,group)()<<std::endl;
+    std::cout << n.first << ": " << group.name() << ", measure=" << SymmetryMeasure(molecule, group)() << std::endl;
   }
   std::cout << *prof << std::endl;
 }
@@ -338,5 +332,47 @@ TEST(point_charge_symmetry, allene45) {
   SymmetryMeasure sm(allene, group);
   EXPECT_LE(sm(-1, 0, -1), 1e-14);
   auto grad = sm.coordinate_system_gradient();
-  EXPECT_LE(std::inner_product(grad.begin(), grad.end(), grad.begin(), 0), 1e-14) ;//<< "Gradient: " << grad;
+  EXPECT_LE(std::inner_product(grad.begin(), grad.end(), grad.begin(), 0), 1e-14); //<< "Gradient: " << grad;
+}
+
+template <typename T>
+std::ostream &operator<<(std::ostream &s, const std::vector<T> &v) {
+  for (const auto &e : v)
+    s << " " << e;
+  return s;
+}
+
+TEST(point_charge_symmetry, atom_gradient) {
+  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("atom_gradient");
+  Molecule molecule("hexamethylbenzene.xyz");
+  CoordinateSystem cs;
+  //  auto group = discover_group(molecule, cs);
+  auto group = group_factory(cs, "D3h");
+  SymmetryMeasure sm(molecule, group);
+  //  std::cout << molecule << std::endl;
+  //  std::cout << sm() << std::endl;
+  auto grad = sm.atom_gradient();
+  //  cout << "analytic gradient " << grad << std::endl;
+  auto numgrad = grad;
+  numgrad.assign(numgrad.size(), 0);
+  int i = 0;
+  double step = 1e-3;
+  auto sm0 = sm();
+  for (auto &atom : molecule.m_atoms) {
+    for (int j = 0; j < 3; j++) {
+      atom.position(j) -= 2 * step;
+      auto smmm = sm();
+      atom.position(j) += step;
+      auto smm = sm();
+      atom.position(j) += 2 * step;
+      auto smp = sm();
+      atom.position(j) += step;
+      auto smpp = sm();
+      atom.position(j) -= 2 * step;
+      numgrad[i] = (smmm - 8 * smm + 8 * smp - smpp) / (12 * step);
+      i++;
+    }
+  }
+  //  cout << "numerical gradient " << numgrad << std::endl;
+  EXPECT_THAT(grad, ::testing::Pointwise(::testing::DoubleNear(1e-6), numgrad));
 }

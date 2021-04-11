@@ -22,7 +22,7 @@ public:
 
   double operator()(int operator_index = -1, int functional_form = 0, int verbosity = -1) const;
   [[nodiscard]] CoordinateSystem::parameters_t coordinate_system_gradient(int operator_index = -1, int functional_form = 0) const;
-  [[nodiscard]] std::vector<CoordinateSystem::vec> atom_gradient(int operator_index = -1, int functional_form = 0) const;
+  [[nodiscard]] std::vector<double> atom_gradient(int operator_index = -1, int functional_form = 0) const;
   //  SymmetryMeasure(const Molecule& molecule, const Operator& op) : SymmetryMeasure(molecule, Group)
   [[nodiscard]] std::string str() const;
 

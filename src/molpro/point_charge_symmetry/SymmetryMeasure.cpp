@@ -117,15 +117,18 @@ CoordinateSystem::parameters_t SymmetryMeasure::coordinate_system_gradient(int o
   return result;
 }
 
-std::vector<CoordinateSystem::vec> SymmetryMeasure::atom_gradient(int operator_index, int functional_form) const {
+std::vector<double> SymmetryMeasure::atom_gradient(int operator_index, int functional_form) const {
   auto p = molpro::Profiler::single()->push("SymmetryMeasure::atom_gradient()");
-  std::vector<CoordinateSystem::vec> result(m_molecule.m_atoms.size(), {0, 0, 0});
+  std::vector<double> result(m_molecule.m_atoms.size() * 3, 0);
   const auto origin = m_group.coordinate_system().origin();
   const auto axes = m_group.coordinate_system().axes();
   auto start = operator_index < 0 ? m_group.begin() : m_group.begin() + operator_index;
   auto end = operator_index < 0 ? m_group.end() : m_group.begin() + operator_index + 1;
   for (auto op = start; op < end; op++) {
     //    std::cout << "Operator " << (*op)->name() << std::endl;
+    CoordinateSystem::mat w; // T_t u^\dagger
+    for (int j = 0; j < 3; j++)
+      w.col(j) = (*op)->operator_local(axes.row(j));
     for (int a = 0; a < m_molecule.m_atoms.size(); a++) {
       //            std::cout << "Atom " << a << m_molecule.m_atoms[a].position.transpose() << std::endl;
       //            std::cout << "Mapped Atom " << a << (**op)(m_molecule.m_atoms[a].position).transpose() << std::endl;
@@ -145,7 +148,8 @@ std::vector<CoordinateSystem::vec> SymmetryMeasure::atom_gradient(int operator_i
         else
           throw std::logic_error("impossible functional form");
         factor /= dist;
-        //      result[a] += factor * axes * m_group.op
+        Eigen::Map<Eigen::Vector3d>(&result[3 * a], 3) += factor * w.transpose() * axes.transpose() * d;
+        Eigen::Map<Eigen::Vector3d>(&result[3 * ai], 3) -= factor * d;
       }
     }
   }
@@ -392,7 +396,8 @@ static inline bool test_group(const Molecule& molecule, const Group& group, doub
   if ((group.name() == "Dinfh" or group.name() == "Cinfv") and
       std::min({sm.inertia_principal_values()(0), sm.inertia_principal_values()(1), sm.inertia_principal_values()(2)}) >
           1e-3) {
-//    std::cout << "abandoning testing linear, inertial principal values " << sm.inertia_principal_values().transpose() << std::endl;
+    //    std::cout << "abandoning testing linear, inertial principal values " <<
+    //    sm.inertia_principal_values().transpose() << std::endl;
     return false;
   }
   if (verbosity > 0) {
@@ -586,7 +591,7 @@ Group group_factory(CoordinateSystem& coordinate_system, const std::string& name
   }
   if (name == "Cinfv" or name == "Dinfh") { // representative only
     auto newname = name;
-    newname.replace(1,3,"11");
+    newname.replace(1, 3, "11");
     auto gg = group_factory(coordinate_system, newname, generators_only);
     gg.name() = name;
     return gg;
@@ -603,8 +608,8 @@ Group group_factory(CoordinateSystem& coordinate_system, const std::string& name
   if (std::regex_match(name, m, std::regex{"([C])([1-9][0-9]*)([v])"}) or
       std::regex_match(name, m, std::regex{"([D])([1-9][0-9]*)([hd])"})) {
     auto order = std::stoi(m.str(2));
-    auto angle = std::acos(double(-1))/order;
-    for (int count=0; count < order; count++)
+    auto angle = std::acos(double(-1)) / order;
+    for (int count = 0; count < order; count++)
       g.add(Reflection({std::cos(count * angle), std::sin(count * angle), 0}));
   }
 
