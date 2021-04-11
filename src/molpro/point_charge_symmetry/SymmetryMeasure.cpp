@@ -320,48 +320,51 @@ int SymmetryMeasure::optimise_frame() {
   return -1;
 }
 
-
 template <typename T>
-std::ostream &operator<<(std::ostream &s, const std::vector<T> &v) {
-  for (const auto &e : v)
+std::ostream& operator<<(std::ostream& s, const std::vector<T>& v) {
+  for (const auto& e : v)
     s << " " << e;
   return s;
 }
-Molecule SymmetryMeasure::refine() const {
-  auto molecule = this->m_molecule;
-  auto sm = SymmetryMeasure(molecule,m_group);
-  using Rvector = std::vector<double>;
-  Rvector parameters;
-  for (const auto& atom : m_molecule.m_atoms)
-    for (int i=0; i<3; i++)
-      parameters.push_back(atom.position(i));
+Molecule SymmetryMeasure::refine(int repeat) const {
+  auto molecule = molecule_localised(m_group.coordinate_system(), this->m_molecule);
+  //  std::cout << "refine initial molecule\n"<<molecule<<std::endl;
+  auto group = group_factory(m_group.name());
+  //  std::cout << "refine initial group\n"<<group<<std::endl;
+  for (int attempt = 0; attempt < repeat; attempt++) {
+    auto sm = SymmetryMeasure(molecule, group);
+    using Rvector = std::vector<double>;
+    Rvector parameters;
+    for (const auto& atom : molecule.m_atoms)
+      for (int i = 0; i < 3; i++)
+        parameters.push_back(atom.position(i));
     const int verbosity = -1;
     auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector, Rvector>(
-        "BFGS", "max_size_qspace=6,convergence_threshold=1e-28");
+        "BFGS", "max_size_qspace=6,convergence_threshold=1e-18");
     int nwork = 1;
-  auto original_molecule = m_molecule;
-  for (int iter = 0; iter < 200; iter++) {
+    for (int iter = 0; iter < 200; iter++) {
       auto value = sm(-1, 1);
       auto grad = sm.atom_gradient(-1, 1);
-//      std::cout << "value "<<value<<std::endl;
-//      std::cout << "parameters "<<parameters<<std::endl;
-//      std::cout << "grad "<<grad<<std::endl;
+      //      std::cout << "value "<<value<<std::endl;
+      //      std::cout << "parameters "<<parameters<<std::endl;
+      //      std::cout << "grad "<<grad<<std::endl;
       if (solver->add_value(parameters, value, grad)) {
         for (int i = 0; i < 6; i++)
           grad[i] /= 1;
       }
       nwork = solver->end_iteration(parameters, grad);
-    size_t j=0;
-    for (auto& atom : molecule.m_atoms)
-      for (int i=0; i<3; i++)
-        atom.position(i) = parameters[j++];
-//    std::cout << "after end_iteration parameters "<<parameters<<std::endl;
+      size_t j = 0;
+      for (auto& atom : molecule.m_atoms)
+        for (int i = 0; i < 3; i++)
+          atom.position(i) = parameters[j++];
+      //    std::cout << "after end_iteration parameters "<<parameters<<std::endl;
       if (verbosity > 0)
         solver->report();
       if (nwork <= 0)
         break;
     }
-    return molecule_localised(m_group.coordinate_system(),molecule);
+  }
+  return molecule;
 }
 
 static inline bool test_group(const Molecule& molecule, const Group& group, double threshold = 1e-6,
