@@ -14,15 +14,12 @@ protected:
   std::string m_name;
 
 public:
-  Group(CoordinateSystem& coordinate_system = s_group_default_coordinate_system, std::string name = "")
-      : m_coordinate_system(coordinate_system), m_name(std::move(name)) {}
-  Group(std::string name) : m_coordinate_system(s_group_default_coordinate_system), m_name(std::move(name)) {}
-  Group(CoordinateSystem& coordinate_system, const Group& source)
-      : m_coordinate_system(coordinate_system), m_name(source.m_name) {
-    for (const auto& m : source.m_members) {
-      m_members.emplace_back(m->clone(m_coordinate_system));
-    }
-  }
+  Group();
+  Group(CoordinateSystem& coordinate_system);
+  Group (CoordinateSystem& coordinate_system, std::string name, bool generators_only = false);
+  Group (const std::string& name, bool generators_only = false);
+//  Group(std::string name);
+  Group(CoordinateSystem& coordinate_system, const Group& source);
   std::string name() const { return m_name; }
   std::string& name() { return m_name; }
   void add(Identity op) { m_members.emplace_back(new Identity(m_coordinate_system)); }

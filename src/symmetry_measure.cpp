@@ -38,9 +38,11 @@ int main(int argc, char* argv[]) {
     if (refine.isSet()) {
       if (not quiet.getValue())
         std::cout << "Refine geometry " << std::endl;
-      molecule = SymmetryMeasure(molecule, group).refine();
+      molecule = SymmetryMeasure(molecule, group).refine(3);
+      cs = CoordinateSystem();
       if (not quiet.getValue())
-        std::cout << "Refined symmetry measure = " << SymmetryMeasure(molecule, group)() << std::endl;
+        std::cout << "Refined symmetry measure = " << SymmetryMeasure(molecule, Group(group.name()))() << std::endl;
+      std::cout <<molecule<<std::endl;
     }
 
     if (output_file.isSet()) {

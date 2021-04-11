@@ -96,11 +96,11 @@ TEST(point_charge_symmetry, Group) {
   mat axes;
   axes << 0, 1, 0, -1, 0, 0, 0, 0, 1;
   CoordinateSystem coords({0, 0, 0});
-  Group c2v(coords);
-  c2v.add(Identity());
-  c2v.add(Rotation({0, 0, 1}, 2));
-  c2v.add(Reflection({1, 0, 0}));
-  c2v.add(Reflection({0, 1, 0}));
+  Group group(coords);
+  group.add(Identity());
+  group.add(Rotation({0, 0, 1}, 2));
+  group.add(Reflection({1, 0, 0}));
+  group.add(Reflection({0, 1, 0}));
 }
 
 TEST(point_charge_symmetry, axes_gradient) {
@@ -145,20 +145,21 @@ TEST(point_charge_symmetry, Molecule) {
   std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Molecule");
   Molecule water("h2o.xyz");
   std::cout << water << std::endl;
-  Group c2v("C2v");
-  c2v.add(Identity());
-  c2v.add(Rotation({0, 0, 1}, 2));
-  c2v.add(Reflection({1, 0, 0}));
-  c2v.add(Reflection({0, 1, 0}));
-  auto sm = SymmetryMeasure(water, c2v);
+  Group group;
+  group.name()="C2v";
+  group.add(Identity());
+  group.add(Rotation({0, 0, 1}, 2));
+  group.add(Reflection({1, 0, 0}));
+  group.add(Reflection({0, 1, 0}));
+  auto sm = SymmetryMeasure(water, group);
   std::cout << sm << std::endl;
   int i = 0;
-  for (const auto &op : c2v) {
+  for (const auto &op : group) {
 
     std::cout << "Operator symmetry measure: " << op->name() << " " << sm(i) << std::endl;
     i++;
   }
-  std::cout << c2v.name() << " symmetry measure: " << sm() << std::endl;
+  std::cout << group.name() << " symmetry measure: " << sm() << std::endl;
   //  std::cout << "CoordinateSystem data";
   //  for (int i = 0; i < 6; i++)
   //    std::cout << " " << c2v.coordinate_system().data()[i];
@@ -183,7 +184,7 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
   //  group.add(Rotation({0, 0, 1}, 2));
   //  group.add(Reflection({1, 0, 0}));
   //  group.add(Reflection({0, 1, 0}));
-  auto group = group_factory(coordinate_system, "C3v");
+  auto group = Group(coordinate_system, "C3v");
   //  int best_axis = 0;
   //  double best_axis_sm = 1e50;
   //  for (int principal_axis = 0; principal_axis < 6; principal_axis++) {
@@ -260,7 +261,7 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
 }
 
 TEST(point_charge_symmetry, group_factory) {
-  //  std::cout<<"D5h generators\n" << molpro::point_charge_symmetry::group_factory("D5h",true)<<std::endl;
+  //  std::cout<<"D5h generators\n" << molpro::point_charge_symmetry::Group("D5h",true)<<std::endl;
   std::map<std::string, int> orders;
   orders["Dinfh"] = 44;
   orders["Cinfv"] = 22;
@@ -284,7 +285,7 @@ TEST(point_charge_symmetry, group_factory) {
     orders[std::string{"C"} + std::to_string(i)] = i;
   }
   for (const auto &n : orders) {
-    auto g = molpro::point_charge_symmetry::group_factory(n.first);
+    auto g = molpro::point_charge_symmetry::Group(n.first);
     //    std::cout << g << std::endl;
     EXPECT_EQ(g.end() - g.begin(), n.second) << "Wrong order for group " << g;
   }
@@ -327,7 +328,7 @@ TEST(point_charge_symmetry, allene45) {
   axes << 0, 0, 1, 1, 0, 0, 0, 1, 0;
   CoordinateSystem cs(vec::Zero(), axes);
   //  std::cout << cs<<std::endl;
-  const Group group = group_factory(cs, "D2d");
+  const Group group = Group(cs, "D2d");
   //  std::cout << group << std::endl;
   SymmetryMeasure sm(allene, group);
   EXPECT_LE(sm(-1, 0, -1), 1e-14);
@@ -352,9 +353,9 @@ TEST(point_charge_symmetry, refine) {
   SymmetryMeasure sm(molecule, group);
 //  std::cout << molecule << std::endl;
 //  std::cout << sm() << std::endl;
-  auto newmolecule = sm.refine();
+  auto newmolecule = sm.refine(1);
   double error = SymmetryMeasure(newmolecule, Group(group.name()))();
-  ASSERT_LE(error,1e-15);
+  ASSERT_LE(error,1e-14);
 //  std::cout << error << std::endl;
 //  std::cout << newmolecule << std::endl;
   }
@@ -365,7 +366,7 @@ TEST(point_charge_symmetry, atom_gradient) {
   Molecule molecule("hexamethylbenzene.xyz");
   CoordinateSystem cs;
   //  auto group = discover_group(molecule, cs);
-  auto group = group_factory(cs, "D3h");
+  auto group = Group(cs, "D3h");
   SymmetryMeasure sm(molecule, group);
   //  std::cout << molecule << std::endl;
   //  std::cout << sm() << std::endl;

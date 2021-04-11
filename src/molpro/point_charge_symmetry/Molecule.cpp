@@ -38,9 +38,15 @@ Molecule::Molecule(const std::string& filename) {
 
 void Molecule::write(const std::string& filename, const std::string& title, const std::string& format) {
   std::ofstream f(filename);
+//  Eigen::IOFormat fmt(10, 0);
+  f.precision(10);
+  f << std::fixed;
   f << m_atoms.size() << "\n" << (title.empty() ? m_title : title) << "\n";
-  for (const auto& atom : m_atoms)
-    f << atom.name << " " << atom.position.transpose() << std::endl;
+  for (const auto& atom : m_atoms) {
+
+//    f << atom.name << " " << atom.position.transpose().format(fmt) << std::endl;
+  f << atom.name; for (int i=0; i<3; i++) f << " " << atom.position(i); f << std::endl;
+  }
 }
 
 Eigen::Vector3d Molecule::centre_of_charge() const {
@@ -55,7 +61,8 @@ Eigen::Matrix3d Molecule::inertia_tensor() const {
   Eigen::Matrix3d result = Eigen::Matrix3d::Zero();
   auto coc = centre_of_charge();
   for (const auto& atom : m_atoms) {
-    result += atom.charge * ((atom.position-coc).dot(atom.position-coc)*Eigen::Matrix3d::Identity()-(atom.position - coc) * (atom.position - coc).transpose());
+    result += atom.charge * ((atom.position - coc).dot(atom.position - coc) * Eigen::Matrix3d::Identity() -
+                             (atom.position - coc) * (atom.position - coc).transpose());
     //    std::cout << "shifted atom position " << (atom.position - coc).transpose() << std::endl;
   }
   //  std::cout << "Inertia tensor\n" << result << std::endl;

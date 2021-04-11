@@ -49,7 +49,7 @@ public:
            not spherical_top();
   }
 
-  [[nodiscard]] Molecule refine() const;
+  [[nodiscard]] Molecule refine(int repeat=1) const;
   [[nodiscard]] CoordinateSystem::vec inertia_principal_values() const { return m_inertia_principal_values; }
 
 protected:
@@ -69,9 +69,6 @@ inline std::ostream& operator<<(std::ostream& os, const SymmetryMeasure& sm) {
 Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_system, double threshold = 1e-10,
                      int verbosity = -1);
 Group discover_group(const Molecule& molecule, double threshold = 1e-10, int verbosity = -1);
-
-Group group_factory(CoordinateSystem& coordinate_system, const std::string& name, bool generators_only = false);
-Group group_factory(const std::string& name, bool generators_only = false);
 
 Molecule molecule_localised(const CoordinateSystem& coordinate_system, const Molecule& source);
 

@@ -329,7 +329,7 @@ std::ostream& operator<<(std::ostream& s, const std::vector<T>& v) {
 Molecule SymmetryMeasure::refine(int repeat) const {
   auto molecule = molecule_localised(m_group.coordinate_system(), this->m_molecule);
   //  std::cout << "refine initial molecule\n"<<molecule<<std::endl;
-  auto group = group_factory(m_group.name());
+  auto group = Group(m_group.name());
   //  std::cout << "refine initial group\n"<<group<<std::endl;
   for (int attempt = 0; attempt < repeat; attempt++) {
     auto sm = SymmetryMeasure(molecule, group);
@@ -452,21 +452,22 @@ Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_syst
   const bool generators_only = false;
   constexpr size_t maximum_axis_order = 10;
   Group result;
-  using molpro::point_charge_symmetry::group_factory;
   // special?
   //  for (const auto& n : std::vector<std::string>{"Dinfh", "Cinfv", "Td", "Oh", "Ih"})
   //  for (const auto& n : std::vector<std::string>{"Oh", "Td"})
   for (const auto& n : std::vector<std::string>{"Dinfh", "Cinfv", "Td"})
-    if (test_group(molecule, group_factory(coordinate_system, n, generators_only), threshold, verbosity))
-      return group_factory(coordinate_system, n);
+    if (test_group(molecule, Group(coordinate_system, n, generators_only), threshold, verbosity))
+      return Group(coordinate_system, n);
 
   // axis?
   for (int axis_order = maximum_axis_order; axis_order > 1; axis_order--) {
     auto o = std::to_string(axis_order);
-    Group c2x(coordinate_system, "pseudo-C2x");
+    Group c2x(coordinate_system);
+    c2x.name() = "pseudo-C2x";
     c2x.add(Rotation(coordinate_system, {0, 0, 1}, axis_order));
     c2x.add(Rotation(coordinate_system, {std::cos(double(.001)), std::sin(double(.001)), 0}, 2));
-    Group sigma_h(coordinate_system, "pseudo-sigma_h");
+    Group sigma_h(coordinate_system);
+    sigma_h.name() = "pseudo-sigma_h";
     sigma_h.add(Rotation(coordinate_system, {0, 0, 1}, axis_order));
     sigma_h.add(Reflection(coordinate_system, {0, 0, 1}));
     //    std::cout << "explore "
@@ -474,7 +475,7 @@ Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_syst
     //    std::cout << "Atomic coordinates in current local frame\n" << std::endl;
     //    for (const auto& atom : molecule.m_atoms)
     //      std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
-    if (test_group(molecule, group_factory(coordinate_system, "C" + o, generators_only), threshold, verbosity)) {
+    if (test_group(molecule, Group(coordinate_system, "C" + o, generators_only), threshold, verbosity)) {
       //      std::cout << "c2x\n" << c2x << std::endl;
       //      std::cout << "explore "
       //                << "c2x" << std::endl;
@@ -485,9 +486,9 @@ Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_syst
         //        std::cout << "test sigma_h: " << test_group(molecule, sigma_h, threshold,verbosity) << std::endl;
         //        if (test_group(molecule, sigma_h, threshold,verbosity)) {
         auto coordinate_system_save = coordinate_system;
-        if (test_group(molecule, group_factory(coordinate_system, "D" + o + "h", generators_only), threshold,
+        if (test_group(molecule, Group(coordinate_system, "D" + o + "h", generators_only), threshold,
                        verbosity)) {
-          return group_factory(coordinate_system, "D" + o + "h");
+          return Group(coordinate_system, "D" + o + "h");
         } else {
           coordinate_system = coordinate_system_save;
           for (const auto& n : std::vector<std::string>{"D" + o + "d", "D" + o}) {
@@ -497,153 +498,26 @@ Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_syst
               for (const auto& atom : molecule.m_atoms)
                 std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
             }
-            if (test_group(molecule, group_factory(coordinate_system, n, generators_only), threshold, verbosity))
-              return group_factory(coordinate_system, n);
+            if (test_group(molecule, Group(coordinate_system, n, generators_only), threshold, verbosity))
+              return Group(coordinate_system, n);
           }
         }
       } else {
         for (const auto& n : std::vector<std::string>{"C" + o + "h", "C" + o + "v", "S" + o, "C" + o}) {
           //       std::cout << "explore "<<n<<std::endl;
           if (n != "S2" and
-              test_group(molecule, group_factory(coordinate_system, n, generators_only), threshold, verbosity))
-            return group_factory(coordinate_system, n);
+              test_group(molecule, Group(coordinate_system, n, generators_only), threshold, verbosity))
+            return Group(coordinate_system, n);
         }
       }
     }
   }
   // no axis found
   for (const auto& n : std::vector<std::string>{"Cs", "Ci", "C1"})
-    if (test_group(molecule, group_factory(coordinate_system, n, generators_only), threshold, verbosity))
-      return group_factory(coordinate_system, n);
+    if (test_group(molecule, Group(coordinate_system, n, generators_only), threshold, verbosity))
+      return Group(coordinate_system, n);
   throw std::logic_error("unexpected failure to find point group");
 }
-
-Group group_factory(const std::string& name, bool generators_only) {
-  return group_factory(s_default_coordinate_system, name, generators_only);
-}
-Group group_factory(CoordinateSystem& coordinate_system, const std::string& name, bool generators_only) {
-  using vec = CoordinateSystem::vec;
-  const vec xaxis{1, 0, 0};
-  const vec yaxis{0, 1, 0};
-  const vec zaxis{0, 0, 1};
-  const auto all = not generators_only;
-  Group g(coordinate_system, name);
-  if (all)
-    g.add(Identity());
-  std::smatch m;
-  if (name == "Ih")
-    g.add(Rotation(zaxis, 7)); // TODO implement
-  if (name == "Oh") {
-    for (int axis = 0; axis < 3; axis++) {
-      for (int count = 0; count < 3; count += 2) {
-        g.add(Rotation(Eigen::Matrix3d::Identity().col(axis), 4, true, count));
-        if (all)
-          g.add(Rotation(Eigen::Matrix3d::Identity().col(axis), 4, false, count));
-      }
-      g.add(Rotation(Eigen::Matrix3d::Identity().col(axis), 2, true, 1));
-      g.add(Reflection(Eigen::Matrix3d::Identity().col(axis)));
-    }
-    for (int corner = 0; corner < (all ? 4 : 2); corner++) {
-      auto sq2 = std::sqrt(1 / double(2));
-      g.add(Rotation(vec{std::cos((2 * corner + 1) * acos(double(-1)) / 4),
-                         std::sin((2 * corner + 1) * acos(double(-1)) / 4), sq2},
-                     3));
-    }
-  }
-  if (name == "Td") {
-    for (int axis = 0; axis < 3; axis++) {
-      if (all)
-        g.add(Rotation(Eigen::Matrix3d::Identity().col(axis), 2, true, 1));
-      if (all)
-        g.add(Rotation(Eigen::Matrix3d::Identity().col(axis), 4, false, 1));
-      if (all)
-        g.add(Rotation(Eigen::Matrix3d::Identity().col(axis), 4, false, 3));
-      if (all)
-        g.add(Reflection(Eigen::Matrix3d::Identity().col((axis + 1) % 3) +
-                         Eigen::Matrix3d::Identity().col((axis + 2) % 3)));
-      g.add(Reflection(Eigen::Matrix3d::Identity().col((axis + 1) % 3) -
-                       Eigen::Matrix3d::Identity().col((axis + 2) % 3)));
-    }
-    for (int corner = 0; corner < (all ? 4 : 2); corner++) {
-      auto sq2 = std::sqrt(1 / double(2));
-      for (int count = 1; count < 3; count++)
-        g.add(Rotation(vec{std::cos((2 * corner + 1) * acos(double(-1)) / 4),
-                           std::sin((2 * corner + 1) * acos(double(-1)) / 4), sq2},
-                       3, true, count));
-    }
-  }
-  if (name == "Cinfv" or name == "Dinfh") { // representative only
-    auto newname = name;
-    newname.replace(1, 3, "11");
-    auto gg = group_factory(coordinate_system, newname, generators_only);
-    gg.name() = name;
-    return gg;
-  }
-
-  if (std::regex_match(name, m, std::regex{"[CD][0-9]*[02468]h"}) or
-      std::regex_match(name, m, std::regex{"D[0-9]*[13579]d"}) or
-      std::regex_match(name, m, std::regex{"Ih|Th|Oh|Dinfh|Ci"}))
-    g.add(Inversion());
-
-  if (std::regex_match(name, m, std::regex{"Dinfh|Ih|Cs|[CD][1-9][0-9]*h"}))
-    g.add(Reflection(zaxis));
-
-  if (std::regex_match(name, m, std::regex{"([C])([1-9][0-9]*)([v])"}) or
-      std::regex_match(name, m, std::regex{"([D])([1-9][0-9]*)([hd])"})) {
-    auto order = std::stoi(m.str(2));
-    auto angle = std::acos(double(-1)) / order;
-    for (int count = 0; count < order; count++)
-      g.add(Reflection({std::cos(count * angle), std::sin(count * angle), 0}));
-  }
-
-  if (std::regex_match(name, m, std::regex{"([D])([1-9][0-9]*)([^v])?"})) {
-    auto order = std::stoi(m.str(2));
-    //    for (double angle = 0; angle < std::acos(double(-1)) - 1e-10; angle += std::acos(double(-1)) / order)
-    for (int count = 0; count < (all ? order : 2); count++) {
-      double angle = (std::regex_match(name, m, std::regex{"D[0-9]*[02468]d"}) ? (count + 0.5) : count) *
-                     std::acos(double(-1)) / order;
-      g.add(Rotation({std::cos(angle), std::sin(angle), 0}, 2));
-    }
-  }
-
-  if (std::regex_match(name, m, std::regex{"([CD])([1-9][0-9]*)([hvd]*)"})) {
-    auto order = std::stoi(m.str(2));
-    for (int count = 1; count < order; count++)
-      g.add(Rotation(zaxis, order, true, count));
-  }
-  if (std::regex_match(name, m, std::regex{"([CD])([0-9]*[02468])(h)"})) {
-    auto order = std::stoi(m.str(2));
-    for (int count = 0; count < order / 2; count++)
-      if (count * 2 + 1 != order / 2)
-        g.add(Rotation(zaxis, order, false, count * 2 + 1));
-    if (order > 2)
-      for (int count = 0; count < ((order % 4) ? order / 2 : order / 4); count++)
-        if (count * 2 + 1 != ((order % 4) ? order / 2 : order / 4))
-          g.add(Rotation(zaxis, order / 2, false, count * 2 + 1));
-  }
-  if (std::regex_match(name, m, std::regex{"([CD])([0-9]*[13579])(h)"})) {
-    auto order = std::stoi(m.str(2));
-    for (int count = 0; count < order; count++)
-      if (count != (order - 1) / 2)
-        g.add(Rotation(zaxis, order, false, count * 2 + 1));
-  }
-  if (std::regex_match(name, m, std::regex{"([D])([1-9][0-9]*)(d)"})) {
-    auto order = std::stoi(m.str(2));
-    for (int count = 0; count < order; count++)
-      if (2 * count != (order - 1))
-        g.add(Rotation(zaxis, 2 * order, false, count * 2 + 1));
-  }
-  if (std::regex_match(
-          name, m,
-          std::regex{
-              "([S])([0-9]*[02468])"})) { // could be done more prettily with explicit proper rotations and inversion
-    auto order = std::stoi(m.str(2));
-    for (int count = 1; count < order; count++)
-      g.add(Rotation(zaxis, order, false, count));
-  }
-  return g;
-}
-
 Molecule molecule_localised(const CoordinateSystem& coordinate_system, const Molecule& source) {
   Molecule result(source);
   for (auto& atom : result.m_atoms) {
