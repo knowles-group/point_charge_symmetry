@@ -28,7 +28,6 @@ public:
 
   void adopt_inertial_axes();
   int optimise_frame();
-  int optimise_coordinates();
 
   bool spherical_top() {
     constexpr double tol = 1e-3;

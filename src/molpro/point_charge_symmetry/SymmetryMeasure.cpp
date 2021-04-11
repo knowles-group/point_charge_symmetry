@@ -281,30 +281,6 @@ int SymmetryMeasure::optimise_frame() {
     reset_neighbours();
     auto value = (*this)(-1, 1);
     auto grad = coordinate_system_gradient(-1, 1);
-    if (false) { // test gradient
-      CoordinateSystem::parameters_t vpp, vp, vm, vmm, testgrad;
-      double step = 2e-3;
-      double diff = 0;
-      for (int i = 0; i < 6; i++) {
-        parameters[i] -= 2 * step;
-        vmm[i] = (*this)(-1, 1);
-        parameters[i] += step;
-        vm[i] = (*this)(-1, 1);
-        parameters[i] += 2 * step;
-        vp[i] = (*this)(-1, 1);
-        parameters[i] += step;
-        vpp[i] = (*this)(-1, 1);
-        parameters[i] -= 2 * step;
-        testgrad[i] = (vmm[i] - 8 * vm[i] + 8 * vp[i] - vpp[i]) / (12 * step);
-        diff += std::pow(testgrad[i] - grad[i], 2);
-      }
-      //      std::cout << "calc gradient " << grad << std::endl;
-      //      std::cout << "test gradient " << testgrad << std::endl;
-      diff = std::sqrt(diff);
-      //      std::cout << "diff gradient " << diff << std::endl;
-      if (diff > 1e-7)
-        throw std::runtime_error("differentiation");
-    }
     if (not optimize_origin)
       std::fill(grad.begin(), grad.begin() + 3, 0);
     auto centre_of_charge_displacement = (m_group.coordinate_system().origin() - m_molecule.centre_of_charge()).eval();
@@ -314,41 +290,6 @@ int SymmetryMeasure::optimise_frame() {
       std::cout << "m_molecule.centre_of_charge() " << m_molecule.centre_of_charge().transpose() << std::endl;
       std::cout << "centre_of_charge_displacement " << centre_of_charge_displacement.transpose() << std::endl;
     }
-    //        value=0; std::fill(grad.begin(),grad.end(),0);
-    //    std::fill(grad.begin() + 3, grad.end(), 0);
-    //    for (int i = 0; i < 3; i++)
-    //      grad[i] = -grad[i];
-    // std::fill(grad.begin(),grad.end()-3,0);
-    //    std::cout << "gradient before penalty:";
-    //    for (int i = 0; i < 6; i++)
-    //      std::cout << " " << grad[i];
-    //    std::cout << std::endl;
-
-    //    value += centre_of_charge_penalty * std::pow(centre_of_charge_displacement.norm(),
-    //    centre_of_charge_penalty_power); auto grad_penalty = centre_of_charge_penalty_power *
-    //                        std::pow(centre_of_charge_displacement.norm(), centre_of_charge_penalty_power - 2) *
-    //                        centre_of_charge_displacement;
-    //    for (int i = 0; i < 3; i++)
-    //      grad[i] += grad_penalty(i);
-
-    //    std::cout << "gradient:";
-    //    for (int i = 0; i < 6; i++)
-    //      std::cout << " " << grad[i];
-    //    std::cout << std::endl;
-    //    std::cout << "before add_value " << nwork;
-    //    for (int i = 0; i < 6; i++)
-    //      std::cout << " " << parameters[i];
-    //    std::cout << std::endl;
-    //    std::cout << " before add_value " << nwork;
-    //    for (int i = 0; i < 6; i++)
-    //      std::cout << " " << grad[i];
-    //    std::cout << std::endl;
-    //    std::cout << "value=" << value << std::endl;
-    //    std::cout << "Current parameters " << parameters << std::endl;
-    auto current_parameters = parameters;
-    //    grad[0] = 0;
-    //    grad[1] = 0;
-    //    grad[2] = 0;
     if (solver->add_value(parameters, value, grad)) {
       if (verbosity > 1) {
         std::cout << "after add_value " << nwork;
@@ -379,9 +320,48 @@ int SymmetryMeasure::optimise_frame() {
   return -1;
 }
 
+
+template <typename T>
+std::ostream &operator<<(std::ostream &s, const std::vector<T> &v) {
+  for (const auto &e : v)
+    s << " " << e;
+  return s;
+}
 Molecule SymmetryMeasure::refine() const {
-  auto result = m_molecule;
-  return result;
+  auto molecule = this->m_molecule;
+  auto sm = SymmetryMeasure(molecule,m_group);
+  using Rvector = std::vector<double>;
+  Rvector parameters;
+  for (const auto& atom : m_molecule.m_atoms)
+    for (int i=0; i<3; i++)
+      parameters.push_back(atom.position(i));
+    const int verbosity = -1;
+    auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector, Rvector>(
+        "BFGS", "max_size_qspace=6,convergence_threshold=1e-28");
+    int nwork = 1;
+  auto original_molecule = m_molecule;
+  for (int iter = 0; iter < 200; iter++) {
+      auto value = sm(-1, 1);
+      auto grad = sm.atom_gradient(-1, 1);
+//      std::cout << "value "<<value<<std::endl;
+//      std::cout << "parameters "<<parameters<<std::endl;
+//      std::cout << "grad "<<grad<<std::endl;
+      if (solver->add_value(parameters, value, grad)) {
+        for (int i = 0; i < 6; i++)
+          grad[i] /= 1;
+      }
+      nwork = solver->end_iteration(parameters, grad);
+    size_t j=0;
+    for (auto& atom : molecule.m_atoms)
+      for (int i=0; i<3; i++)
+        atom.position(i) = parameters[j++];
+//    std::cout << "after end_iteration parameters "<<parameters<<std::endl;
+      if (verbosity > 0)
+        solver->report();
+      if (nwork <= 0)
+        break;
+    }
+    return molecule_localised(m_group.coordinate_system(),molecule);
 }
 
 static inline bool test_group(const Molecule& molecule, const Group& group, double threshold = 1e-6,
