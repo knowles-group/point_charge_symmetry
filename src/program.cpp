@@ -1,5 +1,5 @@
 #include <iostream>
-#include <molpro/Profiler.h>
+//#include <molpro/Profiler.h>
 #include <molpro/point_charge_symmetry/CoordinateSystem.h>
 #include <molpro/point_charge_symmetry/Molecule.h>
 #include <molpro/point_charge_symmetry/SymmetryMeasure.h>
@@ -17,8 +17,8 @@ int main(int argc, char* argv[]) {
     TCLAP::ValueArg<std::string> output_file("o", "output", "Name of file to contain modified xyz geometry", false, "",
                                         "filename", cmd);
     cmd.parse(argc, argv);
-    std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("symmetry_measure");
-    prof->set_max_depth(1);
+//    std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("symmetry_measure");
+//    prof->set_max_depth(1);
     using namespace molpro::point_charge_symmetry;
     if (not quiet.getValue())
       std::cout << "Look for symmetry in " << input_file.getValue() << " with acceptance threshold "

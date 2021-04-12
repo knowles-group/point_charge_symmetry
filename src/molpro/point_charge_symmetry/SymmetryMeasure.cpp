@@ -1,5 +1,5 @@
 #include "SymmetryMeasure.h"
-#include <molpro/Profiler.h>
+//#include <molpro/Profiler.h>
 #include <molpro/linalg/itsolv/OptimizeBFGS.h>
 #include <molpro/linalg/itsolv/SolverFactory.h>
 #include <regex>
@@ -29,7 +29,7 @@ size_t SymmetryMeasure::image_neighbour(size_t atom_index, const Operator& op) {
 }
 
 double SymmetryMeasure::operator()(int operator_index, int functional_form, int verbosity) const {
-  auto p = molpro::Profiler::single()->push("SymmetryMeasure()");
+//  auto p = molpro::Profiler::single()->push("SymmetryMeasure()");
   constexpr bool use_neighbour_list = true;
   double result = 0;
   auto start = operator_index < 0 ? m_group.begin() : m_group.begin() + operator_index;
@@ -74,7 +74,7 @@ double SymmetryMeasure::operator()(int operator_index, int functional_form, int 
 
 CoordinateSystem::parameters_t SymmetryMeasure::coordinate_system_gradient(int operator_index,
                                                                            int functional_form) const {
-  auto p = molpro::Profiler::single()->push("SymmetryMeasure::coordinate_system_gradient()");
+//  auto p = molpro::Profiler::single()->push("SymmetryMeasure::coordinate_system_gradient()");
   CoordinateSystem::parameters_t result{0, 0, 0, 0, 0, 0};
   const auto origin = m_group.coordinate_system().origin();
   const auto axes = m_group.coordinate_system().axes();
@@ -118,7 +118,7 @@ CoordinateSystem::parameters_t SymmetryMeasure::coordinate_system_gradient(int o
 }
 
 std::vector<double> SymmetryMeasure::atom_gradient(int operator_index, int functional_form) const {
-  auto p = molpro::Profiler::single()->push("SymmetryMeasure::atom_gradient()");
+//  auto p = molpro::Profiler::single()->push("SymmetryMeasure::atom_gradient()");
   std::vector<double> result(m_molecule.m_atoms.size() * 3, 0);
   const auto origin = m_group.coordinate_system().origin();
   const auto axes = m_group.coordinate_system().axes();
@@ -373,7 +373,7 @@ static inline bool test_group(const Molecule& molecule, const Group& group, doub
     std::cout << "test_group " << group.name() << std::endl;
   if (verbosity > 0)
     std::cout << "test_group " << group << std::endl;
-  auto p = molpro::Profiler::single()->push("SymmetryMeasure::test_group(" + group.name() + ")");
+//  auto p = molpro::Profiler::single()->push("SymmetryMeasure::test_group(" + group.name() + ")");
   SymmetryMeasure sm(molecule, group);
   sm.adopt_inertial_axes();
   if ((group.name() == "Dinfh" or group.name() == "Cinfv") and
@@ -444,7 +444,7 @@ Group discover_group(const Molecule& molecule, double threshold, int verbosity) 
 }
 
 Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_system, double threshold, int verbosity) {
-  auto p = molpro::Profiler::single()->push("SymmetryMeasure::discover_group(" + molecule.m_title + ")");
+//  auto p = molpro::Profiler::single()->push("SymmetryMeasure::discover_group(" + molecule.m_title + ")");
   using vec = CoordinateSystem::vec;
   const vec xaxis{1, 0, 0};
   const vec yaxis{0, 1, 0};

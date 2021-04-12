@@ -2,7 +2,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <iostream>
-#include <molpro/Profiler.h>
+//#include <molpro/Profiler.h>
 #include <molpro/point_charge_symmetry/Group.h>
 #include <molpro/point_charge_symmetry/Molecule.h>
 #include <molpro/point_charge_symmetry/Operator.h>
@@ -104,7 +104,7 @@ TEST(point_charge_symmetry, Group) {
 }
 
 TEST(point_charge_symmetry, axes_gradient) {
-  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("axes_gradient");
+//  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("axes_gradient");
   mat axes;
   //  axes << 0, 1, 0, -1, 0, 0, 0, 0, 1;
   axes << 1 / std::sqrt(3), 1 / std::sqrt(3), 1 / std::sqrt(3), 2 / std::sqrt(6), -1 / std::sqrt(6), -1 / std::sqrt(6),
@@ -142,7 +142,7 @@ TEST(point_charge_symmetry, axes_gradient) {
 }
 
 TEST(point_charge_symmetry, Molecule) {
-  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Molecule");
+//  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Molecule");
   Molecule water("h2o.xyz");
   std::cout << water << std::endl;
   Group group;
@@ -167,7 +167,7 @@ TEST(point_charge_symmetry, Molecule) {
 }
 
 TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
-  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("SymmetryMeasure_gradient");
+//  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("SymmetryMeasure_gradient");
   Molecule water("h2o-nosym.xyz");
   //  Molecule water("h2o.xyz");
   //  Molecule water("Ferrocene.xyz");
@@ -292,8 +292,8 @@ TEST(point_charge_symmetry, group_factory) {
 }
 
 TEST(point_charge_symmetry, discover_group) {
-  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Discover groups");
-  prof->set_max_depth(1);
+//  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Discover groups");
+//  prof->set_max_depth(1);
   std::map<std::string, std::string> expected_groups;
   //  expected_groups["n2"] = "Dinfh";
   expected_groups["h2o"] = "C2v";
@@ -318,10 +318,10 @@ TEST(point_charge_symmetry, discover_group) {
     EXPECT_EQ(group.name(), n.second) << n.first << ": " << group.name();
     std::cout << n.first << ": " << group.name() << ", measure=" << SymmetryMeasure(molecule, group)() << std::endl;
   }
-  std::cout << *prof << std::endl;
+//  std::cout << *prof << std::endl;
 }
 TEST(point_charge_symmetry, allene45) {
-  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("allene45");
+//  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("allene45");
   Molecule allene("allene45.xyz");
   //  std::cout << allene<<std::endl;
   CoordinateSystem::mat axes;
@@ -344,7 +344,7 @@ std::ostream &operator<<(std::ostream &s, const std::vector<T> &v) {
 }
 
 TEST(point_charge_symmetry, refine) {
-  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("refine");
+//  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("refine");
   std::vector<std::string> tests{"methane","ch4","allene","allene45","adamantane","cyclohexane","h2o","h2o-nosym"};
   for (const auto& test : tests) {
   Molecule molecule(test+".xyz");
@@ -362,7 +362,7 @@ TEST(point_charge_symmetry, refine) {
 }
 
 TEST(point_charge_symmetry, atom_gradient) {
-  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("atom_gradient");
+//  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("atom_gradient");
   Molecule molecule("hexamethylbenzene.xyz");
   CoordinateSystem cs;
   //  auto group = discover_group(molecule, cs);
