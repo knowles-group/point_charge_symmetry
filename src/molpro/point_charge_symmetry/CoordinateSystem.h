@@ -36,7 +36,6 @@ public:
   vec to_local(const vec& source) const;
   vec to_global(const vec& source) const;
   void cycle_axes() const;
-  void rot90(int axis);
 };
 
 inline std::ostream& operator<<(std::ostream& os, const CoordinateSystem& op) {

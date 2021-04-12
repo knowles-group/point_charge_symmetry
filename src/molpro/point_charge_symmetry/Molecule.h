@@ -10,19 +10,19 @@ struct Atom {
   Eigen::Vector3d position;
   double charge;
   std::string name;
-  Atom(Eigen::Vector3d r, double q, std::string name = "") : position(r), charge(q), name(std::move(name)) {}
+  Atom(Eigen::Vector3d r, double q, std::string name = "") : position(std::move(r)), charge(q), name(std::move(name)) {}
 };
 
 class Molecule {
 public:
   std::vector<Atom> m_atoms;
   std::string m_title;
-  Molecule(const std::string& filename);
-  std::string str() const;
-  Eigen::Vector3d centre_of_charge() const;
-  Eigen::Matrix3d inertia_tensor() const;
-  Eigen::Matrix3d inertial_axes() const;
-  void write(const std::string& filename, const std::string& title="", const std::string& format="xyz");
+  explicit Molecule(const std::string& filename);
+  [[nodiscard]] std::string str() const;
+  [[nodiscard]] Eigen::Vector3d centre_of_charge() const;
+  [[nodiscard]] Eigen::Matrix3d inertia_tensor() const;
+  [[nodiscard]] Eigen::Matrix3d inertial_axes() const;
+  void write(const std::string& filename, const std::string& title = "", const std::string& format = "xyz");
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Molecule& op) {

@@ -19,7 +19,7 @@ if (NOT tclap_POPULATED)
     FetchContent_Populate(tclap)
 endif ()
 
-add_executable(program symmetry_measure.cpp)
+add_executable(program program.cpp molpro/point_charge_symmetry/SymmetryMeasureC.cpp molpro/point_charge_symmetry/SymmetryMeasureC.h)
 target_link_libraries(program PRIVATE molpro::point_charge_symmetry)
 target_include_directories(program PRIVATE ${tclap_SOURCE_DIR}/include)
 set_target_properties(program PROPERTIES OUTPUT_NAME point_charge_symmetry)

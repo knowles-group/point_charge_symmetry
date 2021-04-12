@@ -34,18 +34,15 @@ void CoordinateSystem::from_axes(const mat& axes) const {
     if (beta < 1e-6)
       beta = std::asin(std::sqrt(std::pow(u(0, 2), 2) + std::pow(u(1, 2), 2)));
     if (beta < 1e-12) {
-      //      std::cout << "taking low beta branch " << beta << std::endl;
       alpha = std::atan2(u(1, 0), u(0, 0));
       gamma = 0;
     } else {
       alpha = std::atan2(u(1, 2), u(0, 2));
       gamma = std::atan2(u(2, 1), -u(2, 0));
       auto pi = std::acos(double(-1));
-      //      std::cout << "gamma - pi "<<gamma-pi<<std::endl;
       if (gamma >= pi)
         gamma -= pi;
     }
-    //    std::cout << "alpha="<<alpha<<", beta="<<beta<<", gamma="<<gamma<<std::endl;
   } break;
   case RotationParameterType::Quaternion:
     throw std::logic_error("unimplemented");
@@ -71,12 +68,6 @@ const CoordinateSystem::mat CoordinateSystem::axes() const {
     auto c3 = std::cos(axis_generator()(2));
     auto s3 = std::sin(axis_generator()(2));
     Eigen::Matrix3d result;
-    //    result << c1*c2 , s1*c2, -s2,
-    //    s3*s2*c1-c3*s1, s3*s2*s1+c3*c1, s3*c2,
-    //        c3*s2*c1+s3*s1, c3*s2*s1-s3*c1, c3*c2;
-    //    result << c3*c1-c2*s1*s3, c3*s1-c2*c1*s3, s3*s2,
-    //        -s3*c1-c2*s1*c3, -s3*s1+c2*c1*c3,c3*s2,
-    //        s2*s1,-s2*c1,c2;
     result << c1 * c2 * c3 - s1 * s3, -c3 * s1 - c1 * c2 * s3, c1 * s2, c2 * c3 * s1 + c1 * s3, c1 * c3 - c2 * s1 * s3,
         s1 * s2, -c3 * s2, s2 * s3, c2;
     return result;
@@ -132,14 +123,8 @@ CoordinateSystem::vec CoordinateSystem::to_global(const vec& source) const {
 }
 
 void CoordinateSystem::cycle_axes() const {
-  //  std::cout << "cycle_axes starts with\n" << axes() << std::endl;
-  //  rot90(2);
-  //  std::cout << "cycle_axes after rot90\n"<<axes()<<std::endl;
-  //  if (m_axis_permutation_rot90_next)std::cout << "cycle_axes returns after rotating x,y
-  //  with\n"<<axes()<<std::endl; if (m_axis_permutation_rot90_next) return;
   mat new_axes;
   mat axes = this->axes();
-  //  std::cout << "cycle_axes() start\n" << axes << std::endl;
   if (m_axis_permutation_rot90_next) {
     new_axes.col(0) = axes.col(1);
     new_axes.col(1) = -axes.col(0);
@@ -156,28 +141,7 @@ void CoordinateSystem::cycle_axes() const {
         new_axes.col(j) = -new_axes.col(j);
       }
   from_axes(new_axes);
-  if (false) {
-    auto regen_axes = this->axes();
-    if ((regen_axes - new_axes).norm() > 1e-6) {
-      auto generator = new_axes.log();
-      std::cerr << "generator\n" << generator << std::endl;
-      std::cerr << "exp(generator)\n" << generator.exp() << std::endl;
-      std::cerr << "new_axes\n" << new_axes << "\nregen_axes\n" << regen_axes << std::endl;
-      std::cerr << regen_axes - new_axes << std::endl;
-      throw std::runtime_error("axis permutation failed");
-    }
-  }
   m_axis_permutation_rot90_next = not m_axis_permutation_rot90_next;
-  //  std::cout << "cycle_axes returns after permuting x,y,z with\n" << this->axes() << std::endl;
-}
-
-void CoordinateSystem::rot90(int axis) {
-  mat new_axes;
-  mat axes = this->axes();
-  new_axes.col(axis) = axes.col(axis);
-  new_axes.col((axis + 1) % 3) = axes.col((axis + 2) % 3);
-  new_axes.col((axis + 2) % 3) = -axes.col((axis + 1) % 3);
-  from_axes(new_axes);
 }
 
 std::string CoordinateSystem::str() const {

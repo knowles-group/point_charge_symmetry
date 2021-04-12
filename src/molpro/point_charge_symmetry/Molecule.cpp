@@ -1,5 +1,4 @@
 #include "Molecule.h"
-#include <iostream>
 #include <numeric>
 #include <sstream>
 #define N_PERIODIC_TABLE 105

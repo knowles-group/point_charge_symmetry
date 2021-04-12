@@ -5,7 +5,6 @@ set(CMAKE_CXX_STANDARD 17)
 add_subdirectory(src)
 
 if (${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
-    #    add_subdirectory(examples)
     enable_testing()
     add_subdirectory(test)
 endif ()

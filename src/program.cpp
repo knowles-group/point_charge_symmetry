@@ -14,7 +14,6 @@ int main(int argc, char* argv[]) {
                                                   cmd);
     TCLAP::MultiSwitchArg verbose("v", "verbose", "show detail", cmd);
     TCLAP::SwitchArg quiet("q", "quiet", "Suppress output", cmd);
-    TCLAP::SwitchArg refine("r", "refine", "Refine structure to conform with discovered point group", cmd);
     TCLAP::ValueArg<std::string> output_file("o", "output", "Name of file to contain modified xyz geometry", false, "",
                                         "filename", cmd);
     cmd.parse(argc, argv);
@@ -35,7 +34,6 @@ int main(int argc, char* argv[]) {
         std::cout << group << std::endl;
     }
 
-    if (refine.isSet()) {
       if (not quiet.getValue())
         std::cout << "Refine geometry " << std::endl;
       molecule = SymmetryMeasure(molecule, group).refine(3);
@@ -43,7 +41,6 @@ int main(int argc, char* argv[]) {
       if (not quiet.getValue())
         std::cout << "Refined symmetry measure = " << SymmetryMeasure(molecule, Group(group.name()))() << std::endl;
       std::cout <<molecule<<std::endl;
-    }
 
     if (output_file.isSet()) {
       if (not quiet.getValue())
