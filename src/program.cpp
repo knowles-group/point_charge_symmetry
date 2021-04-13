@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
     //    std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("symmetry_measure");
     //    prof->set_max_depth(1);
     using namespace molpro::point_charge_symmetry;
-    if (not quiet.getValue())
+    if (not quiet.getValue() and not given_group.isSet())
       std::cout << "Look for symmetry in " << input_file.getValue() << " with acceptance threshold "
                 << tolerance.getValue() << std::endl;
     Molecule molecule(input_file.getValue());
@@ -32,21 +32,29 @@ int main(int argc, char* argv[]) {
     CoordinateSystem cs;
     auto group = given_group.isSet() ? Group(cs, given_group.getValue())
                                      : discover_group(molecule, cs, tolerance.getValue(), verbose.getValue() - 1);
-    SymmetryMeasure sm(molecule,group);
+    SymmetryMeasure sm(molecule, group);
     sm.optimise_frame();
+    if (not quiet.getValue() and verbose.getValue()>3)
+    for (int i=0; i<group.end()-group.begin();i++)
+      std::cout <<"Symmetry operation "<<i<<" ("<<group[i].name()<<") symmetry-breaking measure = "<<sm(i)<<std::endl;
     if (not quiet.getValue()) {
-      std::cout << group.name() << ": " << sm() << std::endl;
+      std::cout << (given_group.isSet() ? "Given group " : "Discovered group ") << group.name()
+                << ", symmetry-breaking measure = " << sm() << std::endl;
       if (verbose.getValue() > 1)
         std::cout << group << std::endl;
+      if (verbose.getValue() > 1)
+        std::cout << cs << std::endl;
     }
 
-    if (not quiet.getValue())
+    if (not quiet.getValue() and verbose.getValue() > 2)
       std::cout << "Refine geometry " << std::endl;
     molecule = sm.refine(3);
     cs = CoordinateSystem();
     if (not quiet.getValue())
-      std::cout << "Refined symmetry measure = " << SymmetryMeasure(molecule, Group(group.name()))() << std::endl;
-    std::cout << molecule << std::endl;
+      std::cout << "After geometry refinement, symmetry-breaking measure = "
+                << SymmetryMeasure(molecule, Group(group.name()))() << std::endl;
+    if (not quiet.getValue() and verbose.getValue() > 0)
+      std::cout << molecule << std::endl;
 
     if (output_file.isSet()) {
       if (not quiet.getValue())
