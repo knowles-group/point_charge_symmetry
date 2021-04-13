@@ -351,19 +351,18 @@ std::ostream &operator<<(std::ostream &s, const std::vector<T> &v) {
 
 TEST(point_charge_symmetry, refine) {
   //  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("refine");
-  std::vector<std::string> tests{//      "c60",
-                                 "methane",    "ch4",         "allene", "allene45",
-                                 "adamantane", "cyclohexane", "h2o",    "h2o-nosym"};
+  std::vector<std::string> tests{"c60",        "methane",     "ch4", "allene",   "allene45",
+                                 "adamantane", "cyclohexane", "h2o", "h2o-nosym"};
   for (const auto &test : tests) {
     Molecule molecule(test + ".xyz");
     CoordinateSystem cs;
     auto group = discover_group(molecule, cs, 1e-6, -1);
     SymmetryMeasure sm(molecule, group);
-    //  std::cout << molecule << std::endl;
-    //  std::cout << sm() << std::endl;
+    //      std::cout << molecule << std::endl;
+    //      std::cout << sm() << std::endl;
     auto newmolecule = sm.refine(1);
     double error = SymmetryMeasure(newmolecule, Group(group.name()))();
-    ASSERT_LE(error, 1e-14);
+    ASSERT_LE(error, 1e-12);
     //  std::cout << error << std::endl;
     //  std::cout << newmolecule << std::endl;
   }
