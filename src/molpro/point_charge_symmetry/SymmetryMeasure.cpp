@@ -340,7 +340,7 @@ Molecule SymmetryMeasure::refine(int repeat) const {
         parameters.push_back(atom.position(i));
     const int verbosity = -1;
     auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector, Rvector>(
-        "BFGS", "max_size_qspace=6,convergence_threshold=1e-18");
+        "BFGS", "max_size_qspace=6,convergence_threshold=1e-10");
     int nwork = 1;
     for (int iter = 0; iter < 200; iter++) {
       auto value = sm(-1, 1);
