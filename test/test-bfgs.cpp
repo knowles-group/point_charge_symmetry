@@ -10,7 +10,7 @@ using std::cout;
 using Rvector = std::array<double, 3>;
 TEST(bfgs, quadratic) {
   Rvector x{9e49, 1, -73e8}, g;
-  auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector, Rvector>("BFGS", "max_size_qspace=4");
+  auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector>("BFGS", "max_size_qspace=4");
   int nwork = 1;
   for (int iter = 0; iter < 100; iter++) {
     double value = 0;
@@ -20,7 +20,7 @@ TEST(bfgs, quadratic) {
     }
     cout << "x=" << x[0] << ", " << x[1] << ", " << x[2] << std::endl;
     cout << " value " << value << "; gradient=" << g[0] << ", " << g[1] << ", " << g[2] << std::endl;
-    nwork = solver->add_value(x, value, g);
+    nwork = solver->add_vector(x, g, value);
     nwork = solver->end_iteration(x, g);
     solver->report();
     if (nwork <= 0)
@@ -32,7 +32,7 @@ TEST(bfgs, molecule) {
   cout << water << std::endl;
   auto coc = water.centre_of_charge();
   Rvector x{0, 0, 0}, g;
-  auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector, Rvector>("BFGS", "max_size_qspace=4");
+  auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector>("BFGS", "max_size_qspace=4");
   int nwork = 1;
   for (int iter = 0; iter < 100; iter++) {
     double value = 0;
@@ -44,7 +44,7 @@ TEST(bfgs, molecule) {
       }
     cout << "x=" << x[0] << ", " << x[1] << ", " << x[2] << std::endl;
     cout << " value " << value << "; gradient=" << g[0] << ", " << g[1] << ", " << g[2] << std::endl;
-    nwork = solver->add_value(x, value, g);
+    nwork = solver->add_vector(x, g, value);
     nwork = solver->end_iteration(x, g);
     solver->report();
     if (nwork <= 0)
@@ -52,4 +52,4 @@ TEST(bfgs, molecule) {
   }
 }
 #include <molpro/linalg/itsolv/SolverFactory-implementation.h>
-template class molpro::linalg::itsolv::SolverFactory<Rvector, Rvector, Rvector>;
+template class molpro::linalg::itsolv::SolverFactory<Rvector, Rvector>;

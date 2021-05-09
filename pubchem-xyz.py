@@ -20,11 +20,3 @@ for result in results:
                     conformer['z'][key])
                     )
             filename += '_'
-
-    # print(result.common_name)
-    # print(result.mol_3d)
-    # molecule = pybel.readstring("pc", result.record)
-    # while os.path.exists(filename+".xyz"): filename += "_"
-    # f = open(filename+".xyz","w")
-    # f.write(molecule.write("XYZ"))
-    # print("written to "+filename+".xyz")

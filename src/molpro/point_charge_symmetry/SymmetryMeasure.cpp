@@ -263,7 +263,7 @@ int SymmetryMeasure::optimise_frame() {
     parameters[c] += step;
     std::cout << "analytic=" << grad0[c] << ", numerical=" << (valuep - valuem) / (2 * step) << std::endl;
   }
-  auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector, Rvector>(
+  auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector>(
       "BFGS", "max_size_qspace=3,convergence_threshold=1e-6");
   int nwork = 1;
   if (verbosity > 0) {
@@ -290,7 +290,7 @@ int SymmetryMeasure::optimise_frame() {
       std::cout << "m_molecule.centre_of_charge() " << m_molecule.centre_of_charge().transpose() << std::endl;
       std::cout << "centre_of_charge_displacement " << centre_of_charge_displacement.transpose() << std::endl;
     }
-    if (solver->add_value(parameters, value, grad)) {
+    if (solver->add_vector(parameters, grad, value)) {
       if (verbosity > 1) {
         std::cout << "after add_value " << nwork;
         for (int i = 0; i < 6; i++)
@@ -339,7 +339,7 @@ Molecule SymmetryMeasure::refine(int repeat) const {
       for (int i = 0; i < 3; i++)
         parameters.push_back(atom.position(i));
     const int verbosity = -1;
-    auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector, Rvector>(
+    auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector>(
         "BFGS", "max_size_qspace=6,convergence_threshold=1e-10");
     int nwork = 1;
     for (int iter = 0; iter < 200; iter++) {
@@ -348,7 +348,7 @@ Molecule SymmetryMeasure::refine(int repeat) const {
       //      std::cout << "value "<<value<<std::endl;
       //      std::cout << "parameters "<<parameters<<std::endl;
       //      std::cout << "grad "<<grad<<std::endl;
-      if (solver->add_value(parameters, value, grad)) {
+      if (solver->add_vector(parameters, grad, value)) {
         for (int i = 0; i < 6; i++)
           grad[i] /= 1;
       }
