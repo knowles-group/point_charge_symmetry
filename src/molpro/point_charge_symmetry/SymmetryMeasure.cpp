@@ -10,7 +10,8 @@ Atom SymmetryMeasure::image(const Atom& source, const Operator& op) {
   return Atom(op(source.position), source.charge, source.name);
 }
 size_t SymmetryMeasure::image_neighbour(size_t atom_index, const Operator& op) {
-  size_t result;
+  const size_t no_result = 1000000;
+  size_t result = no_result;
   //  std::cout << "Operator "<<op<<std::endl;
   double closest_distance = 1e50;
   //    std::cout << "Atom "<<m_molecule.m_atoms[atom_index].position.transpose() <<std::endl;
@@ -24,6 +25,16 @@ size_t SymmetryMeasure::image_neighbour(size_t atom_index, const Operator& op) {
         result = i;
       }
     }
+  }
+  if (result == no_result) {
+    std::cout << "atom_index " << atom_index << std::endl;
+    std::cout << "Atom " << m_molecule.m_atoms[atom_index].position.transpose() << std::endl;
+    std::cout << "op " << op << " " << op.str("Operator", true) << std::endl;
+    std::cout << "Image " << image.position.transpose() << std::endl;
+    for (size_t i = 0; i < m_molecule.m_atoms.size(); i++) {
+      std::cout << "atom " << m_molecule.m_atoms[i].position.transpose() << std::endl;
+    }
+    throw std::logic_error("cannot get neighbour");
   }
   return result;
 }
@@ -235,6 +246,28 @@ void SymmetryMeasure::adopt_inertial_axes() {
   //    std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
 }
 
+class Problem_optimise_frame : public molpro::linalg::itsolv::Problem<CoordinateSystem::parameters_t> {
+  SymmetryMeasure& m_sm;
+
+public:
+  Problem_optimise_frame(SymmetryMeasure& sm) : m_sm(sm) {}
+  value_t residual(const container_t& parameters, container_t& residual) const override {
+    constexpr bool optimize_origin = false;
+    //    std::cout << "parameters: "<<parameters<<std::endl;
+    m_sm.reset_neighbours();
+    residual = m_sm.coordinate_system_gradient(-1, 1);
+    if (not optimize_origin)
+      std::fill(residual.begin(), residual.begin() + 3, 0);
+    //    std::cout << "residual: "<<residual<<std::endl;
+    //    std::cout << "value: "<<m_sm(-1,1)<<std::endl;
+    return m_sm(-1, 1);
+  }
+  bool diagonals(container_t& d) const override {
+    std::fill(d.begin(), d.end(), 100);
+    return true;
+  }
+};
+
 int SymmetryMeasure::optimise_frame() {
   constexpr bool optimize_origin = false;
   auto& parameters = m_group.coordinate_system_parameters();
@@ -242,29 +275,8 @@ int SymmetryMeasure::optimise_frame() {
   const int centre_of_charge_penalty_power = 4;
   const int verbosity = -1;
   using Rvector = CoordinateSystem::parameters_t;
-  //  std::cout << "optimise_frame" << std::endl;
-  for (int c = 0; c < 0; c++) { // TODO remove testing only
-    parameters = {1, 1, 1, 1, 1, 1};
-    double step = 1e-3;
-    auto value0 = (*this)();
-    auto grad0 = coordinate_system_gradient();
-    parameters[c] += step;
-    auto valuep = (*this)();
-    std::cout << "plus displacement parameters=";
-    for (int i = 0; i < 6; i++)
-      std::cout << " " << parameters[i];
-    std::cout << ", value=" << valuep << std::endl;
-    parameters[c] -= 2 * step;
-    auto valuem = (*this)();
-    std::cout << "minus displacement parameters=";
-    for (int i = 0; i < 6; i++)
-      std::cout << " " << parameters[i];
-    std::cout << ", value=" << valuem << std::endl;
-    parameters[c] += step;
-    std::cout << "analytic=" << grad0[c] << ", numerical=" << (valuep - valuem) / (2 * step) << std::endl;
-  }
-  auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector>(
-      "BFGS", "max_size_qspace=3,convergence_threshold=1e-6");
+  auto solver =
+      molpro::linalg::itsolv::create_Optimize<Rvector, Rvector>("BFGS", "max_size_qspace=3,convergence_threshold=1e-6");
   int nwork = 1;
   if (verbosity > 0) {
     std::cout << "initial";
@@ -276,48 +288,14 @@ int SymmetryMeasure::optimise_frame() {
     for (const auto& atom : m_molecule.m_atoms)
       std::cout << atom.name << ": " << m_group.coordinate_system().to_local(atom.position).transpose() << std::endl;
   }
-  for (int iter = 0; iter < 200; iter++) {
-    //    std::cout << coordinate_system << std::endl;
-    reset_neighbours();
-    auto value = (*this)(-1, 1);
-    auto grad = coordinate_system_gradient(-1, 1);
-    if (not optimize_origin)
-      std::fill(grad.begin(), grad.begin() + 3, 0);
-    auto centre_of_charge_displacement = (m_group.coordinate_system().origin() - m_molecule.centre_of_charge()).eval();
-    if (verbosity > 1) {
-      std::cout << "grad " << grad << std::endl;
-      std::cout << "coordinate_system.origin() " << m_group.coordinate_system().origin().transpose() << std::endl;
-      std::cout << "m_molecule.centre_of_charge() " << m_molecule.centre_of_charge().transpose() << std::endl;
-      std::cout << "centre_of_charge_displacement " << centre_of_charge_displacement.transpose() << std::endl;
-    }
-    if (solver->add_vector(parameters, grad, value)) {
-      if (verbosity > 1) {
-        std::cout << "after add_value " << nwork;
-        for (int i = 0; i < 6; i++)
-          std::cout << " " << grad[i];
-        std::cout << std::endl;
-        cout << "precondition" << std::endl;
-      }
-      for (int i = 0; i < 6; i++)
-        grad[i] /= 100;
-    }
-    nwork = solver->end_iteration(parameters, grad);
-    if (verbosity > 1) {
-      std::cout << "after end_iteration " << nwork;
-      for (int i = 0; i < 6; i++)
-        std::cout << " " << parameters[i];
-      std::cout << std::endl;
-      std::cout << m_group.coordinate_system().axes() << std::endl;
-      std::cout << "Atomic coordinates in current local frame\n" << std::endl;
-      for (const auto& atom : m_molecule.m_atoms)
-        std::cout << atom.name << ": " << m_group.coordinate_system().to_local(atom.position).transpose() << std::endl;
-    }
-    if (verbosity > 0)
-      solver->report();
-    if (nwork <= 0)
-      return iter;
-  }
-  return -1;
+  auto problem = Problem_optimise_frame(*this);
+  CoordinateSystem::parameters_t grad;
+  solver->set_verbosity(linalg::itsolv::Verbosity::None);
+  auto result = solver->solve(parameters, grad, problem, false);
+  //    std::cout << "solve finds";
+  //    std::cout << parameters;
+  //    std::cout << std::endl;
+  return result ? solver->statistics().iterations : -1;
 }
 
 template <typename T>
@@ -326,6 +304,26 @@ std::ostream& operator<<(std::ostream& s, const std::vector<T>& v) {
     s << " " << e;
   return s;
 }
+
+class Problem_refine : public molpro::linalg::itsolv::Problem<std::vector<double>> {
+  SymmetryMeasure& m_sm;
+  Molecule& m_molecule;
+
+public:
+  Problem_refine(SymmetryMeasure& sm, Molecule& molecule) : m_sm(sm), m_molecule(molecule) {}
+  value_t residual(const container_t& parameters, container_t& residual) const override {
+    size_t j = 0;
+    for (auto& atom : m_molecule.m_atoms)
+      for (int i = 0; i < 3; i++)
+        atom.position(i) = parameters[j++];
+    residual = m_sm.atom_gradient(-1, 1);
+    return m_sm(-1, 1);
+  }
+  bool diagonals(container_t& d) const override {
+    std::fill(d.begin(), d.end(), 1);
+    return true;
+  }
+};
 Molecule SymmetryMeasure::refine(int repeat) const {
   auto molecule = molecule_localised(m_group.coordinate_system(), this->m_molecule);
   //  std::cout << "refine initial molecule\n"<<molecule<<std::endl;
@@ -341,28 +339,10 @@ Molecule SymmetryMeasure::refine(int repeat) const {
     const int verbosity = -1;
     auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector>(
         "BFGS", "max_size_qspace=6,convergence_threshold=1e-10");
-    int nwork = 1;
-    for (int iter = 0; iter < 200; iter++) {
-      auto value = sm(-1, 1);
-      auto grad = sm.atom_gradient(-1, 1);
-      //      std::cout << "value "<<value<<std::endl;
-      //      std::cout << "parameters "<<parameters<<std::endl;
-      //      std::cout << "grad "<<grad<<std::endl;
-      if (solver->add_vector(parameters, grad, value)) {
-        for (int i = 0; i < 6; i++)
-          grad[i] /= 1;
-      }
-      nwork = solver->end_iteration(parameters, grad);
-      size_t j = 0;
-      for (auto& atom : molecule.m_atoms)
-        for (int i = 0; i < 3; i++)
-          atom.position(i) = parameters[j++];
-      //    std::cout << "after end_iteration parameters "<<parameters<<std::endl;
-      if (verbosity > 0)
-        solver->report();
-      if (nwork <= 0)
-        break;
-    }
+    solver->set_verbosity(linalg::itsolv::Verbosity::None);
+    auto problem = Problem_refine(sm, molecule);
+    auto grad = parameters;
+    solver->solve(parameters, grad, problem);
   }
   return molecule;
 }
