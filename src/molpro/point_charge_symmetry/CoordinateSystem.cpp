@@ -76,6 +76,7 @@ const CoordinateSystem::mat CoordinateSystem::axes() const {
     throw std::logic_error("unimplemented");
     break;
   }
+  throw std::logic_error("unexpected rotation parameter type");
 }
 
 const std::array<CoordinateSystem::mat, 3> CoordinateSystem::axes_gradient(int displacements, double step) const {
