@@ -16,8 +16,7 @@ using vec = Operator::vec;
 using mat = Operator::mat;
 
 TEST(point_charge_symmetry, Euler) {
-  CoordinateSystem cs;
-  cs.m_rotation_parameter_type = RotationParameterType::Euler;
+  CoordinateSystem cs(RotationParameterType::Euler);
   std::vector<std::array<double, 3>> parameters;
   parameters.push_back({1, 0, 0});
   parameters.push_back({0, 1, 0});
@@ -71,7 +70,7 @@ TEST(point_charge_symmetry, local_operations) {
 }
 
 TEST(point_charge_symmetry, translated_operations) {
-  CoordinateSystem coords({10, 10, 10});
+  CoordinateSystem coords(RotationParameterType::Euler,{10, 10, 10});
   test_operation({1, 1, 1}, Reflection(coords, {0, 0, 1}), {1, 1, 19});
   test_operation({1, 1, 1}, Reflection(coords, {0, 0, -1}), {1, 1, 19});
   test_operation({1, 1, 1}, Reflection(coords, {-1, -1, -1}), {19, 19, 19});
@@ -83,7 +82,7 @@ TEST(point_charge_symmetry, translated_operations) {
 TEST(point_charge_symmetry, rotated_operations) {
   mat axes;
   axes << 0, 1, 0, -1, 0, 0, 0, 0, 1;
-  CoordinateSystem coords({0, 0, 0}, axes);
+  CoordinateSystem coords(RotationParameterType::Euler,{0, 0, 0}, axes);
   test_operation({1, 1, 1}, Reflection(coords, {0, 0, 1}), {1, 1, -1});
   test_operation({1, 1, 1}, Reflection(coords, {0, 0, -1}), {1, 1, -1});
   test_operation({1, 1, 1}, Reflection(coords, {-1, -1, -1}), {1 / 3., 5 / 3., 1 / 3.});
@@ -95,7 +94,7 @@ TEST(point_charge_symmetry, rotated_operations) {
 TEST(point_charge_symmetry, Group) {
   mat axes;
   axes << 0, 1, 0, -1, 0, 0, 0, 0, 1;
-  CoordinateSystem coords({0, 0, 0});
+  CoordinateSystem coords(RotationParameterType::Euler,{0, 0, 0});
   Group group(coords);
   group.add(Identity());
   group.add(Rotation({0, 0, 1}, 2));
@@ -109,7 +108,7 @@ TEST(point_charge_symmetry, axes_gradient) {
   //  axes << 0, 1, 0, -1, 0, 0, 0, 0, 1;
   axes << 1 / std::sqrt(3), 1 / std::sqrt(3), 1 / std::sqrt(3), 2 / std::sqrt(6), -1 / std::sqrt(6), -1 / std::sqrt(6),
       0, 1 / std::sqrt(2), -1 / std::sqrt(2);
-  CoordinateSystem coords({0, 0, 0}, axes);
+  CoordinateSystem coords(RotationParameterType::Euler,{0, 0, 0}, axes);
   //  std::cout << "coords.axes():\n" << coords.axes() << std::endl;
   vec displacement{2e-6, 2e-6, 2e-6};
   auto coords_minus = coords;
@@ -217,7 +216,6 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
   //    std::cout << " " << group.coordinate_system().data()[i];
   //  std::cout << std::endl;
   for (int functional_form = 0; functional_form < 2; functional_form++) {
-
     auto g = sm.coordinate_system_gradient(-1, functional_form);
     std::cout << "functional_form=" << functional_form << std::endl;
     std::cout << "coordinate system gradient:";
@@ -332,7 +330,7 @@ TEST(point_charge_symmetry, allene45) {
   //  std::cout << allene<<std::endl;
   CoordinateSystem::mat axes;
   axes << 0, 0, 1, 1, 0, 0, 0, 1, 0;
-  CoordinateSystem cs(vec::Zero(), axes);
+  CoordinateSystem cs(RotationParameterType::Euler,vec::Zero(), axes);
   //  std::cout << cs<<std::endl;
   const Group group = Group(cs, "D2d");
   //  std::cout << group << std::endl;
