@@ -43,6 +43,49 @@ static std::array<double, 3> euler_from_axes(const CoordinateSystem::mat& u) {
   return {alpha, beta, gamma};
 }
 
+static auto axes_gradient_from_euler(const Eigen::Vector3d& euler) {
+  std::array<CoordinateSystem::mat, 3> result;
+  auto c1 = std::cos(euler[0]);
+  auto s1 = std::sin(euler[0]);
+  auto c2 = std::cos(euler[1]);
+  auto s2 = std::sin(euler[1]);
+  auto c3 = std::cos(euler[2]);
+  auto s3 = std::sin(euler[2]);
+  result[0] << -c2 * c3 * s1 - c1 * s3, -c1 * c3 + c2 * s1 * s3, -s1 * s2, c1 * c2 * c3 - s1 * s3,
+      -c3 * s1 - c1 * c2 * s3, c1 * s2, 0, 0, 0;
+  result[1] << -c1 * c3 * s2, c1 * s2 * s3, c1 * c2, -c3 * s1 * s2, s1 * s2 * s3, c2 * s1, -c2 * c3, c2 * s3, -s2;
+  result[2] << -c3 * s1 - c1 * c2 * s3, -c1 * c2 * c3 + s1 * s3, 0, c1 * c3 - c2 * s1 * s3, -c2 * c3 * s1 - c1 * s3, 0,
+      s2 * s3, c3 * s2, 0;
+  return result;
+}
+
+static Eigen::Matrix3d axes_from_euler(const Eigen::Vector3d& euler) {
+  auto c1 = std::cos(euler[0]);
+  auto s1 = std::sin(euler[0]);
+  auto c2 = std::cos(euler[1]);
+  auto s2 = std::sin(euler[1]);
+  auto c3 = std::cos(euler[2]);
+  auto s3 = std::sin(euler[2]);
+  Eigen::Matrix3d result;
+  result << c1 * c2 * c3 - s1 * s3, -c3 * s1 - c1 * c2 * s3, c1 * s2, c2 * c3 * s1 + c1 * s3, c1 * c3 - c2 * s1 * s3,
+      s1 * s2, -c3 * s2, s2 * s3, c2;
+  if (false) {
+    if (result(0, 0) < 0 and result(1, 1) < 0) {
+      result.col(0) = -result.col(0);
+      result.col(1) = -result.col(1);
+    }
+    if (result(0, 0) < 0 and result(2, 2) < 0) {
+      result.col(0) = -result.col(0);
+      result.col(2) = -result.col(2);
+    }
+    if (result(1, 1) < 0 and result(2, 2) < 0) {
+      result.col(1) = -result.col(1);
+      result.col(2) = -result.col(2);
+    }
+  }
+  return result;
+}
+
 void CoordinateSystem::from_axes(const mat& axes) const {
   if (std::abs(axes.determinant() - 1) > 1e-14)
     throw std::runtime_error("Axes must be proper rotation");
@@ -60,29 +103,19 @@ void CoordinateSystem::from_axes(const mat& axes) const {
   case RotationParameterType::TanEuler: {
     auto euler = euler_from_axes(axes);
     auto pi = std::acos(double(-1));
-    m_parameters[3] = std::tan((euler[0] - pi) / 2);
-    m_parameters[4] = std::tan(euler[1]);
-    m_parameters[5] = std::tan((euler[2] - pi) / 2);
+    m_parameters[3] = std::tan((euler[0] - pi) / (2 * m_rotation_parameter_scale));
+    m_parameters[4] = std::tan(euler[1] / m_rotation_parameter_scale);
+    m_parameters[5] = std::tan((euler[2] - pi) / (2 * m_rotation_parameter_scale));
+//        std::cout << "from axes\n" << axes << std::endl;
+//        std::cout << "Euler angles " << euler[0] << ", " << euler[1] << ", " << euler[2] << std::endl;
+//        std::cout << "parameters set to " << m_parameters[3] << ", " << m_parameters[4] << ", " << m_parameters[5]
+//                  << std::endl;
   } break;
   case RotationParameterType::Quaternion:
     throw std::logic_error("unimplemented");
     break;
   }
 }
-
-static Eigen::Matrix3d axes_from_euler(const Eigen::Vector3d& euler) {
-  auto c1 = std::cos(euler[0]);
-  auto s1 = std::sin(euler[0]);
-  auto c2 = std::cos(euler[1]);
-  auto s2 = std::sin(euler[1]);
-  auto c3 = std::cos(euler[2]);
-  auto s3 = std::sin(euler[2]);
-  Eigen::Matrix3d result;
-  result << c1 * c2 * c3 - s1 * s3, -c3 * s1 - c1 * c2 * s3, c1 * s2, c2 * c3 * s1 + c1 * s3, c1 * c3 - c2 * s1 * s3,
-      s1 * s2, -c3 * s2, s2 * s3, c2;
-  return result;
-}
-
 const CoordinateSystem::mat CoordinateSystem::axes() const {
   switch (m_rotation_parameter_type) {
   case RotationParameterType::Log: {
@@ -98,9 +131,13 @@ const CoordinateSystem::mat CoordinateSystem::axes() const {
   case RotationParameterType::TanEuler: {
     Eigen::Vector3d euler;
     auto pi = std::acos(double(-1));
-    euler[0] = pi - 2 * std::atan(axis_generator()(0));
-    euler[1] = std::atan(axis_generator()(1));
-    euler[2] = pi - 2 * std::atan(axis_generator()(2));
+    euler[0] = pi + 2 * m_rotation_parameter_scale * std::atan(axis_generator()(0));
+    euler[1] = m_rotation_parameter_scale * std::atan(axis_generator()(1));
+    euler[2] = pi + 2 * m_rotation_parameter_scale * std::atan(axis_generator()(2));
+//        std::cout << "parameters read " << m_parameters[3] << ", " << m_parameters[4] << ", " << m_parameters[5]
+//                  << std::endl;
+//        std::cout << "Euler angles " << euler[0] << ", " << euler[1] << ", " << euler[2] << std::endl;
+//        std::cout << "to axes\n" << axes_from_euler(euler) << std::endl;
     return axes_from_euler(euler);
   }
   case RotationParameterType::Quaternion:
@@ -108,22 +145,6 @@ const CoordinateSystem::mat CoordinateSystem::axes() const {
   }
   throw std::logic_error("unexpected rotation parameter type");
 }
-static auto axes_gradient_from_euler(const Eigen::Vector3d& euler) {
-  std::array<CoordinateSystem::mat, 3> result;
-  auto c1 = std::cos(euler[0]);
-  auto s1 = std::sin(euler[0]);
-  auto c2 = std::cos(euler[1]);
-  auto s2 = std::sin(euler[1]);
-  auto c3 = std::cos(euler[2]);
-  auto s3 = std::sin(euler[2]);
-  result[0] << -c2 * c3 * s1 - c1 * s3, -c1 * c3 + c2 * s1 * s3, -s1 * s2, c1 * c2 * c3 - s1 * s3,
-      -c3 * s1 - c1 * c2 * s3, c1 * s2, 0, 0, 0;
-  result[1] << -c1 * c3 * s2, c1 * s2 * s3, c1 * c2, -c3 * s1 * s2, s1 * s2 * s3, c2 * s1, -c2 * c3, c2 * s3, -s2;
-  result[2] << -c3 * s1 - c1 * c2 * s3, -c1 * c2 * c3 + s1 * s3, 0, c1 * c3 - c2 * s1 * s3, -c2 * c3 * s1 - c1 * s3, 0,
-      s2 * s3, c3 * s2, 0;
-  return result;
-}
-
 const std::array<CoordinateSystem::mat, 3> CoordinateSystem::axes_gradient(int displacements, double step) const {
   //  auto p = molpro::Profiler::single()->push("CoordinateSystem::axes_gradient()");
   if (displacements == 0) { // analytic
@@ -135,9 +156,9 @@ const std::array<CoordinateSystem::mat, 3> CoordinateSystem::axes_gradient(int d
     case RotationParameterType::TanEuler: {
       std::array<CoordinateSystem::mat, 3> result;
       auto eulergrad = axes_gradient_from_euler(axis_generator());
-      result[0] = -2 * eulergrad[0] / (1 + std::pow(m_parameters[3], 2));
-      result[1] = eulergrad[1] / (1 + std::pow(m_parameters[4], 2));
-      result[2] = -2 * eulergrad[2] / (1 + std::pow(m_parameters[5], 2));
+      result[0] = 2 * m_rotation_parameter_scale * eulergrad[0] / (1 + std::pow(m_parameters[3], 2));
+      result[1] = m_rotation_parameter_scale * eulergrad[1] / (1 + std::pow(m_parameters[4], 2));
+      result[2] = 2 * m_rotation_parameter_scale * eulergrad[2] / (1 + std::pow(m_parameters[5], 2));
       return result;
     }
     case RotationParameterType::Quaternion:

@@ -15,6 +15,7 @@ public:
   // protected:
   mutable parameters_t m_parameters;
   const RotationParameterType m_rotation_parameter_type = RotationParameterType::Euler;
+  const double m_rotation_parameter_scale = double(0*1e-11)+1;
 
 protected:
   mutable bool m_axis_permutation_rot90_next = false;

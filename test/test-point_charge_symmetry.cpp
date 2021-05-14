@@ -16,35 +16,44 @@ using vec = Operator::vec;
 using mat = Operator::mat;
 
 TEST(point_charge_symmetry, Euler) {
-  CoordinateSystem cs(RotationParameterType::Euler);
-  std::vector<std::array<double, 3>> parameters;
-  parameters.push_back({1, 0, 0});
-  parameters.push_back({0, 1, 0});
-  parameters.push_back({0, 0, 1});
-  parameters.push_back({0, 1e-13, 1});
-  parameters.push_back({0, 1e-12, 1});
-  parameters.push_back({0, 1e-11, 1});
-  parameters.push_back({0, 1e-10, 1});
-  parameters.push_back({0, 1e-9, 1});
-  parameters.push_back({0, 1e-8, 1});
-  parameters.push_back({0, 1e-7, 1});
-  parameters.push_back({0, 1e-6, 1});
-  parameters.push_back({1, 1, 0});
-  parameters.push_back({0.1, 0.2, 0.3});
-  for (const auto &p : parameters) {
-    //    cout << "test "<<p[0]<<", "<<p[1]<<", "<<p[2]<<std::endl;
-    for (int i = 0; i < 3; i++)
-      cs.m_parameters[3 + i] = p[i];
-    //    cout << cs << std::endl;
-    auto u = cs.axes();
-    cs.from_axes(u);
-    auto pnew = std::array<double, 3>{cs.m_parameters[3], cs.m_parameters[4], cs.m_parameters[5]};
-    if (std::abs(p[1]) > 1e-12)
-      EXPECT_THAT(pnew, ::testing::Pointwise(::testing::DoubleNear(1e-10), p));
-    //    cout << cs << std::endl;
-    auto unew = cs.axes();
-    EXPECT_THAT(std::vector<double>(&unew(0, 0), &unew(0, 0) + 9),
-                ::testing::Pointwise(::testing::DoubleNear(1e-10), std::vector<double>(&u(0, 0), &u(0, 0) + 9)));
+  for (const auto &rpt : {RotationParameterType::Euler, RotationParameterType::TanEuler}) {
+    CoordinateSystem cs(rpt);
+    std::vector<std::array<double, 3>> parameters;
+    parameters.push_back({1, 0, 0});
+    parameters.push_back({0, 1, 0});
+    parameters.push_back({0, 0, 1});
+    parameters.push_back({0, 1e-13, 1});
+    parameters.push_back({0, 1e-12, 1});
+    parameters.push_back({0, 1e-11, 1});
+    parameters.push_back({0, 1e-10, 1});
+    parameters.push_back({0, 1e-9, 1});
+    parameters.push_back({0, 1e-8, 1});
+    parameters.push_back({0, 1e-7, 1});
+    parameters.push_back({0, 1e-6, 1});
+    parameters.push_back({1, 1, 0});
+    parameters.push_back({0.1, 0.2, 0.3});
+    for (auto &p : parameters) {
+      for (int i = 0; i < 3; i++)
+        cs.m_parameters[3 + i] = p[i];
+      auto ufirst = cs.axes();
+      cs.from_axes(ufirst);
+      for (int i = 0; i < 3; i++)
+        p[i] = cs.m_parameters[3 + i];
+      //      cout << "!!test " << p[0] << ", " << p[1] << ", " << p[2] << std::endl;
+      auto u = cs.axes();
+      cs.from_axes(u);
+      auto pnew = std::array<double, 3>{cs.m_parameters[3], cs.m_parameters[4], cs.m_parameters[5]};
+      if (std::abs(p[1]) > 1e-12)
+        EXPECT_THAT(pnew, ::testing::Pointwise(::testing::DoubleNear(1e-10), p));
+      //      cout << cs << std::endl;
+      auto unew = cs.axes();
+      ASSERT_THAT(std::vector<double>(&unew(0, 0), &unew(0, 0) + 9),
+                  ::testing::Pointwise(::testing::DoubleNear(1e-10), std::vector<double>(&u(0, 0), &u(0, 0) + 9)))
+          << "u:\n"
+          << u << std::endl
+          << "unew:\n"
+          << unew << std::endl;
+    }
   }
 }
 
@@ -70,7 +79,7 @@ TEST(point_charge_symmetry, local_operations) {
 }
 
 TEST(point_charge_symmetry, translated_operations) {
-  CoordinateSystem coords(RotationParameterType::Euler,{10, 10, 10});
+  CoordinateSystem coords(RotationParameterType::Euler, {10, 10, 10});
   test_operation({1, 1, 1}, Reflection(coords, {0, 0, 1}), {1, 1, 19});
   test_operation({1, 1, 1}, Reflection(coords, {0, 0, -1}), {1, 1, 19});
   test_operation({1, 1, 1}, Reflection(coords, {-1, -1, -1}), {19, 19, 19});
@@ -82,7 +91,7 @@ TEST(point_charge_symmetry, translated_operations) {
 TEST(point_charge_symmetry, rotated_operations) {
   mat axes;
   axes << 0, 1, 0, -1, 0, 0, 0, 0, 1;
-  CoordinateSystem coords(RotationParameterType::Euler,{0, 0, 0}, axes);
+  CoordinateSystem coords(RotationParameterType::Euler, {0, 0, 0}, axes);
   test_operation({1, 1, 1}, Reflection(coords, {0, 0, 1}), {1, 1, -1});
   test_operation({1, 1, 1}, Reflection(coords, {0, 0, -1}), {1, 1, -1});
   test_operation({1, 1, 1}, Reflection(coords, {-1, -1, -1}), {1 / 3., 5 / 3., 1 / 3.});
@@ -94,7 +103,7 @@ TEST(point_charge_symmetry, rotated_operations) {
 TEST(point_charge_symmetry, Group) {
   mat axes;
   axes << 0, 1, 0, -1, 0, 0, 0, 0, 1;
-  CoordinateSystem coords(RotationParameterType::Euler,{0, 0, 0});
+  CoordinateSystem coords(RotationParameterType::Euler, {0, 0, 0});
   Group group(coords);
   group.add(Identity());
   group.add(Rotation({0, 0, 1}, 2));
@@ -108,18 +117,18 @@ TEST(point_charge_symmetry, axes_gradient) {
   //  axes << 0, 1, 0, -1, 0, 0, 0, 0, 1;
   axes << 1 / std::sqrt(3), 1 / std::sqrt(3), 1 / std::sqrt(3), 2 / std::sqrt(6), -1 / std::sqrt(6), -1 / std::sqrt(6),
       0, 1 / std::sqrt(2), -1 / std::sqrt(2);
-  CoordinateSystem coords(RotationParameterType::Euler,{0, 0, 0}, axes);
-  //  std::cout << "coords.axes():\n" << coords.axes() << std::endl;
+  CoordinateSystem coords(RotationParameterType::Euler, {0, 0, 0}, axes);
+  std::cout << "axes:\n" << axes << std::endl;
   vec displacement{2e-6, 2e-6, 2e-6};
   auto coords_minus = coords;
   coords_minus.axis_generator() -= displacement;
   auto coords_plus = coords;
   coords_plus.axis_generator() += displacement;
   auto reference = ((coords_plus.axes() - coords_minus.axes()) / (2 * displacement.norm())).eval();
-  //  std::cout << "coords.axes():\n" << coords.axes() << std::endl;
-  //  std::cout << "coords_plus.axes():\n" << coords_plus.axes() << std::endl;
-  //  std::cout << "coords_minus.axes():\n" << coords_minus.axes() << std::endl;
-  //      std::cout << "reference:\n" << reference << std::endl;
+  std::cout << "coords.axes():\n" << coords.axes() << std::endl;
+  std::cout << "coords_plus.axes():\n" << coords_plus.axes() << std::endl;
+  std::cout << "coords_minus.axes():\n" << coords_minus.axes() << std::endl;
+  std::cout << "reference:\n" << reference << std::endl;
   for (int logstep = -7; logstep < 1; logstep++) {
     std::vector<mat> tested;
     const auto step = std::pow(double(10), logstep);
@@ -128,8 +137,8 @@ TEST(point_charge_symmetry, axes_gradient) {
       tested.emplace_back(mat::Zero());
       for (int i = 0; i < 3; i++)
         tested.back() += displacement[i] * axes_gradient[i] / displacement.norm();
-      //            std::cout << "tested:\n" << tested.back() << std::endl;
-      //            std::cout << "reference-tested:\n" << reference - tested.back() << std::endl;
+      std::cout << "tested[" << tested.size() - 1 << "]:\n" << tested.back() << std::endl;
+      std::cout << "reference-tested:\n" << reference - tested.back() << std::endl;
       const auto tolerance = std::max(1e-8, 2 * std::pow(step, displacements * 2));
       EXPECT_LT((reference - tested.back()).norm(), tolerance)
           << "step=" << step << " , displacements=" << displacements
@@ -330,7 +339,7 @@ TEST(point_charge_symmetry, allene45) {
   //  std::cout << allene<<std::endl;
   CoordinateSystem::mat axes;
   axes << 0, 0, 1, 1, 0, 0, 0, 1, 0;
-  CoordinateSystem cs(RotationParameterType::Euler,vec::Zero(), axes);
+  CoordinateSystem cs(RotationParameterType::Euler, vec::Zero(), axes);
   //  std::cout << cs<<std::endl;
   const Group group = Group(cs, "D2d");
   //  std::cout << group << std::endl;
