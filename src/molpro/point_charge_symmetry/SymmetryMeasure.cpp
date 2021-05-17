@@ -186,7 +186,7 @@ void SymmetryMeasure::adopt_inertial_axes() {
   //    std::cout << "adopt_inertial_axes initial, group="<<m_group.name()<<"\n" << coordinate_system.axes() <<
   //    std::endl;
   { // initialise to inertial axes in some orientation or other
-    CoordinateSystem temporary_coordinate_system(m_molecule.centre_of_charge(), m_molecule.inertial_axes());
+    CoordinateSystem temporary_coordinate_system(coordinate_system.m_rotation_parameter_type, m_molecule.centre_of_charge(), m_molecule.inertial_axes());
     std::copy(temporary_coordinate_system.m_parameters.begin(), temporary_coordinate_system.m_parameters.end(),
               parameters.begin());
   }
