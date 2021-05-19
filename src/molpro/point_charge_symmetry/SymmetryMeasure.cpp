@@ -276,7 +276,7 @@ int SymmetryMeasure::optimise_frame() {
   const int verbosity = -1;
   using Rvector = CoordinateSystem::parameters_t;
   auto solver =
-      molpro::linalg::itsolv::create_Optimize<Rvector, Rvector>("BFGS", "max_size_qspace=3,convergence_threshold=1e-6");
+      molpro::linalg::itsolv::create_Optimize<Rvector, Rvector>("BFGS", "max_size_qspace=6,convergence_threshold=1e-8");
   int nwork = 1;
   if (verbosity > 0) {
     std::cout << "initial";

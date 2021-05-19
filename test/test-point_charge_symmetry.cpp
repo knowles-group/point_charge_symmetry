@@ -320,6 +320,7 @@ TEST(point_charge_symmetry, discover_group) {
   //  expected_groups["hexamethylbenzene"]="D3d";
   expected_groups["Icosahedron"] = "Ih";
   expected_groups["c60"] = "Ih";
+  expected_groups["c60_clean"] = "Ih";
   //  expected_groups["buckminsterfullerene"]="Ih";
   expected_groups["sulfur-hexafluoride"] = "Oh";
   expected_groups["cyclohexane"] = "D3d";
