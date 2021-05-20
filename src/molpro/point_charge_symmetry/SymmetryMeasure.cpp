@@ -1,5 +1,6 @@
 #include "SymmetryMeasure.h"
 //#include <molpro/Profiler.h>
+#include "util/Problem_refine.h"
 #include <molpro/linalg/itsolv/OptimizeBFGS.h>
 #include <molpro/linalg/itsolv/SolverFactory.h>
 #include <regex>
@@ -69,7 +70,10 @@ double SymmetryMeasure::operator()(int operator_index, int functional_form, int 
         std::cout << "measure " << 1 - std::exp(-zr) * (1 + zr + zr * zr / 3) << std::endl;
       }
       if (functional_form == 0)
-        result += 1 - std::exp(-zr) * (1 + zr + zr * zr / 3);
+        if (zr < 1e-8)
+          result += zr * zr * (double(1) / 6 - zr * zr * (double(1) / 24 - zr / 45));
+        else
+          result += 1 - std::exp(-zr) * (1 + zr + zr * zr / 3);
       else if (functional_form == 1)
         result += zr * zr;
       else
@@ -186,7 +190,8 @@ void SymmetryMeasure::adopt_inertial_axes() {
   //    std::cout << "adopt_inertial_axes initial, group="<<m_group.name()<<"\n" << coordinate_system.axes() <<
   //    std::endl;
   { // initialise to inertial axes in some orientation or other
-    CoordinateSystem temporary_coordinate_system(coordinate_system.m_rotation_parameter_type, m_molecule.centre_of_charge(), m_molecule.inertial_axes());
+    CoordinateSystem temporary_coordinate_system(coordinate_system.m_rotation_parameter_type,
+                                                 m_molecule.centre_of_charge(), m_molecule.inertial_axes());
     std::copy(temporary_coordinate_system.m_parameters.begin(), temporary_coordinate_system.m_parameters.end(),
               parameters.begin());
   }
@@ -305,25 +310,6 @@ std::ostream& operator<<(std::ostream& s, const std::vector<T>& v) {
   return s;
 }
 
-class Problem_refine : public molpro::linalg::itsolv::Problem<std::vector<double>> {
-  SymmetryMeasure& m_sm;
-  Molecule& m_molecule;
-
-public:
-  Problem_refine(SymmetryMeasure& sm, Molecule& molecule) : m_sm(sm), m_molecule(molecule) {}
-  value_t residual(const container_t& parameters, container_t& residual) const override {
-    size_t j = 0;
-    for (auto& atom : m_molecule.m_atoms)
-      for (int i = 0; i < 3; i++)
-        atom.position(i) = parameters[j++];
-    residual = m_sm.atom_gradient(-1, 1);
-    return m_sm(-1, 1);
-  }
-  bool diagonals(container_t& d) const override {
-    std::fill(d.begin(), d.end(), 1);
-    return true;
-  }
-};
 Molecule SymmetryMeasure::refine(int repeat) const {
   auto molecule = molecule_localised(m_group.coordinate_system(), this->m_molecule);
   //  std::cout << "refine initial molecule\n"<<molecule<<std::endl;
@@ -338,11 +324,20 @@ Molecule SymmetryMeasure::refine(int repeat) const {
         parameters.push_back(atom.position(i));
     const int verbosity = -1;
     auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector>(
-        "BFGS", "max_size_qspace=6,convergence_threshold=1e-10");
+        "BFGS", "max_size_qspace=12,convergence_threshold=1e-7");
     solver->set_verbosity(linalg::itsolv::Verbosity::None);
     auto problem = Problem_refine(sm, molecule);
     auto grad = parameters;
     solver->solve(parameters, grad, problem);
+    size_t j = 0;
+    for (auto& atom : molecule.m_atoms)
+      for (int i = 0; i < 3; i++)
+        atom.position(i) = parameters[j++];
+//    std::cout << "in refine, from problem object final symmetry measure " << problem.residual(parameters, grad)
+//              << std::endl;
+//    std::cout << "in refine, final symmetry measure " << sm(-1) << std::endl;
+//    std::cout << "in refine, final symmetry measure " << sm(-1, 0) << std::endl;
+//    std::cout << "in refine, final symmetry measure " << sm(-1, 1) << std::endl;
   }
   return molecule;
 }

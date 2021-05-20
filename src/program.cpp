@@ -34,9 +34,10 @@ int main(int argc, char* argv[]) {
                                      : discover_group(molecule, cs, tolerance.getValue(), verbose.getValue() - 1);
     SymmetryMeasure sm(molecule, group);
     sm.optimise_frame();
-    if (not quiet.getValue() and verbose.getValue()>3)
-    for (int i=0; i<group.end()-group.begin();i++)
-      std::cout <<"Symmetry operation "<<i<<" ("<<group[i].name()<<") symmetry-breaking measure = "<<sm(i)<<std::endl;
+    if (not quiet.getValue() and verbose.getValue() > 3)
+      for (int i = 0; i < group.end() - group.begin(); i++)
+        std::cout << "Symmetry operation " << i << " (" << group[i].name() << ") symmetry-breaking measure = " << sm(i)
+                  << std::endl;
     if (not quiet.getValue()) {
       std::cout << (given_group.isSet() ? "Given group " : "Discovered group ") << group.name()
                 << ", symmetry-breaking measure = " << sm() << std::endl;

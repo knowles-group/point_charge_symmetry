@@ -13,7 +13,7 @@ target_link_libraries(point_charge_symmetry PUBLIC Eigen3::Eigen)
 if (NOT TARGET molpro::LinearAlgebra)
     include(FetchContent)
     FetchContent_Declare(LinearAlgebra
-            GIT_REPOSITORY https://gitlab.com/molpro/LinearAlgebra.git GIT_TAG 0.6.3)
+            GIT_REPOSITORY https://gitlab.com/molpro/LinearAlgebra.git GIT_TAG 34d83775a29ae864f3b9c64f15dfb4bbac9c8bf9)
     set(FORTRAN OFF)
     set(MPI OFF)
     set(LINEARALGEBRA_ARRAY_MPI3 OFF)
