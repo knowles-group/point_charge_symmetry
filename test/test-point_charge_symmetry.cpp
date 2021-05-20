@@ -357,21 +357,54 @@ std::ostream &operator<<(std::ostream &s, const std::vector<T> &v) {
   return s;
 }
 
+#include <molpro/point_charge_symmetry/util/Problem_refine.h>
 TEST(point_charge_symmetry, refine) {
   //  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("refine");
-  std::vector<std::string> tests{"c60",        "methane",     "ch4", "allene",   "allene45",
-                                 "adamantane", "cyclohexane", "h2o", "h2o-nosym"};
+  std::vector<std::string> tests{
+      "c60_clean"
+            ,"c60",        "methane",     "ch4", "allene",   "allene45", "adamantane", "cyclohexane", "h2o",
+            "h2o-nosym"
+  };
   for (const auto &test : tests) {
     Molecule molecule(test + ".xyz");
     CoordinateSystem cs;
     auto group = discover_group(molecule, cs, 1e-6, -1);
     SymmetryMeasure sm(molecule, group);
-    //      std::cout << molecule << std::endl;
-    //      std::cout << sm() << std::endl;
+    std::cout << "test "<<test<<std::endl;
+//          std::cout << molecule << std::endl;
+//          std::cout << sm() << std::endl;
+
+    {
+      auto problem = Problem_refine(sm, molecule);
+      std::vector<double> c0;
+      for (auto &atom : molecule.m_atoms)
+        for (int i = 0; i < 3; i++)
+          c0.push_back(atom.position(i));
+      auto g0 = c0;
+      auto v0 = problem.residual(c0, g0);
+      double step = 1e-4;
+      for (int i = 0; i < c0.size(); i++) {
+        auto c = c0;
+        auto g = g0;
+        c[i] += 2 * step;
+        auto vpp = problem.residual(c, g);
+        c[i] -= step;
+        auto vp = problem.residual(c, g);
+        c[i] -= 2 * step;
+        auto vm = problem.residual(c, g);
+        c[i] -= step;
+        auto vmm = problem.residual(c, g);
+        auto gradn = (vmm - 8 * vm + 8 * vp - vpp) / (12 * step);
+        EXPECT_NEAR(gradn, g0[i], std::max(1e-10,double(1e-10 * g0[i])));
+      }
+      v0 = problem.residual(c0, g0);
+//    std::cout << "after gradient check value="<<problem.residual(c0,g0)<<std::endl;
+    }
+
     auto newmolecule = sm.refine(1);
     double error = SymmetryMeasure(newmolecule, Group(group.name()))();
     ASSERT_LE(error, 1e-12);
-    //  std::cout << error << std::endl;
+      std::cout << error << std::endl;
     //  std::cout << newmolecule << std::endl;
   }
 }
