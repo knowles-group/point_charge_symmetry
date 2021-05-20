@@ -1,4 +1,4 @@
-##Point Group Discovery and Repair
+## Point Group Discovery and Repair
 To use the command-line tool,
 
 ``
