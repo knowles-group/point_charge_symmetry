@@ -21,7 +21,8 @@ public:
   }
 
   double operator()(int operator_index = -1, int functional_form = 0, int verbosity = -1) const;
-  [[nodiscard]] CoordinateSystem::parameters_t coordinate_system_gradient(int operator_index = -1, int functional_form = 0) const;
+  [[nodiscard]] CoordinateSystem::parameters_t coordinate_system_gradient(int operator_index = -1,
+                                                                          int functional_form = 0) const;
   [[nodiscard]] std::vector<double> atom_gradient(int operator_index = -1, int functional_form = 0) const;
   //  SymmetryMeasure(const Molecule& molecule, const Operator& op) : SymmetryMeasure(molecule, Group)
   [[nodiscard]] std::string str() const;
@@ -49,7 +50,7 @@ public:
            not spherical_top();
   }
 
-  [[nodiscard]] Molecule refine(int repeat=1) const;
+  [[nodiscard]] Molecule refine(int repeat = 1) const;
   [[nodiscard]] CoordinateSystem::vec inertia_principal_values() const { return m_inertia_principal_values; }
 
 protected:
@@ -58,7 +59,10 @@ protected:
   std::vector<std::vector<size_t>> m_neighbours;
   CoordinateSystem::vec m_inertia_principal_values = {1, 2, 3};
   Atom image(const Atom& source, const Operator& op);
+
+public:
   size_t image_neighbour(size_t atom_index, const Operator& op);
+  const Group& group() const { return m_group; }
 };
 
 inline std::ostream& operator<<(std::ostream& os, const SymmetryMeasure& sm) {

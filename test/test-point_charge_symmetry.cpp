@@ -6,6 +6,7 @@
 #include <molpro/point_charge_symmetry/Group.h>
 #include <molpro/point_charge_symmetry/Molecule.h>
 #include <molpro/point_charge_symmetry/Operator.h>
+#include <molpro/point_charge_symmetry/Projector.h>
 #include <molpro/point_charge_symmetry/SymmetryMeasure.h>
 #include <numeric>
 #include <vector>
@@ -361,18 +362,18 @@ std::ostream &operator<<(std::ostream &s, const std::vector<T> &v) {
 TEST(point_charge_symmetry, refine) {
   //  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("refine");
   std::vector<std::string> tests{
-      "c60_clean"
-            ,"c60",        "methane",     "ch4", "allene",   "allene45", "adamantane", "cyclohexane", "h2o",
-            "h2o-nosym"
-  };
+      "c60_clean", "c60",        "methane",     "ch4",
+      "allene",
+                                 "allene45",  "adamantane", "cyclohexane", "h2o", "h2o-nosym",
+                                 "co2"};
   for (const auto &test : tests) {
     Molecule molecule(test + ".xyz");
     CoordinateSystem cs;
     auto group = discover_group(molecule, cs, 1e-6, -1);
     SymmetryMeasure sm(molecule, group);
-    std::cout << "test "<<test<<std::endl;
-//          std::cout << molecule << std::endl;
-//          std::cout << sm() << std::endl;
+    std::cout << "test " << test << std::endl;
+    //          std::cout << molecule << std::endl;
+    //          std::cout << sm() << std::endl;
 
     {
       auto problem = Problem_refine(sm, molecule);
@@ -395,16 +396,19 @@ TEST(point_charge_symmetry, refine) {
         c[i] -= step;
         auto vmm = problem.residual(c, g);
         auto gradn = (vmm - 8 * vm + 8 * vp - vpp) / (12 * step);
-        EXPECT_NEAR(gradn, g0[i], std::max(1e-10,double(1e-10 * g0[i])));
+        EXPECT_NEAR(gradn, g0[i], std::max(1e-10, double(1e-10 * g0[i])));
       }
       v0 = problem.residual(c0, g0);
-//    std::cout << "after gradient check value="<<problem.residual(c0,g0)<<std::endl;
+      //    std::cout << "after gradient check value="<<problem.residual(c0,g0)<<std::endl;
     }
+
+    molpro::point_charge_symmetry::Projector projector(group, molecule);
+//    std::cout << projector
 
     auto newmolecule = sm.refine(1);
     double error = SymmetryMeasure(newmolecule, Group(group.name()))();
     ASSERT_LE(error, 1e-12);
-      std::cout << error << std::endl;
+    std::cout << error << std::endl;
     //  std::cout << newmolecule << std::endl;
   }
 }

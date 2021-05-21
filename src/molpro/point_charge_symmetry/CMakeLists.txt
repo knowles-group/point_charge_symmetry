@@ -5,8 +5,13 @@ set_target_properties(point_charge_symmetry
         CXX_EXTENSIONS NO
         )
 LibraryManager_Append(point_charge_symmetry
-        SOURCES Operator.cpp CoordinateSystem.cpp Molecule.cpp SymmetryMeasure.cpp SolverFactory-instantiation.cpp Group.cpp
+        SOURCES Operator.cpp CoordinateSystem.cpp Molecule.cpp SymmetryMeasure.cpp SolverFactory-instantiation.cpp Group.cpp Projector.cpp Projector.h
         PUBLIC_HEADER Operator.h CoordinateSystem.h Group.h Molecule.h SymmetryMeasure.h)
+LibraryManager_LAPACK(point_charge_symmetry PUBLIC Intel10_64lp_seq Intel10_64lp)
+if (MKL_TYPE STREQUAL "lp64")
+    message(STATUS "Eigen will use MKL")
+    target_compile_definitions(${PROJECT_NAME} PUBLIC EIGEN_USE_MKL_ALL)
+endif ()
 find_package(Eigen3 REQUIRED)
 target_link_libraries(point_charge_symmetry PUBLIC Eigen3::Eigen)
 
