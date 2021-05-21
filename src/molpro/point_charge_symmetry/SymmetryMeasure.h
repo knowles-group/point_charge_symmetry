@@ -11,14 +11,7 @@ public:
     reset_neighbours();
   }
 
-  void reset_neighbours() {
-    m_neighbours.clear();
-    for (const auto& op : m_group) {
-      m_neighbours.emplace_back();
-      for (size_t i = 0; i < m_molecule.m_atoms.size(); i++)
-        m_neighbours.back().push_back(image_neighbour(i, *op));
-    }
-  }
+  void reset_neighbours();
 
   double operator()(int operator_index = -1, int functional_form = 0, int verbosity = -1) const;
   [[nodiscard]] CoordinateSystem::parameters_t coordinate_system_gradient(int operator_index = -1,
@@ -53,14 +46,14 @@ public:
   [[nodiscard]] Molecule refine(int repeat = 1) const;
   [[nodiscard]] CoordinateSystem::vec inertia_principal_values() const { return m_inertia_principal_values; }
 
-protected:
   const Molecule& m_molecule;
+protected:
   const Group& m_group;
   std::vector<std::vector<size_t>> m_neighbours;
   CoordinateSystem::vec m_inertia_principal_values = {1, 2, 3};
-  Atom image(const Atom& source, const Operator& op);
 
 public:
+  Atom image(const Atom& source, const Operator& op) const;
   size_t image_neighbour(size_t atom_index, const Operator& op);
   const Group& group() const { return m_group; }
 };

@@ -1,5 +1,6 @@
 #include <iostream>
 //#include <molpro/Profiler.h>
+#include <molpro/Profiler.h>
 #include <molpro/point_charge_symmetry/CoordinateSystem.h>
 #include <molpro/point_charge_symmetry/Molecule.h>
 #include <molpro/point_charge_symmetry/SymmetryMeasure.h>
@@ -19,10 +20,13 @@ int main(int argc, char* argv[]) {
                                              false, "", "Mixed case Schoenflies notation", cmd);
     TCLAP::ValueArg<std::string> output_file("o", "output", "Name of file to contain modified xyz geometry", false, "",
                                              "filename", cmd);
+    TCLAP::ValueArg<int> profiler_depth("p", "profiler", "Maximum depth of execution time profiling", false, -1,
+                                        "integer", cmd);
     cmd.parse(argc, argv);
     //    std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("symmetry_measure");
     //    prof->set_max_depth(1);
     using namespace molpro::point_charge_symmetry;
+    molpro::Profiler::single()->set_max_depth(profiler_depth.getValue());
     if (not quiet.getValue() and not given_group.isSet())
       std::cout << "Look for symmetry in " << input_file.getValue() << " with acceptance threshold "
                 << tolerance.getValue() << std::endl;
@@ -62,7 +66,8 @@ int main(int argc, char* argv[]) {
         std::cout << "Write geometry to " << output_file.getValue() << std::endl;
       molecule_localised(cs, molecule).write(output_file.getValue());
     }
-
+    if (profiler_depth.getValue() > 0)
+      std::cout << *molpro::Profiler::single() << std::endl;
   } catch (TCLAP::ArgException& e) // catch any exceptions
   {
     std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;

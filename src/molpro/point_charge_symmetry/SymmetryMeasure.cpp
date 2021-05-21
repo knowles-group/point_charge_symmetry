@@ -7,20 +7,26 @@
 #include <sstream>
 #include <unsupported/Eigen/MatrixFunctions>
 namespace molpro::point_charge_symmetry {
-Atom SymmetryMeasure::image(const Atom& source, const Operator& op) {
+Atom SymmetryMeasure::image(const Atom& source, const Operator& op) const {
   return Atom(op(source.position), source.charge, source.name);
 }
-size_t SymmetryMeasure::image_neighbour(size_t atom_index, const Operator& op) {
+static inline size_t image_neighbour_inline(SymmetryMeasure& sm, size_t atom_index, const Operator& op) {
+//  auto prof = molpro::Profiler::single()->push("SymmetryMeasure::image_neighbour");
   const size_t no_result = 1000000;
   size_t result = no_result;
   //  std::cout << "Operator "<<op<<std::endl;
   double closest_distance = 1e50;
   //    std::cout << "Atom "<<m_molecule.m_atoms[atom_index].position.transpose() <<std::endl;
-  auto image = this->image(m_molecule.m_atoms[atom_index], op);
+  auto image = sm.image(sm.m_molecule.m_atoms[atom_index], op);
   //    std::cout << "Image "<<image.position.transpose() <<std::endl;
-  for (size_t i = 0; i < m_molecule.m_atoms.size(); i++) {
-    if (m_molecule.m_atoms[i].charge == m_molecule.m_atoms[atom_index].charge) {
-      double dist = (m_molecule.m_atoms[i].position - image.position).norm();
+  for (size_t i = 0; i < sm.m_molecule.m_atoms.size(); i++) {
+    if (sm.m_molecule.m_atoms[i].charge == sm.m_molecule.m_atoms[atom_index].charge) {
+      //      double dist = (sm.m_molecule.m_atoms[i].position - image.position).norm();
+      //      double dist = (sm.m_molecule.m_atoms[i].position - image.position).dot((sm.m_molecule.m_atoms[i].position
+      //      - image.position));
+      double dist = std::pow(sm.m_molecule.m_atoms[i].position(0) - image.position(0), 2) +
+                    std::pow(sm.m_molecule.m_atoms[i].position(1) - image.position(1), 2) +
+                    std::pow(sm.m_molecule.m_atoms[i].position(2) - image.position(2), 2);
       if (dist < closest_distance) {
         closest_distance = dist;
         result = i;
@@ -29,19 +35,34 @@ size_t SymmetryMeasure::image_neighbour(size_t atom_index, const Operator& op) {
   }
   if (result == no_result) {
     std::cout << "atom_index " << atom_index << std::endl;
-    std::cout << "Atom " << m_molecule.m_atoms[atom_index].position.transpose() << std::endl;
+    std::cout << "Atom " << sm.m_molecule.m_atoms[atom_index].position.transpose() << std::endl;
     std::cout << "op " << op << " " << op.str("Operator", true) << std::endl;
     std::cout << "Image " << image.position.transpose() << std::endl;
-    for (size_t i = 0; i < m_molecule.m_atoms.size(); i++) {
-      std::cout << "atom " << m_molecule.m_atoms[i].position.transpose() << std::endl;
+    for (size_t i = 0; i < sm.m_molecule.m_atoms.size(); i++) {
+      std::cout << "atom " << sm.m_molecule.m_atoms[i].position.transpose() << std::endl;
     }
     throw std::logic_error("cannot get neighbour");
   }
   return result;
 }
+size_t SymmetryMeasure::image_neighbour(size_t atom_index, const Operator& op) {
+  return image_neighbour_inline(*this, atom_index, op);
+}
+
+void SymmetryMeasure::reset_neighbours() {
+  auto prof = molpro::Profiler::single()->push("SymmetryMeasure::reset_neighbours");
+  m_neighbours.clear();
+  size_t n = m_molecule.m_atoms.size();
+  for (const auto& op : m_group) {
+    m_neighbours.emplace_back();
+    m_neighbours.back().reserve(n);
+    for (size_t i = 0; i < n; i++)
+      m_neighbours.back().emplace_back(image_neighbour_inline(*this, i, *op));
+  }
+}
 
 double SymmetryMeasure::operator()(int operator_index, int functional_form, int verbosity) const {
-  //  auto p = molpro::Profiler::single()->push("SymmetryMeasure()");
+  auto p = molpro::Profiler::single()->push("SymmetryMeasure()");
   constexpr bool use_neighbour_list = true;
   double result = 0;
   auto start = operator_index < 0 ? m_group.begin() : m_group.begin() + operator_index;
@@ -89,7 +110,7 @@ double SymmetryMeasure::operator()(int operator_index, int functional_form, int 
 
 CoordinateSystem::parameters_t SymmetryMeasure::coordinate_system_gradient(int operator_index,
                                                                            int functional_form) const {
-  //  auto p = molpro::Profiler::single()->push("SymmetryMeasure::coordinate_system_gradient()");
+  auto p = molpro::Profiler::single()->push("SymmetryMeasure::coordinate_system_gradient()");
   CoordinateSystem::parameters_t result{0, 0, 0, 0, 0, 0};
   const auto origin = m_group.coordinate_system().origin();
   const auto axes = m_group.coordinate_system().axes();
@@ -133,7 +154,7 @@ CoordinateSystem::parameters_t SymmetryMeasure::coordinate_system_gradient(int o
 }
 
 std::vector<double> SymmetryMeasure::atom_gradient(int operator_index, int functional_form) const {
-  //  auto p = molpro::Profiler::single()->push("SymmetryMeasure::atom_gradient()");
+  auto p = molpro::Profiler::single()->push("SymmetryMeasure::atom_gradient()");
   std::vector<double> result(m_molecule.m_atoms.size() * 3, 0);
   const auto origin = m_group.coordinate_system().origin();
   const auto axes = m_group.coordinate_system().axes();
@@ -185,6 +206,7 @@ std::string SymmetryMeasure::str() const {
 }
 
 void SymmetryMeasure::adopt_inertial_axes() {
+  auto prof = molpro::Profiler::single()->push("SymmetryMeasure::adopt_inertial_axes");
   auto& coordinate_system = m_group.coordinate_system();
   auto& parameters = m_group.coordinate_system_parameters();
   //    std::cout << "adopt_inertial_axes initial, group="<<m_group.name()<<"\n" << coordinate_system.axes() <<
@@ -259,8 +281,11 @@ public:
   value_t residual(const container_t& parameters, container_t& residual) const override {
     constexpr bool optimize_origin = false;
     //    std::cout << "parameters: "<<parameters<<std::endl;
-    m_sm.reset_neighbours();
-    residual = m_sm.coordinate_system_gradient(-1, 1);
+//    residual = m_sm.coordinate_system_gradient(-1, 1);
+//    if (std::inner_product(residual.begin(), residual.end(), residual.begin(), double(0)) > 1e-6) {
+      m_sm.reset_neighbours();
+      residual = m_sm.coordinate_system_gradient(-1, 1);
+//    }
     if (not optimize_origin)
       std::fill(residual.begin(), residual.begin() + 3, 0);
     //    std::cout << "residual: "<<residual<<std::endl;
@@ -274,6 +299,7 @@ public:
 };
 
 int SymmetryMeasure::optimise_frame() {
+  auto prof = molpro::Profiler::single()->push("SymmetryMeasure::optimise_frame");
   constexpr bool optimize_origin = false;
   auto& parameters = m_group.coordinate_system_parameters();
   const double centre_of_charge_penalty = 0e0;
@@ -311,6 +337,7 @@ std::ostream& operator<<(std::ostream& s, const std::vector<T>& v) {
 }
 
 Molecule SymmetryMeasure::refine(int repeat) const {
+  auto prof = molpro::Profiler::single()->push("SymmetryMeasure::refine");
   auto molecule = molecule_localised(m_group.coordinate_system(), this->m_molecule);
   //  std::cout << "refine initial molecule\n"<<molecule<<std::endl;
   auto group = Group(m_group.name());
@@ -333,17 +360,18 @@ Molecule SymmetryMeasure::refine(int repeat) const {
     for (auto& atom : molecule.m_atoms)
       for (int i = 0; i < 3; i++)
         atom.position(i) = parameters[j++];
-//    std::cout << "in refine, from problem object final symmetry measure " << problem.residual(parameters, grad)
-//              << std::endl;
-//    std::cout << "in refine, final symmetry measure " << sm(-1) << std::endl;
-//    std::cout << "in refine, final symmetry measure " << sm(-1, 0) << std::endl;
-//    std::cout << "in refine, final symmetry measure " << sm(-1, 1) << std::endl;
+    //    std::cout << "in refine, from problem object final symmetry measure " << problem.residual(parameters, grad)
+    //              << std::endl;
+    //    std::cout << "in refine, final symmetry measure " << sm(-1) << std::endl;
+    //    std::cout << "in refine, final symmetry measure " << sm(-1, 0) << std::endl;
+    //    std::cout << "in refine, final symmetry measure " << sm(-1, 1) << std::endl;
   }
   return molecule;
 }
 
 static inline bool test_group(const Molecule& molecule, const Group& group, double threshold = 1e-6,
                               int verbosity = -1) {
+  auto prof = molpro::Profiler::single()->push("SymmetryMeasure::test_group");
   if (verbosity >= 0)
     std::cout << "test_group " << group.name() << std::endl;
   if (verbosity > 0)
@@ -364,7 +392,7 @@ static inline bool test_group(const Molecule& molecule, const Group& group, doub
   }
   // scan
   if (sm.spherical_top()) {
-    const int nscan = 5;
+    const int nscan = 3;
     double best_measure = 1e50;
     double pi = std::acos(double(-1));
     CoordinateSystem::parameters_t best_parameters;
@@ -419,7 +447,7 @@ Group discover_group(const Molecule& molecule, double threshold, int verbosity) 
 }
 
 Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_system, double threshold, int verbosity) {
-  //  auto p = molpro::Profiler::single()->push("SymmetryMeasure::discover_group(" + molecule.m_title + ")");
+  auto p = molpro::Profiler::single()->push("SymmetryMeasure::discover_group(" + molecule.m_title + ")");
   using vec = CoordinateSystem::vec;
   const vec xaxis{1, 0, 0};
   const vec yaxis{0, 1, 0};
