@@ -47,6 +47,7 @@ public:
   [[nodiscard]] CoordinateSystem::vec inertia_principal_values() const { return m_inertia_principal_values; }
 
   const Molecule& m_molecule;
+
 protected:
   const Group& m_group;
   std::vector<std::vector<size_t>> m_neighbours;
@@ -68,6 +69,8 @@ Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_syst
 Group discover_group(const Molecule& molecule, double threshold = 1e-10, int verbosity = -1);
 
 Molecule molecule_localised(const CoordinateSystem& coordinate_system, const Molecule& source);
+
+bool test_group(const Molecule& molecule, const Group& group, double threshold = 1e-6, int verbosity = -1);
 
 } // namespace molpro::point_charge_symmetry
 
