@@ -369,8 +369,7 @@ Molecule SymmetryMeasure::refine(int repeat) const {
   return molecule;
 }
 
-static inline bool test_group(const Molecule& molecule, const Group& group, double threshold = 1e-6,
-                              int verbosity = -1) {
+bool test_group(const Molecule& molecule, const Group& group, double threshold, int verbosity) {
   auto prof = molpro::Profiler::single()->push("SymmetryMeasure::test_group");
   if (verbosity >= 0)
     std::cout << "test_group " << group.name() << std::endl;
