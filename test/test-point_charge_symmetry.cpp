@@ -447,3 +447,30 @@ TEST(point_charge_symmetry, atom_gradient) {
   //  cout << "numerical gradient " << numgrad << std::endl;
   EXPECT_THAT(grad, ::testing::Pointwise(::testing::DoubleNear(1e-6), numgrad));
 }
+
+#include <molpro/point_charge_symmetry/SymmetryMeasureC.h>
+TEST(point_charge_symmetry, C) {
+
+  Molecule water("h2o-nosym.xyz");
+  CoordinateSystem cs;
+  auto group = Group(cs, "C2v");
+  auto sm = SymmetryMeasure(water,group);
+  std::cout << sm() << std::endl;
+  sm.optimise_frame();
+  std::cout << sm() << std::endl;
+  auto gr = discover_group(water,cs);
+
+
+  std::vector<double> xyz{0,0,0, 0,0,1, 0,.2756373558,-.9612616959};
+//  O          0.0000000000        0.0000000000        0.0000000000
+//  H          0.0000000000        0.0000000000        1.0000000000
+//  H          0.0000000000        0.2756373558       -0.9612616959
+  std::vector<double> q{8,1,1};
+  auto measure = SymmetryMeasureValue("C2v",3,xyz.data(),q.data());
+  std::cout << "measure "<<measure<< std::endl;
+  SymmetryMeasureOptimiseFrame("D2h",3,xyz.data(),q.data());
+  for (int i=0; i<q.size(); i++)
+    std::cout << "xyz = "<<xyz[3*i]<<" "<<xyz[3*i+1]<<" "<<xyz[3*i+2]<<std::endl;
+  measure = SymmetryMeasureValue("D2h",3,xyz.data(),q.data());
+  std::cout << "measure "<<measure<< std::endl;
+}

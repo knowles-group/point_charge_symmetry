@@ -18,6 +18,7 @@ public:
   std::vector<Atom> m_atoms;
   std::string m_title;
   explicit Molecule(const std::string& filename);
+  explicit Molecule(const Eigen::MatrixXd& coordinates, const Eigen::VectorXd& charges);
   [[nodiscard]] std::string str() const;
   [[nodiscard]] Eigen::Vector3d centre_of_charge() const;
   [[nodiscard]] Eigen::Matrix3d inertia_tensor() const;
