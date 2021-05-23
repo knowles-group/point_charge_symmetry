@@ -259,8 +259,8 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
         << "for functional_form=" << functional_form;
   }
 
-  EXPECT_GE(sm.optimise_frame(), 0);
-  EXPECT_GE(sm.optimise_frame(), 0);
+  EXPECT_GE(sm.refine_frame(), 0);
+  EXPECT_GE(sm.refine_frame(), 0);
   std::cout << group.name() << " symmetry measure: " << sm() << std::endl;
   std::cout << coordinate_system << std::endl;
   std::cout << "Atomic coordinates in local frame\n" << std::endl;
@@ -347,11 +347,12 @@ TEST(point_charge_symmetry, test_group) {
   for (const auto &n : expected_groups) {
     Molecule molecule(n.first + ".xyz");
     auto group = Group(n.second);
-    EXPECT_TRUE(test_group(molecule, group, 1e-3));
-    SymmetryMeasure sm(molecule,group);
-    sm.optimise_frame();
-    EXPECT_LE(sm(),1e-3) << n.first << ": " << n.second;
-//    std::cout << n.first << ": " << group.name() << ", measure=" << sm() << std::endl;
+    //    EXPECT_TRUE(test_group(molecule, group, 1e-3));
+    SymmetryMeasure sm(molecule, group);
+    sm.adopt_inertial_axes();
+    EXPECT_GE(sm.refine_frame(), 0) << n.first << ": " << n.second;
+    EXPECT_LE(sm(), 1e-3) << n.first << ": " << n.second;
+    //    std::cout << n.first << ": " << group.name() << ", measure=" << sm() << std::endl;
   }
   //  std::cout << *prof << std::endl;
 }
@@ -382,11 +383,8 @@ std::ostream &operator<<(std::ostream &s, const std::vector<T> &v) {
 #include <molpro/point_charge_symmetry/util/Problem_refine.h>
 TEST(point_charge_symmetry, refine) {
   //  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("refine");
-  std::vector<std::string> tests{
-      "c60_clean", "c60",        "methane",     "ch4",
-      "allene",
-                                 "allene45",  "adamantane", "cyclohexane", "h2o", "h2o-nosym",
-                                 "co2"};
+  std::vector<std::string> tests{"c60_clean",  "c60",         "methane", "ch4",       "allene", "allene45",
+                                 "adamantane", "cyclohexane", "h2o",     "h2o-nosym", "co2"};
   for (const auto &test : tests) {
     Molecule molecule(test + ".xyz");
     CoordinateSystem cs;
@@ -424,7 +422,7 @@ TEST(point_charge_symmetry, refine) {
     }
 
     molpro::point_charge_symmetry::Projector projector(group, molecule);
-//    std::cout << projector
+    //    std::cout << projector
 
     auto newmolecule = sm.refine(1);
     double error = SymmetryMeasure(newmolecule, Group(group.name()))();
