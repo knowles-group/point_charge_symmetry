@@ -1,5 +1,5 @@
 #include "Projector.h"
-#include <Eigen/core>
+#include <Eigen/Core>
 #include <molpro/Profiler.h>
 
 namespace molpro::point_charge_symmetry {
