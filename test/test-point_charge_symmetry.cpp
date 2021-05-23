@@ -511,8 +511,14 @@ TEST(point_charge_symmetry, C) {
     SymmetryMeasureOptimiseFrame(n.second.c_str(), q.size(), xyz.data(), q.data());
     //    for (int i = 0; i < q.size(); i++)
     //      std::cout << "xyz = " << xyz[3 * i] << " " << xyz[3 * i + 1] << " " << xyz[3 * i + 2] << std::endl;
-    auto measure = SymmetryMeasureValue(n.second.c_str(), q.size(), xyz.data(), q.data());
-    EXPECT_LE(measure, 1e-3) << n.first << ":" << n.second;
-//    std::cout << "measure " << measure << std::endl;
+    EXPECT_LE(SymmetryMeasureValue(n.second.c_str(), q.size(), xyz.data(), q.data()), 1e-3) <<"before refinement "<< n.first << ":" << n.second;
+
+    SymmetryMeasureRefine(n.second.c_str(),q.size(),xyz.data(),q.data());
+    auto measure2 = SymmetryMeasureValue(n.second.c_str(), q.size(), xyz.data(), q.data());
+    EXPECT_LE(SymmetryMeasureValue(n.second.c_str(), q.size(), xyz.data(), q.data()), 1e-10) <<"after refinement "<< n.first << ":" << n.second;
+
+    auto foundgroup = SymmetryMeasureDiscoverGroup(1e-3,q.size(),xyz.data(),q.data());
+    EXPECT_EQ(std::string{foundgroup},n.second);
+    free(foundgroup);
   }
 }

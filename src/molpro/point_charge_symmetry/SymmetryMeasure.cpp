@@ -11,7 +11,7 @@ Atom SymmetryMeasure::image(const Atom& source, const Operator& op) const {
   return Atom(op(source.position), source.charge, source.name);
 }
 static inline size_t image_neighbour_inline(SymmetryMeasure& sm, size_t atom_index, const Operator& op) {
-//  auto prof = molpro::Profiler::single()->push("SymmetryMeasure::image_neighbour");
+  //  auto prof = molpro::Profiler::single()->push("SymmetryMeasure::image_neighbour");
   const size_t no_result = 1000000;
   size_t result = no_result;
   //  std::cout << "Operator "<<op<<std::endl;
@@ -357,6 +357,8 @@ Molecule SymmetryMeasure::refine(int repeat) const {
     auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector>(
         "BFGS", "max_size_qspace=12,convergence_threshold=1e-7");
     solver->set_verbosity(linalg::itsolv::Verbosity::None);
+    if (verbosity >= 0)
+      solver->set_verbosity(linalg::itsolv::Verbosity::Iteration);
     auto problem = Problem_refine(sm, molecule);
     auto grad = parameters;
     solver->solve(parameters, grad, problem);
