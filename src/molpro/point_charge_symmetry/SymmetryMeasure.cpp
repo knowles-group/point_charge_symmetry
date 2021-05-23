@@ -281,11 +281,11 @@ public:
   value_t residual(const container_t& parameters, container_t& residual) const override {
     constexpr bool optimize_origin = false;
     //    std::cout << "parameters: "<<parameters<<std::endl;
-//    residual = m_sm.coordinate_system_gradient(-1, 1);
-//    if (std::inner_product(residual.begin(), residual.end(), residual.begin(), double(0)) > 1e-6) {
-      m_sm.reset_neighbours();
-      residual = m_sm.coordinate_system_gradient(-1, 1);
-//    }
+    //    residual = m_sm.coordinate_system_gradient(-1, 1);
+    //    if (std::inner_product(residual.begin(), residual.end(), residual.begin(), double(0)) > 1e-6) {
+    m_sm.reset_neighbours();
+    residual = m_sm.coordinate_system_gradient(-1, 1);
+    //    }
     if (not optimize_origin)
       std::fill(residual.begin(), residual.begin() + 3, 0);
     //    std::cout << "residual: "<<residual<<std::endl;
@@ -298,8 +298,8 @@ public:
   }
 };
 
-int SymmetryMeasure::optimise_frame() {
-  auto prof = molpro::Profiler::single()->push("SymmetryMeasure::optimise_frame");
+int SymmetryMeasure::refine_frame() {
+  auto prof = molpro::Profiler::single()->push("SymmetryMeasure::refine_frame");
   constexpr bool optimize_origin = false;
   auto& parameters = m_group.coordinate_system_parameters();
   const double centre_of_charge_penalty = 0e0;
@@ -307,7 +307,7 @@ int SymmetryMeasure::optimise_frame() {
   const int verbosity = -1;
   using Rvector = CoordinateSystem::parameters_t;
   auto solver =
-      molpro::linalg::itsolv::create_Optimize<Rvector, Rvector>("BFGS", "max_size_qspace=6,convergence_threshold=1e-8");
+      molpro::linalg::itsolv::create_Optimize<Rvector, Rvector>("BFGS", "max_size_qspace=9,convergence_threshold=1e-3");
   int nwork = 1;
   if (verbosity > 0) {
     std::cout << "initial";
@@ -322,6 +322,11 @@ int SymmetryMeasure::optimise_frame() {
   auto problem = Problem_optimise_frame(*this);
   CoordinateSystem::parameters_t grad;
   solver->set_verbosity(linalg::itsolv::Verbosity::None);
+  if (verbosity > 0)
+    solver->set_verbosity(linalg::itsolv::Verbosity::Iteration);
+  if (verbosity > 1)
+    solver->set_verbosity(linalg::itsolv::Verbosity::Detailed);
+  solver->set_max_iter(100);
   auto result = solver->solve(parameters, grad, problem, false);
   //    std::cout << "solve finds";
   //    std::cout << parameters;
@@ -431,7 +436,7 @@ bool test_group(const Molecule& molecule, const Group& group, double threshold, 
       return false;
   }
   //  if (sm() > threshold*1000) return false;
-  sm.optimise_frame();
+  sm.refine_frame();
   double d = sm();
   if (verbosity >= 0)
     std::cout << "end of test_group() for " << group.name() << ", measure=" << d << " " << (d < threshold) << " "

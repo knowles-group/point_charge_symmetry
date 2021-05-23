@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
     auto group = given_group.isSet() ? Group(cs, given_group.getValue())
                                      : discover_group(molecule, cs, tolerance.getValue(), verbose.getValue() - 1);
     SymmetryMeasure sm(molecule, group);
-    sm.optimise_frame();
+    sm.refine_frame();
     if (not quiet.getValue() and verbose.getValue() > 3)
       for (int i = 0; i < group.end() - group.begin(); i++)
         std::cout << "Symmetry operation " << i << " (" << group[i].name() << ") symmetry-breaking measure = " << sm(i)

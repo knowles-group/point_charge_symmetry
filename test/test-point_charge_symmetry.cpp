@@ -475,9 +475,10 @@ TEST(point_charge_symmetry, C) {
   auto group = Group(cs, "C2v");
   auto sm = SymmetryMeasure(water,group);
   std::cout << sm() << std::endl;
-  sm.optimise_frame();
+  sm.adopt_inertial_axes();
+  sm.refine_frame();
   std::cout << sm() << std::endl;
-  auto gr = discover_group(water,cs);
+//  auto gr = discover_group(water,cs);
 
 
   std::vector<double> xyz{0,0,0, 0,0,1, 0,.2756373558,-.9612616959};

@@ -20,7 +20,8 @@ void SymmetryMeasureOptimiseFrame(const char *groupname, size_t atoms, double *c
   const Molecule &molecule0 = Molecule(xyz, q);
   const Group &group = Group(std::string{groupname});
   molpro::point_charge_symmetry::SymmetryMeasure sm(molecule0, group);
-  sm.optimise_frame();
+  sm.adopt_inertial_axes();
+  sm.refine_frame();
   auto molecule = molpro::point_charge_symmetry::molecule_localised(sm.group().coordinate_system(),molecule0);
   for (int i=0; i<atoms; i++)
     xyz.col(i) = molecule.m_atoms[i].position;
