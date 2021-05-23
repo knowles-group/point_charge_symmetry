@@ -350,6 +350,7 @@ TEST(point_charge_symmetry, test_group) {
     //    EXPECT_TRUE(test_group(molecule, group, 1e-3));
     SymmetryMeasure sm(molecule, group);
     sm.adopt_inertial_axes();
+    sm.refine_frame();
     EXPECT_GE(sm.refine_frame(), 0) << n.first << ": " << n.second;
     EXPECT_LE(sm(), 1e-3) << n.first << ": " << n.second;
     //    std::cout << n.first << ": " << group.name() << ", measure=" << sm() << std::endl;
@@ -470,27 +471,48 @@ TEST(point_charge_symmetry, atom_gradient) {
 #include <molpro/point_charge_symmetry/SymmetryMeasureC.h>
 TEST(point_charge_symmetry, C) {
 
-  Molecule water("h2o-nosym.xyz");
-  CoordinateSystem cs;
-  auto group = Group(cs, "C2v");
-  auto sm = SymmetryMeasure(water,group);
-  std::cout << sm() << std::endl;
-  sm.adopt_inertial_axes();
-  sm.refine_frame();
-  std::cout << sm() << std::endl;
-//  auto gr = discover_group(water,cs);
+  //  Molecule water("h2o.xyz");
+  //  CoordinateSystem cs;
+  //  auto group = Group(cs, "C2v");
+  //  auto sm = SymmetryMeasure(water, group);
+  //  std::cout << sm() << std::endl;
+  //  sm.adopt_inertial_axes();
+  //  sm.refine_frame(1);
+  //  std::cout << sm() << std::endl;
+  //  auto gr = discover_group(water,cs);
 
+  auto expected_groups = create_expected_groups();
+  //  expected_groups.clear();
+  //  expected_groups["h2o-nosym"] = "C2v";
+  //  expected_groups["h2o"] = "C2v";
+  for (const auto &n : expected_groups) {
+    Molecule molecule(n.first + ".xyz");
 
-  std::vector<double> xyz{0,0,0, 0,0,1, 0,.2756373558,-.9612616959};
-//  O          0.0000000000        0.0000000000        0.0000000000
-//  H          0.0000000000        0.0000000000        1.0000000000
-//  H          0.0000000000        0.2756373558       -0.9612616959
-  std::vector<double> q{8,1,1};
-  auto measure = SymmetryMeasureValue("C2v",3,xyz.data(),q.data());
-  std::cout << "measure "<<measure<< std::endl;
-  SymmetryMeasureOptimiseFrame("D2h",3,xyz.data(),q.data());
-  for (int i=0; i<q.size(); i++)
-    std::cout << "xyz = "<<xyz[3*i]<<" "<<xyz[3*i+1]<<" "<<xyz[3*i+2]<<std::endl;
-  measure = SymmetryMeasureValue("D2h",3,xyz.data(),q.data());
-  std::cout << "measure "<<measure<< std::endl;
+    if (false) {
+      CoordinateSystem cs;
+      auto group = Group(cs, n.second);
+      auto sm = SymmetryMeasure(molecule, group);
+      //  std::cout << sm() << std::endl;
+      sm.adopt_inertial_axes();
+      sm.refine_frame();
+      std::cout << "C++ style " << n.first << ":" << n.second << " " << sm() << std::endl;
+      EXPECT_LE(sm(), 1e-3) << "C++ style " << n.first << ":" << n.second;
+    }
+
+    std::vector<double> xyz, q;
+    for (const auto &atom : molecule.m_atoms) {
+      q.push_back(atom.charge);
+      for (int i = 0; i < 3; i++)
+        xyz.push_back(atom.position(i));
+    }
+    //    for (int i = 0; i < q.size(); i++)
+    //      std::cout << "xyz = " << xyz[3 * i] << " " << xyz[3 * i + 1] << " " << xyz[3 * i + 2] << std::endl;
+    //    std::cout << "measure " << measure << std::endl;
+    SymmetryMeasureOptimiseFrame(n.second.c_str(), q.size(), xyz.data(), q.data());
+    //    for (int i = 0; i < q.size(); i++)
+    //      std::cout << "xyz = " << xyz[3 * i] << " " << xyz[3 * i + 1] << " " << xyz[3 * i + 2] << std::endl;
+    auto measure = SymmetryMeasureValue(n.second.c_str(), q.size(), xyz.data(), q.data());
+    EXPECT_LE(measure, 1e-3) << n.first << ":" << n.second;
+//    std::cout << "measure " << measure << std::endl;
+  }
 }

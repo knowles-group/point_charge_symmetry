@@ -298,16 +298,15 @@ public:
   }
 };
 
-int SymmetryMeasure::refine_frame() {
+int SymmetryMeasure::refine_frame(int verbosity) {
   auto prof = molpro::Profiler::single()->push("SymmetryMeasure::refine_frame");
   constexpr bool optimize_origin = false;
   auto& parameters = m_group.coordinate_system_parameters();
   const double centre_of_charge_penalty = 0e0;
   const int centre_of_charge_penalty_power = 4;
-  const int verbosity = -1;
   using Rvector = CoordinateSystem::parameters_t;
   auto solver =
-      molpro::linalg::itsolv::create_Optimize<Rvector, Rvector>("BFGS", "max_size_qspace=9,convergence_threshold=1e-3");
+      molpro::linalg::itsolv::create_Optimize<Rvector, Rvector>("BFGS", "max_size_qspace=9,convergence_threshold=1e-4");
   int nwork = 1;
   if (verbosity > 0) {
     std::cout << "initial";
