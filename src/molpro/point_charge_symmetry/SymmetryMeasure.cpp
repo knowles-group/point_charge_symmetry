@@ -401,12 +401,19 @@ bool test_group(const Molecule& molecule, const Group& group, double threshold, 
     double best_measure = 1e50;
     double pi = std::acos(double(-1));
     CoordinateSystem::parameters_t best_parameters;
+    auto parameter_ranges = group.coordinate_system().rotation_generator_ranges();
     for (int zscan = 0; zscan < nscan; zscan++)
       for (int yscan = 0; yscan < nscan; yscan++)
         for (int xscan = 0; xscan < nscan; xscan++) {
-          group.coordinate_system_parameters()[3] = (2 * zscan + 1 - nscan) * pi / nscan;
-          group.coordinate_system_parameters()[4] = (2 * yscan + 1 - nscan) * pi / nscan;
-          group.coordinate_system_parameters()[5] = (2 * xscan + 1 - nscan) * pi / nscan;
+          group.coordinate_system_parameters()[3] =
+              parameter_ranges[0][0] +
+              (2 * zscan + 1) * (parameter_ranges[0][1] - parameter_ranges[0][0]) / (2 * nscan);
+          group.coordinate_system_parameters()[4] =
+              parameter_ranges[1][0] +
+              (2 * yscan + 1) * (parameter_ranges[1][1] - parameter_ranges[1][0]) / (2 * nscan);
+          group.coordinate_system_parameters()[5] =
+              parameter_ranges[2][0] +
+              (2 * xscan + 1) * (parameter_ranges[2][1] - parameter_ranges[2][0]) / (2 * nscan);
           sm.reset_neighbours();
           auto measure = sm();
           //        std::cout << "try "<<measure<<" ( current best="<<best_measure<<")

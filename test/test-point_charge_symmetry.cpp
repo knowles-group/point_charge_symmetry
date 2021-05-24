@@ -345,12 +345,14 @@ TEST(point_charge_symmetry, test_group) {
   //  prof->set_max_depth(1);
   auto expected_groups = create_expected_groups();
   for (const auto &n : expected_groups) {
+    std::cout << "try "<<n.first<<std::endl;
     Molecule molecule(n.first + ".xyz");
     auto group = Group(n.second);
-    //    EXPECT_TRUE(test_group(molecule, group, 1e-3));
+        EXPECT_TRUE(test_group(molecule, group, 1e-3));
     SymmetryMeasure sm(molecule, group);
-    sm.adopt_inertial_axes();
-    sm.refine_frame();
+//    sm.refine_frame(1);
+//    sm.adopt_inertial_axes();
+//    sm.refine_frame(1);
     EXPECT_GE(sm.refine_frame(), 0) << n.first << ": " << n.second;
     EXPECT_LE(sm(), 1e-3) << n.first << ": " << n.second;
     //    std::cout << n.first << ": " << group.name() << ", measure=" << sm() << std::endl;

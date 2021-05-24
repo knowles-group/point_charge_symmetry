@@ -39,6 +39,7 @@ public:
   vec to_local(const vec& source) const;
   vec to_global(const vec& source) const;
   void cycle_axes() const;
+  std::array<std::array<double,2>,3> rotation_generator_ranges() const;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const CoordinateSystem& op) {
