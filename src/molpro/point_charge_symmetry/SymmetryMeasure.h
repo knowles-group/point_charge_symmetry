@@ -21,7 +21,7 @@ public:
   [[nodiscard]] std::string str() const;
 
   void adopt_inertial_axes();
-  int optimise_frame();
+  int refine_frame(int verbosity = -1);
 
   bool spherical_top() {
     constexpr double tol = 1e-3;

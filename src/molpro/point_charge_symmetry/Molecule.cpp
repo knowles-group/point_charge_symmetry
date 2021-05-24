@@ -1,6 +1,7 @@
 #include "Molecule.h"
 #include <numeric>
 #include <sstream>
+#include <cmath>
 #define N_PERIODIC_TABLE 105
 const char* const periodic_table[N_PERIODIC_TABLE] = {
     "H",  "He", "Li", "Be", "B",  "C",  "N",  "O",  "F",  "Ne", "Na", "Mg", "Al", "Si", "P",  "S",  "Cl", "Ar",
@@ -33,6 +34,11 @@ Molecule::Molecule(const std::string& filename) {
       q = std::stoi(el);
     m_atoms.emplace_back(Eigen::Vector3d{x, y, z}, q, el);
   }
+}
+Molecule::Molecule(const Eigen::MatrixXd& coordinates, const Eigen::VectorXd& charges) {
+ for (int i=0; i<coordinates.cols(); i++) {
+   m_atoms.emplace_back(coordinates.col(i), charges(i), std::to_string(std::lround(charges(i))));
+ }
 }
 
 void Molecule::write(const std::string& filename, const std::string& title, const std::string& format) {

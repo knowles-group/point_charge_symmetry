@@ -11,7 +11,7 @@ Atom SymmetryMeasure::image(const Atom& source, const Operator& op) const {
   return Atom(op(source.position), source.charge, source.name);
 }
 static inline size_t image_neighbour_inline(SymmetryMeasure& sm, size_t atom_index, const Operator& op) {
-//  auto prof = molpro::Profiler::single()->push("SymmetryMeasure::image_neighbour");
+  //  auto prof = molpro::Profiler::single()->push("SymmetryMeasure::image_neighbour");
   const size_t no_result = 1000000;
   size_t result = no_result;
   //  std::cout << "Operator "<<op<<std::endl;
@@ -281,11 +281,11 @@ public:
   value_t residual(const container_t& parameters, container_t& residual) const override {
     constexpr bool optimize_origin = false;
     //    std::cout << "parameters: "<<parameters<<std::endl;
-//    residual = m_sm.coordinate_system_gradient(-1, 1);
-//    if (std::inner_product(residual.begin(), residual.end(), residual.begin(), double(0)) > 1e-6) {
-      m_sm.reset_neighbours();
-      residual = m_sm.coordinate_system_gradient(-1, 1);
-//    }
+    //    residual = m_sm.coordinate_system_gradient(-1, 1);
+    //    if (std::inner_product(residual.begin(), residual.end(), residual.begin(), double(0)) > 1e-6) {
+    m_sm.reset_neighbours();
+    residual = m_sm.coordinate_system_gradient(-1, 1);
+    //    }
     if (not optimize_origin)
       std::fill(residual.begin(), residual.begin() + 3, 0);
     //    std::cout << "residual: "<<residual<<std::endl;
@@ -298,16 +298,15 @@ public:
   }
 };
 
-int SymmetryMeasure::optimise_frame() {
-  auto prof = molpro::Profiler::single()->push("SymmetryMeasure::optimise_frame");
+int SymmetryMeasure::refine_frame(int verbosity) {
+  auto prof = molpro::Profiler::single()->push("SymmetryMeasure::refine_frame");
   constexpr bool optimize_origin = false;
   auto& parameters = m_group.coordinate_system_parameters();
   const double centre_of_charge_penalty = 0e0;
   const int centre_of_charge_penalty_power = 4;
-  const int verbosity = -1;
   using Rvector = CoordinateSystem::parameters_t;
   auto solver =
-      molpro::linalg::itsolv::create_Optimize<Rvector, Rvector>("BFGS", "max_size_qspace=6,convergence_threshold=1e-8");
+      molpro::linalg::itsolv::create_Optimize<Rvector, Rvector>("BFGS", "max_size_qspace=9,convergence_threshold=1e-4");
   int nwork = 1;
   if (verbosity > 0) {
     std::cout << "initial";
@@ -322,6 +321,11 @@ int SymmetryMeasure::optimise_frame() {
   auto problem = Problem_optimise_frame(*this);
   CoordinateSystem::parameters_t grad;
   solver->set_verbosity(linalg::itsolv::Verbosity::None);
+  if (verbosity > 0)
+    solver->set_verbosity(linalg::itsolv::Verbosity::Iteration);
+  if (verbosity > 1)
+    solver->set_verbosity(linalg::itsolv::Verbosity::Detailed);
+  solver->set_max_iter(100);
   auto result = solver->solve(parameters, grad, problem, false);
   //    std::cout << "solve finds";
   //    std::cout << parameters;
@@ -353,6 +357,8 @@ Molecule SymmetryMeasure::refine(int repeat) const {
     auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector>(
         "BFGS", "max_size_qspace=12,convergence_threshold=1e-7");
     solver->set_verbosity(linalg::itsolv::Verbosity::None);
+    if (verbosity >= 0)
+      solver->set_verbosity(linalg::itsolv::Verbosity::Iteration);
     auto problem = Problem_refine(sm, molecule);
     auto grad = parameters;
     solver->solve(parameters, grad, problem);
@@ -395,12 +401,19 @@ bool test_group(const Molecule& molecule, const Group& group, double threshold, 
     double best_measure = 1e50;
     double pi = std::acos(double(-1));
     CoordinateSystem::parameters_t best_parameters;
+    auto parameter_ranges = group.coordinate_system().rotation_generator_ranges();
     for (int zscan = 0; zscan < nscan; zscan++)
       for (int yscan = 0; yscan < nscan; yscan++)
         for (int xscan = 0; xscan < nscan; xscan++) {
-          group.coordinate_system_parameters()[3] = (2 * zscan + 1 - nscan) * pi / nscan;
-          group.coordinate_system_parameters()[4] = (2 * yscan + 1 - nscan) * pi / nscan;
-          group.coordinate_system_parameters()[5] = (2 * xscan + 1 - nscan) * pi / nscan;
+          group.coordinate_system_parameters()[3] =
+              parameter_ranges[0][0] +
+              (2 * zscan + 1) * (parameter_ranges[0][1] - parameter_ranges[0][0]) / (2 * nscan);
+          group.coordinate_system_parameters()[4] =
+              parameter_ranges[1][0] +
+              (2 * yscan + 1) * (parameter_ranges[1][1] - parameter_ranges[1][0]) / (2 * nscan);
+          group.coordinate_system_parameters()[5] =
+              parameter_ranges[2][0] +
+              (2 * xscan + 1) * (parameter_ranges[2][1] - parameter_ranges[2][0]) / (2 * nscan);
           sm.reset_neighbours();
           auto measure = sm();
           //        std::cout << "try "<<measure<<" ( current best="<<best_measure<<")
@@ -431,7 +444,7 @@ bool test_group(const Molecule& molecule, const Group& group, double threshold, 
       return false;
   }
   //  if (sm() > threshold*1000) return false;
-  sm.optimise_frame();
+  sm.refine_frame();
   double d = sm();
   if (verbosity >= 0)
     std::cout << "end of test_group() for " << group.name() << ", measure=" << d << " " << (d < threshold) << " "

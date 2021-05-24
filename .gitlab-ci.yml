@@ -7,6 +7,8 @@ build:
   image: ${CI_REGISTRY}/molpro/linearalgebra
   #  only:
   #    - merge_requests
+  tags:
+    - linux-farm
   script:
     - TOP=$PWD
     - PROJECT_NAME=$CI_PROJECT_NAME

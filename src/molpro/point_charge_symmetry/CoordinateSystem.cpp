@@ -106,10 +106,10 @@ void CoordinateSystem::from_axes(const mat& axes) const {
     m_parameters[3] = std::tan((euler[0] - pi) / (2 * m_rotation_parameter_scale));
     m_parameters[4] = std::tan(euler[1] / m_rotation_parameter_scale);
     m_parameters[5] = std::tan((euler[2] - pi) / (2 * m_rotation_parameter_scale));
-//        std::cout << "from axes\n" << axes << std::endl;
-//        std::cout << "Euler angles " << euler[0] << ", " << euler[1] << ", " << euler[2] << std::endl;
-//        std::cout << "parameters set to " << m_parameters[3] << ", " << m_parameters[4] << ", " << m_parameters[5]
-//                  << std::endl;
+    //        std::cout << "from axes\n" << axes << std::endl;
+    //        std::cout << "Euler angles " << euler[0] << ", " << euler[1] << ", " << euler[2] << std::endl;
+    //        std::cout << "parameters set to " << m_parameters[3] << ", " << m_parameters[4] << ", " << m_parameters[5]
+    //                  << std::endl;
   } break;
   case RotationParameterType::Quaternion:
     throw std::logic_error("unimplemented");
@@ -134,10 +134,10 @@ const CoordinateSystem::mat CoordinateSystem::axes() const {
     euler[0] = pi + 2 * m_rotation_parameter_scale * std::atan(axis_generator()(0));
     euler[1] = m_rotation_parameter_scale * std::atan(axis_generator()(1));
     euler[2] = pi + 2 * m_rotation_parameter_scale * std::atan(axis_generator()(2));
-//        std::cout << "parameters read " << m_parameters[3] << ", " << m_parameters[4] << ", " << m_parameters[5]
-//                  << std::endl;
-//        std::cout << "Euler angles " << euler[0] << ", " << euler[1] << ", " << euler[2] << std::endl;
-//        std::cout << "to axes\n" << axes_from_euler(euler) << std::endl;
+    //        std::cout << "parameters read " << m_parameters[3] << ", " << m_parameters[4] << ", " << m_parameters[5]
+    //                  << std::endl;
+    //        std::cout << "Euler angles " << euler[0] << ", " << euler[1] << ", " << euler[2] << std::endl;
+    //        std::cout << "to axes\n" << axes_from_euler(euler) << std::endl;
     return axes_from_euler(euler);
   }
   case RotationParameterType::Quaternion:
@@ -181,6 +181,7 @@ const std::array<CoordinateSystem::mat, 3> CoordinateSystem::axes_gradient(int d
     }
     return result;
   }
+  throw std::logic_error("unexpected");
 }
 
 CoordinateSystem::vec CoordinateSystem::to_local(const vec& source) const {
@@ -223,5 +224,21 @@ std::string CoordinateSystem::str() const {
     ss << " " << m_parameters[i + 3];
   ss << "\nAxes:\n" << axes();
   return ss.str();
+}
+std::array<std::array<double, 2>, 3> CoordinateSystem::rotation_generator_ranges() const {
+  std::array<std::array<double, 2>, 3> result;
+  const auto pi = std::acos(double(-1));
+  switch (m_rotation_parameter_type) {
+  case RotationParameterType::Log:
+    result[0] = result[1] = result[2] = {0, 2 * pi};
+    return result;
+  case RotationParameterType::Euler:
+    result[0] = result[2] = {0, 2 * pi};
+    result[1] = {-pi / 2, pi / 2};
+    return result;
+  case RotationParameterType::TanEuler:;
+  case RotationParameterType::Quaternion:;
+  }
+  throw std::logic_error("unimplemented");
 }
 } // namespace molpro::point_charge_symmetry
