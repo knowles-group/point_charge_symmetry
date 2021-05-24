@@ -21,8 +21,9 @@ extern "C" double SymmetryMeasureValue(const char* groupname, size_t atoms, cons
  * changed to values expressing position in the new coordinate frame, but relative distances and angles are
  * preserved.
  * @param charges Charges of atoms, dimension (atoms)
+ * @return 0 if successful
  */
-extern "C" void SymmetryMeasureOptimiseFrame(const char* groupname, size_t atoms, double* coordinates,
+extern "C" int SymmetryMeasureOptimiseFrame(const char* groupname, size_t atoms, double* coordinates,
                                              const double* charges);
 
 /*!
