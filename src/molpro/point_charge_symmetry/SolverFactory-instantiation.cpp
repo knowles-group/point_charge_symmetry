@@ -1,3 +1,6 @@
+#if defined(MOLPRO) && !defined(HAVE_MPI_H)
+#define HAVE_MPI_H 1
+#endif
 #include "SymmetryMeasure.h"
 #include <molpro/linalg/itsolv/SolverFactory-implementation.h>
 using Rvector = molpro::point_charge_symmetry::CoordinateSystem::parameters_t;

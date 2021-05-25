@@ -1,3 +1,6 @@
+#if defined(MOLPRO) && !defined(HAVE_MPI_H)
+#define HAVE_MPI_H 1
+#endif
 #include "SymmetryMeasure.h"
 //#include <molpro/Profiler.h>
 #include "Problem_refine.h"
