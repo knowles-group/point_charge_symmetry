@@ -23,8 +23,6 @@ Group::Group(CoordinateSystem& coordinate_system, const Group& source)
 Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generators_only)
     : m_coordinate_system(coordinate_system), m_name(name) {
   using vec = CoordinateSystem::vec;
-  const vec xaxis{1, 0, 0};
-  const vec yaxis{0, 1, 0};
   const vec zaxis{0, 0, 1};
   const auto all = not generators_only;
   if (all)
@@ -34,6 +32,8 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
     auto gold = (1 + std::sqrt(double(5))) / 2;
     std::vector<vec> pentagons;
     for (int axis = 0; axis < 3; axis++) {
+      auto yaxis = Eigen::Matrix3d::Identity().col((axis + 1) % 3);
+      auto zaxis = Eigen::Matrix3d::Identity().col((axis + 2) % 3);
       for (int flip = -1; flip < 2; flip += 2) {
         pentagons.push_back((yaxis * flip + gold * zaxis) / std::sqrt(2 + gold));
         if (pentagons.back().dot(pentagons.front()) < 0)
