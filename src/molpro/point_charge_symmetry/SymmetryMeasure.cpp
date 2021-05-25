@@ -1,7 +1,6 @@
 #include "SymmetryMeasure.h"
 //#include <molpro/Profiler.h>
-#include "util/Problem_refine.h"
-#include <molpro/linalg/itsolv/OptimizeBFGS.h>
+#include "Problem_refine.h"
 #include <molpro/linalg/itsolv/SolverFactory.h>
 #include <regex>
 #include <sstream>
@@ -63,7 +62,6 @@ void SymmetryMeasure::reset_neighbours() {
 
 double SymmetryMeasure::operator()(int operator_index, int functional_form, int verbosity) const {
   auto p = molpro::Profiler::single()->push("SymmetryMeasure()");
-  constexpr bool use_neighbour_list = true;
   double result = 0;
   auto start = operator_index < 0 ? m_group.begin() : m_group.begin() + operator_index;
   auto end = operator_index < 0 ? m_group.end() : m_group.begin() + operator_index + 1;
@@ -79,7 +77,6 @@ double SymmetryMeasure::operator()(int operator_index, int functional_form, int 
     }
     for (int a = 0; a < m_molecule.m_atoms.size(); a++) {
       int ai = m_neighbours[op - m_group.begin()][a];
-      const auto& neighbour_position = m_molecule.m_atoms[ai].position;
       auto dist = ((**op)(m_molecule.m_atoms[a].position) - m_molecule.m_atoms[ai].position).norm();
       const auto zr = m_molecule.m_atoms[a].charge * dist;
       if (verbosity > 1) {
@@ -112,9 +109,6 @@ CoordinateSystem::parameters_t SymmetryMeasure::coordinate_system_gradient(int o
                                                                            int functional_form) const {
   auto p = molpro::Profiler::single()->push("SymmetryMeasure::coordinate_system_gradient()");
   CoordinateSystem::parameters_t result{0, 0, 0, 0, 0, 0};
-  const auto origin = m_group.coordinate_system().origin();
-  const auto axes = m_group.coordinate_system().axes();
-  const auto axes_gradient = m_group.coordinate_system().axes_gradient();
   auto start = operator_index < 0 ? m_group.begin() : m_group.begin() + operator_index;
   auto end = operator_index < 0 ? m_group.end() : m_group.begin() + operator_index + 1;
   for (auto op = start; op < end; op++) {
@@ -156,7 +150,6 @@ CoordinateSystem::parameters_t SymmetryMeasure::coordinate_system_gradient(int o
 std::vector<double> SymmetryMeasure::atom_gradient(int operator_index, int functional_form) const {
   auto p = molpro::Profiler::single()->push("SymmetryMeasure::atom_gradient()");
   std::vector<double> result(m_molecule.m_atoms.size() * 3, 0);
-  const auto origin = m_group.coordinate_system().origin();
   const auto axes = m_group.coordinate_system().axes();
   auto start = operator_index < 0 ? m_group.begin() : m_group.begin() + operator_index;
   auto end = operator_index < 0 ? m_group.end() : m_group.begin() + operator_index + 1;
@@ -300,14 +293,10 @@ public:
 
 int SymmetryMeasure::refine_frame(int verbosity) {
   auto prof = molpro::Profiler::single()->push("SymmetryMeasure::refine_frame");
-  constexpr bool optimize_origin = false;
   auto& parameters = m_group.coordinate_system_parameters();
-  const double centre_of_charge_penalty = 0e0;
-  const int centre_of_charge_penalty_power = 4;
   using Rvector = CoordinateSystem::parameters_t;
   auto solver =
       molpro::linalg::itsolv::create_Optimize<Rvector, Rvector>("BFGS", "max_size_qspace=9,convergence_threshold=1e-4");
-  int nwork = 1;
   if (verbosity > 0) {
     std::cout << "initial";
     for (int i = 0; i < 6; i++)
@@ -399,7 +388,6 @@ bool test_group(const Molecule& molecule, const Group& group, double threshold, 
   if (sm.spherical_top()) {
     const int nscan = 3;
     double best_measure = 1e50;
-    double pi = std::acos(double(-1));
     CoordinateSystem::parameters_t best_parameters;
     auto parameter_ranges = group.coordinate_system().rotation_generator_ranges();
     for (int zscan = 0; zscan < nscan; zscan++)

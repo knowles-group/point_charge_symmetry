@@ -1,7 +1,7 @@
 #include "SymmetryMeasureC.h"
-#include <molpro/point_charge_symmetry/Group.h>
-#include <molpro/point_charge_symmetry/Molecule.h>
-#include <molpro/point_charge_symmetry/SymmetryMeasure.h>
+#include "Group.h"
+#include "Molecule.h"
+#include "SymmetryMeasure.h"
 #include <string.h>
 using molpro::point_charge_symmetry::CoordinateSystem;
 using molpro::point_charge_symmetry::Group;
@@ -36,7 +36,7 @@ int SymmetryMeasureOptimiseFrame(const char *groupname, size_t atoms, double *co
   //  molpro::point_charge_symmetry::SymmetryMeasure sm2(molecule, group2);
   //  std::cout << "in SymmetryMeasureOptimiseFrame after molecule_localised() "<<sm2()<<std::endl;
   //  std::cout << "in SymmetryMeasureOptimiseFrame, molecule="<<molecule<<std::endl;
-  for (int i = 0; i < atoms; i++)
+  for (size_t i = 0; i < atoms; i++)
     xyz.col(i) = molecule.m_atoms[i].position;
   return 0;
 }

@@ -1,7 +1,7 @@
 #include "Operator.h"
-#include <iostream>
+//#include <iostream>
 #include <memory>
-#include <molpro/Profiler.h>
+//#include <molpro/Profiler.h>
 #include <sstream>
 #include <vector>
 
@@ -20,7 +20,6 @@ std::array<Operator::vec, 6> Operator::operator_gradient(vec v, int numerical, d
   //  auto p = molpro::Profiler::single()->push("Operator::operator_gradient()");
   std::array<Operator::vec, 6> result;
   if (numerical > 0) {
-    CoordinateSystem coordinate_system(m_coordinate_system);
     for (int i = 0; i < 6; i++) {
       std::vector<std::unique_ptr<Operator>> points;
       std::vector<CoordinateSystem> coordinate_systems;
@@ -90,7 +89,6 @@ Rotation::Rotation(const CoordinateSystem& coordinate_system, vec axis, int orde
     m_name += "^" + std::to_string(m_count);
 }
 Operator::vec Rotation::operator_local(vec v) const {
-  double angle = (double)2 * m_count * std::acos(double(-1)) / m_order;
   auto aa = Eigen::AngleAxis<double>((double)2 * m_count * std::acos(double(-1)) / m_order, m_axis);
   v = aa * v;
   if (not m_proper)

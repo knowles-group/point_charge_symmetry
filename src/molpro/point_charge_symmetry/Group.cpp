@@ -1,6 +1,6 @@
 #include "Group.h"
 #include <iostream>
-#include <molpro/point_charge_symmetry/CoordinateSystem.h>
+#include "CoordinateSystem.h"
 #include <regex>
 
 namespace molpro::point_charge_symmetry {
@@ -32,13 +32,8 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
   std::smatch m;
   if (name[0] == 'I') {
     auto gold = (1 + std::sqrt(double(5))) / 2;
-    auto silver = 1 - std::sqrt(double(5));
-    auto pi = std::acos(double(-1));
     std::vector<vec> pentagons;
     for (int axis = 0; axis < 3; axis++) {
-      auto xaxis = Eigen::Matrix3d::Identity().col(axis);
-      auto yaxis = Eigen::Matrix3d::Identity().col((axis + 1) % 3);
-      auto zaxis = Eigen::Matrix3d::Identity().col((axis + 2) % 3);
       for (int flip = -1; flip < 2; flip += 2) {
         pentagons.push_back((yaxis * flip + gold * zaxis) / std::sqrt(2 + gold));
         if (pentagons.back().dot(pentagons.front()) < 0)

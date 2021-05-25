@@ -1,8 +1,8 @@
 #ifndef POINT_CHARGE_SYMMETRY_SRC_MOLPRO_POINT_CHARGE_SYMMETRY_PROJECTOR_H_
 #define POINT_CHARGE_SYMMETRY_SRC_MOLPRO_POINT_CHARGE_SYMMETRY_PROJECTOR_H_
-#include <molpro/point_charge_symmetry/Group.h>
-#include <molpro/point_charge_symmetry/Molecule.h>
-#include <molpro/point_charge_symmetry/SymmetryMeasure.h>
+#include "Group.h"
+#include "Molecule.h"
+#include "SymmetryMeasure.h"
 #include <vector>
 
 namespace molpro::point_charge_symmetry {

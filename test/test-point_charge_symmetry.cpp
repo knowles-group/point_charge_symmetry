@@ -183,7 +183,7 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
   std::cout << water << std::endl;
   //  std::cout << "centre of charge: " << water.centre_of_charge().transpose() << std::endl;
   std::cout << "inertial axes\n" << water.inertial_axes() << std::endl;
-  auto axes = water.inertial_axes();
+//  auto axes = water.inertial_axes();
   //  CoordinateSystem coordinate_system(water.centre_of_charge(), axes);
   CoordinateSystem coordinate_system;
   //  Group group(coordinate_system, "special");
@@ -296,10 +296,10 @@ TEST(point_charge_symmetry, group_factory) {
     auto g = molpro::point_charge_symmetry::Group(n.first);
     //    std::cout << g << std::endl;
     EXPECT_EQ(g.end() - g.begin(), n.second) << "Wrong order for group " << g;
-    for (const auto &op1 : g)
-      for (const auto &op2 : g) {
+//    for (const auto &op1 : g)
+//      for (const auto &op2 : g) {
         //        if (&op1 != &op2) EXPECT_NE(op1,op2);
-      }
+//      }
   }
 }
 
@@ -383,7 +383,7 @@ std::ostream &operator<<(std::ostream &s, const std::vector<T> &v) {
   return s;
 }
 
-#include <molpro/point_charge_symmetry/util/Problem_refine.h>
+#include <molpro/point_charge_symmetry/Problem_refine.h>
 TEST(point_charge_symmetry, refine) {
   //  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("refine");
   std::vector<std::string> tests{"c60_clean",  "c60",         "methane", "ch4",       "allene", "allene45",
@@ -450,7 +450,6 @@ TEST(point_charge_symmetry, atom_gradient) {
   numgrad.assign(numgrad.size(), 0);
   int i = 0;
   double step = 1e-3;
-  auto sm0 = sm();
   for (auto &atom : molecule.m_atoms) {
     for (int j = 0; j < 3; j++) {
       atom.position(j) -= 2 * step;
@@ -517,7 +516,6 @@ TEST(point_charge_symmetry, C) {
     EXPECT_LE(SymmetryMeasureValue(n.second.c_str(), q.size(), xyz.data(), q.data()), 1e-3) <<"before refinement "<< n.first << ":" << n.second;
 
     SymmetryMeasureRefine(n.second.c_str(),q.size(),xyz.data(),q.data());
-    auto measure2 = SymmetryMeasureValue(n.second.c_str(), q.size(), xyz.data(), q.data());
     EXPECT_LE(SymmetryMeasureValue(n.second.c_str(), q.size(), xyz.data(), q.data()), 1e-10) <<"after refinement "<< n.first << ":" << n.second;
 
     auto foundgroup = SymmetryMeasureDiscoverGroup(1e-3,q.size(),xyz.data(),q.data());
