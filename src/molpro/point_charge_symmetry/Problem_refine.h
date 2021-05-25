@@ -2,7 +2,7 @@
 #define POINT_CHARGE_SYMMETRY_SRC_MOLPRO_POINT_CHARGE_SYMMETRY_UTIL_PROBLEM_REFINE_H_
 #include <memory>
 #include <molpro/linalg/itsolv/IterativeSolver.h>
-#include <molpro/point_charge_symmetry/SymmetryMeasure.h>
+#include "SymmetryMeasure.h"
 #include "Projector.h"
 
 namespace molpro::point_charge_symmetry {
