@@ -320,6 +320,7 @@ std::map<std::string, std::string> create_expected_groups() {
   expected_groups["Icosahedron"] = "Ih";
   expected_groups["c60"] = "Ih";
   expected_groups["c60_clean"] = "Ih";
+  expected_groups["c60_from_klaus"] = "Ih";
   //  expected_groups["buckminsterfullerene"]="Ih";
   expected_groups["sulfur-hexafluoride"] = "Oh";
   expected_groups["cyclohexane"] = "D3d";
