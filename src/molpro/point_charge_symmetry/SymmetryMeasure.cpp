@@ -407,12 +407,14 @@ bool test_group(const Molecule& molecule, const Group& group, double threshold, 
               (2 * xscan + 1) * (parameter_ranges[2][1] - parameter_ranges[2][0]) / (2 * nscan);
           sm.reset_neighbours();
           auto measure = sm();
-          //        std::cout << "try "<<measure<<" ( current best="<<best_measure<<")
-          //        "<<group.coordinate_system_parameters()<<std::endl;
+          if (verbosity > 1)
+            std::cout << "try " << measure << " ( current best=" << best_measure << ") "
+                      << group.coordinate_system_parameters() << std::endl;
           if (measure < best_measure) {
             best_measure = measure;
             best_parameters = group.coordinate_system_parameters();
-            //            std::cout << "new best " << best_measure << group.coordinate_system_parameters() << std::endl;
+            if (verbosity > 1)
+              std::cout << "new best " << best_measure << group.coordinate_system_parameters() << std::endl;
           }
         }
     group.coordinate_system_parameters() = best_parameters;
