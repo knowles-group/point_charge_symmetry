@@ -309,6 +309,7 @@ std::map<std::string, std::string> create_expected_groups() {
   expected_groups["h2o"] = "C2v";
   expected_groups["h2o-nosym"] = "C2v";
   expected_groups["ferrocene"] = "D5d";
+  expected_groups["ferrocene-2"] = "D5h";
   expected_groups["benzene"] = "D6h";
   expected_groups["allene"] = "D2d";
   expected_groups["ch4"] = "Td";
@@ -373,6 +374,8 @@ TEST(point_charge_symmetry, test_group) {
     //      std::cout << "symmetry measure from rotation only " << smrot() << std::endl;
     //    }
     SymmetryMeasure sm(molecule, group);
+    for (size_t i = 0; i < group.size(); i++)
+      EXPECT_LE(sm(i), 1e-3) << group[i]  <<" " << sm(i) << std::endl;
     //    for (size_t i = 0; i < group.size(); i++)
     //      EXPECT_LE(sm(i), 1e-8) << group[i].name() << sm(i) << std::endl;
     //    sm.refine_frame(1);
