@@ -378,6 +378,10 @@ bool test_group(const Molecule& molecule, const Group& group, double threshold, 
   //  auto p = molpro::Profiler::single()->push("SymmetryMeasure::test_group(" + group.name() + ")");
   SymmetryMeasure sm0(molecule, group);
   sm0.adopt_inertial_axes();
+  if (group.name() == "R3")
+    return molecule.size() == 1;
+  else if (molecule.size() == 1)
+    return false;
   if ((group.name() == "Dinfh" or group.name() == "Cinfv") and
       std::min({sm0.inertia_principal_values()(0), sm0.inertia_principal_values()(1),
                 sm0.inertia_principal_values()(2)}) > 1e-3) {
@@ -537,7 +541,7 @@ Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_syst
   constexpr size_t maximum_axis_order = 10;
   Group result;
   // special?
-  for (const auto& n : std::vector<std::string>{"Dinfh", "Cinfv", "Oh", "O", "Td", "Ih", "I"})
+  for (const auto& n : std::vector<std::string>{"R3", "Dinfh", "Cinfv", "Oh", "O", "Td", "Ih", "I"})
     if (test_group(molecule, Group(coordinate_system, n, generators_only), threshold, verbosity))
       return Group(coordinate_system, n);
 
