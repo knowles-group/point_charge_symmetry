@@ -162,11 +162,18 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
     add(Reflection(zaxis));
 
   if (std::regex_match(name, m, std::regex{"([C])([1-9][0-9]*)([v])"}) or
-      std::regex_match(name, m, std::regex{"([D])([1-9][0-9]*)([hd])"})) {
+      std::regex_match(name, m, std::regex{"([D])([1-9][0-9]*)([d])"}) or
+      std::regex_match(name, m, std::regex{"([D])([1-9]*[02468])([h])"})) {
     auto order = std::stoi(m.str(2));
     auto angle = std::acos(double(-1)) / order;
     for (int count = 0; count < order; count++)
       add(Reflection({std::cos(count * angle), std::sin(count * angle), 0}));
+  }
+  if (std::regex_match(name, m, std::regex{"([D])([1-9]*[13579])([h])"})) {
+    auto order = std::stoi(m.str(2));
+    auto angle = std::acos(double(-1)) / order;
+    for (int count = 0; count < order; count++)
+      add(Reflection({std::cos((count + double(0.5)) * angle), std::sin((count + double(0.5)) * angle), 0}));
   }
 
   if (std::regex_match(name, m, std::regex{"([D])([1-9][0-9]*)([^v])?"})) {
