@@ -1,7 +1,12 @@
 #include "Molecule.h"
-#include <numeric>
-#include <sstream>
+#include "Problem_refine.h"
+#include "SymmetryMeasure.h"
 #include <cmath>
+#include <molpro/linalg/itsolv/SolverFactory.h>
+#include <numeric>
+#include <regex>
+#include <sstream>
+#include <unsupported/Eigen/MatrixFunctions>
 #define N_PERIODIC_TABLE 105
 const char* const periodic_table[N_PERIODIC_TABLE] = {
     "H",  "He", "Li", "Be", "B",  "C",  "N",  "O",  "F",  "Ne", "Na", "Mg", "Al", "Si", "P",  "S",  "Cl", "Ar",
@@ -36,21 +41,24 @@ Molecule::Molecule(const std::string& filename) {
   }
 }
 Molecule::Molecule(const Eigen::MatrixXd& coordinates, const Eigen::VectorXd& charges) {
- for (int i=0; i<coordinates.cols(); i++) {
-   m_atoms.emplace_back(coordinates.col(i), charges(i), std::to_string(std::lround(charges(i))));
- }
+  for (int i = 0; i < coordinates.cols(); i++) {
+    m_atoms.emplace_back(coordinates.col(i), charges(i), std::to_string(std::lround(charges(i))));
+  }
 }
 
 void Molecule::write(const std::string& filename, const std::string& title, const std::string& format) {
   std::ofstream f(filename);
-//  Eigen::IOFormat fmt(10, 0);
+  //  Eigen::IOFormat fmt(10, 0);
   f.precision(10);
   f << std::fixed;
   f << m_atoms.size() << "\n" << (title.empty() ? m_title : title) << "\n";
   for (const auto& atom : m_atoms) {
 
-//    f << atom.name << " " << atom.position.transpose().format(fmt) << std::endl;
-  f << atom.name; for (int i=0; i<3; i++) f << " " << atom.position(i); f << std::endl;
+    //    f << atom.name << " " << atom.position.transpose().format(fmt) << std::endl;
+    f << atom.name;
+    for (int i = 0; i < 3; i++)
+      f << " " << atom.position(i);
+    f << std::endl;
   }
 }
 
@@ -99,5 +107,138 @@ std::string Molecule::str() const {
     ss << atom.name << "(" << atom.charge << ") " << atom.position.transpose() << std::endl;
   ss << "Centre of charge: " << centre_of_charge().transpose() << std::endl;
   return ss.str();
+}
+static bool coplanar(const Eigen::Vector3d p1, const Eigen::Vector3d p2, const Eigen::Vector3d p3,
+                     const Eigen::Vector3d p4, double threshold = 1e-6) {
+  Eigen::Matrix3d discriminant;
+  discriminant.col(0) = p2 - p1;
+  discriminant.col(1) = p3 - p1;
+  discriminant.col(2) = p4 - p1;
+  //    std::cout << "planarity discriminant "<<discriminant.determinant()<<std::endl;
+  return std::abs(discriminant.determinant()) < threshold;
+}
+Eigen::Vector3d Molecule::findaxis(int order) const {
+  Eigen::Vector3d result;
+  std::vector<bool> distant(this->size());
+  std::vector<double> distance;
+  auto centre = this->centre_of_charge();
+  const double distance_threshold = 1e-3;
+  for (const auto& atom : this->m_atoms) {
+    const auto dist = (atom.position - centre).norm();
+    distance.push_back(dist > distance_threshold ? dist : std::numeric_limits<double>::max());
+  }
+  std::vector<size_t> atoms;
+  auto atom1 = std::min_element(distance.begin(), distance.end()) - distance.begin(); // the nearest distant atom
+  { // first of all see if this atom could itself define the axis
+    result = this->m_atoms[atom1].position - centre;
+    auto group = Group();
+    group.add(Rotation(result, order));
+    SymmetryMeasure sm(*this, group);
+    //    std::cout << "Trying nearest as axis definer " << result.transpose() << ", symmetry measure = " << sm()
+    //              << std::endl;
+    if (sm() < 1e-3)
+      return result;
+  }
+  atoms.push_back(atom1);
+//    std::cout << "findaxis atom " << atom1 << " " << m_atoms[atom1].position.transpose() << std::endl;
+  using neighbour_t = std::pair<size_t, double>;
+  std::set<neighbour_t> near_neighbours;
+  neighbour_t nearest_neighbour{0, std::numeric_limits<double>::max()};
+  for (size_t candidate = 0; candidate < this->size(); candidate++)
+    if (this->m_atoms[candidate].charge == this->m_atoms[atom1].charge and candidate != atom1) {
+      const auto dist = (this->m_atoms[candidate].position - this->m_atoms[atom1].position).norm();
+      near_neighbours.insert({candidate, dist});
+      if (dist < nearest_neighbour.second)
+        nearest_neighbour = {candidate, dist};
+    }
+  for (auto neighbour = near_neighbours.begin(); neighbour != near_neighbours.end();)
+    if (neighbour->second > nearest_neighbour.second * 2.01)
+      neighbour = near_neighbours.erase(neighbour);
+    else
+      neighbour++;
+
+  //  std::cout << "nearest_neighbour " << nearest_neighbour.first << " : " << nearest_neighbour.second << std::endl;
+  //  for (const auto& n : near_neighbours)
+  //    std::cout << "near_neighbour " << n.first << " : " << n.second << std::endl;
+  // find the expected regular polygon angle subtended at atom1 by a pair of neighbours
+  size_t atom2 = atom1, atom3 = atom1;
+  const auto pi = std::acos(double(-1));
+  const auto expected_angle = pi - 2 * pi / order;
+  const auto angle_tolerance = expected_angle / 100;
+  for (const auto& n1 : near_neighbours)
+    for (const auto& n2 : near_neighbours)
+      if (n1 != n2) {
+        const auto& n1xyz = this->m_atoms[n1.first].position;
+        const auto& n2xyz = this->m_atoms[n2.first].position;
+        const auto& n1vec = n1xyz - this->m_atoms[atom1].position;
+        const auto& n2vec = n2xyz - this->m_atoms[atom1].position;
+        const auto& angle = std::acos(n1vec.dot(n2vec) / (n1vec.norm() * n2vec.norm()));
+        //        std::cout << n1.first << n2.first << " angle=" << angle << ", expected_angle=" << expected_angle <<
+        //        std::endl;
+        if (std::abs(angle - expected_angle) < angle_tolerance) {
+          atom2 = n1.first;
+          atom3 = n2.first;
+        }
+      }
+//    std::cout << "atom1, atom2, atom3 " << atom1 << " " << atom2 << " " << atom3 << std::endl;
+  if (atom2 == atom1)
+    return {0, 0, 0};
+  atoms.push_back(atom2);
+  atoms.push_back(atom3);
+
+  for (int n = 3; n < order; n++) {
+    //    std::cout << "Place polygon atom # "<<n<<std::endl;
+    size_t atomn = 99; // the next atom closest to atom1 and of the same type, and within tolerance of the same distance
+                       // from the origin
+    //    std::cout << "n="<<n<<" atoms so far =";for (const auto& atom : atoms) std::cout << " "<<atom; std::cout <<
+    //    std::endl ;
+    for (size_t candidate = 0; candidate < this->size(); candidate++) {
+      //      std::cout << "trying initial candidate "<<candidate<<std::endl;
+      if (std::find(atoms.begin(), atoms.end(), candidate) == atoms.end() and
+          this->m_atoms[candidate].charge == this->m_atoms[atom1].charge and
+          coplanar(this->m_atoms[atom1].position, this->m_atoms[atoms[std::min(atoms.size() - 1, size_t(1))]].position,
+                   this->m_atoms[atoms[std::min(atoms.size() - 1, size_t(2))]].position,
+                   this->m_atoms[candidate].position, 1e-2)) {
+        if (n == 1) {
+          // for first neighbour, need to ensure there's a second neighbour at a similar distance
+          // construct
+        }
+        atomn = candidate;
+      }
+    }
+    //        std::cout << "setting initial atomn to "<<atomn<<std::endl;
+    //        for (size_t candidate = 0; candidate < this->size(); candidate++)
+    //          std::cout << "candidate "<<candidate<<" distance from 1 "<<(this->m_atoms[candidate].position -
+    //          this->m_atoms[atom1].position).norm()<<" , distance from centre  "<<distance[candidate]<<", coplanar "<<
+    //          (n<3?0:coplanar(this->m_atoms[atom1].position, this->m_atoms[atoms[std::min(atoms.size() - 1,
+    //          size_t(1))]].position,
+    //                                                                                                                                   this->m_atoms[atoms[std::min(atoms.size() - 1, size_t(2))]].position,
+    //                                                                                                                                   this->m_atoms[candidate].position, 1e-2))<<std::endl;
+    //    std::cout << "initial atomn="<<atomn<<std::endl;
+    for (size_t candidate = 0; candidate < this->size(); candidate++)
+      if (std::find(atoms.begin(), atoms.end(), candidate) == atoms.end() and
+          distance[candidate] > distance[atom1] - 1e-2 and
+          this->m_atoms[candidate].charge == this->m_atoms[atom1].charge and
+          (this->m_atoms[candidate].position - this->m_atoms[atoms[n - 1]].position).norm() <
+              (this->m_atoms[atomn].position - this->m_atoms[atoms[n - 1]].position).norm() + 1e-2 and
+          coplanar(this->m_atoms[atom1].position, this->m_atoms[atoms[std::min(atoms.size() - 1, size_t(1))]].position,
+                   this->m_atoms[atoms[std::min(atoms.size() - 1, size_t(2))]].position,
+                   this->m_atoms[candidate].position, 1e-2) and
+          (n < 2 or (this->m_atoms[candidate].position - this->m_atoms[atoms[n - 1]].position)
+                            .dot(this->m_atoms[atoms[n - 1]].position - this->m_atoms[atoms[n - 2]].position) >
+                        (this->m_atoms[atomn].position - this->m_atoms[atoms[n - 1]].position)
+                            .dot(this->m_atoms[atoms[n - 1]].position - this->m_atoms[atoms[n - 2]].position)))
+        atomn = candidate;
+    atoms.push_back(atomn);
+    //    std::cout << "findaxis atom " << atomn << " " << m_atoms[atomn].position.transpose() << std::endl;
+  }
+  result = (this->m_atoms[atoms[0]].position - this->m_atoms[atoms[1]].position)
+               .cross(this->m_atoms[atoms[0]].position - this->m_atoms[atoms[2]].position);
+//    std::cout << "plane normal " << result.transpose() / result.norm() << std::endl;
+  //    for (const auto& a : atoms)
+  //      for (const auto& b : atoms)
+  //    std::cout << "distance between atoms "<<a << ", "<<b<<" =
+  //    "<<(m_atoms[a].position-m_atoms[b].position).norm()<<std::endl;
+  return result / result.norm();
 }
 } // namespace molpro::point_charge_symmetry

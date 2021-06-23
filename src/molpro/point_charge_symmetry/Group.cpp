@@ -1,6 +1,6 @@
 #include "Group.h"
-#include <iostream>
 #include "CoordinateSystem.h"
+#include <iostream>
 #include <regex>
 
 namespace molpro::point_charge_symmetry {
@@ -56,34 +56,36 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
     if (all) {
       for (int i = 0; i < 5; i++) {
         vec bisector, joiner;
-        bisector=(pentagons[0] + pentagons[i + 1]) / std::sqrt(double(2));
-        joiner=(pentagons[0] - pentagons[i + 1]) ;
+        bisector = (pentagons[0] + pentagons[i + 1]) / std::sqrt(double(2));
+        joiner = (pentagons[0] - pentagons[i + 1]);
         add(Rotation(bisector, 2));
-        if (name=="Ih")
+        if (name == "Ih")
           add(Reflection(joiner.cross(bisector)));
-        bisector=(pentagons[(i + 1) % 5 + 1] + pentagons[i + 1]) / std::sqrt(double(2));
-        joiner=(pentagons[(i + 1) % 5 + 1] - pentagons[i + 1]) ;
+        bisector = (pentagons[(i + 1) % 5 + 1] + pentagons[i + 1]) / std::sqrt(double(2));
+        joiner = (pentagons[(i + 1) % 5 + 1] - pentagons[i + 1]);
         add(Rotation(bisector, 2));
-        if (name=="Ih")
+        if (name == "Ih")
           add(Reflection(joiner.cross(bisector)));
-        bisector=(-pentagons[(i + 2) % 5 + 1] + pentagons[i + 1]) / std::sqrt(double(2));
-        joiner=(-pentagons[(i + 2) % 5 + 1] - pentagons[i + 1]) ;
+        bisector = (-pentagons[(i + 2) % 5 + 1] + pentagons[i + 1]) / std::sqrt(double(2));
+        joiner = (-pentagons[(i + 2) % 5 + 1] - pentagons[i + 1]);
         add(Rotation(bisector, 2));
-        if (name=="Ih")
+        if (name == "Ih")
           add(Reflection(joiner.cross(bisector)));
       }
       for (int i = 0; i < 5; i++)
         for (int count = 1; count < 3; count++) {
-          add(Rotation((pentagons[0] + pentagons[i + 1] + pentagons[(i + 1) % 5 + 1]) / std::sqrt(double(3)), 3, true, count));
-          if (name=="Ih")
-          add(Rotation((pentagons[0] + pentagons[i + 1] + pentagons[(i + 1) % 5 + 1]) / std::sqrt(double(3)), 6, false, 4*count-3));
+          add(Rotation((pentagons[0] + pentagons[i + 1] + pentagons[(i + 1) % 5 + 1]) / std::sqrt(double(3)), 3, true,
+                       count));
+          if (name == "Ih")
+            add(Rotation((pentagons[0] + pentagons[i + 1] + pentagons[(i + 1) % 5 + 1]) / std::sqrt(double(3)), 6,
+                         false, 4 * count - 3));
           add(Rotation((-pentagons[(i + 3) % 5 + 1] + pentagons[i + 1] + pentagons[(i + 1) % 5 + 1]) /
                            std::sqrt(double(3)),
                        3, true, count));
-          if (name=="Ih")
+          if (name == "Ih")
             add(Rotation((-pentagons[(i + 3) % 5 + 1] + pentagons[i + 1] + pentagons[(i + 1) % 5 + 1]) /
                              std::sqrt(double(3)),
-                         6, false, 4*count-3));
+                         6, false, 4 * count - 3));
         }
     }
     //    std::cout <<*this<<std::endl;
@@ -216,5 +218,19 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
 
 Group::Group(const std::string& name, bool generators_only)
     : Group(s_default_coordinate_system, name, generators_only) {}
+
+Rotation Group::highest_rotation(bool proper, size_t index) const {
+  size_t count = 0;
+  int order = 0;
+  for (size_t i = 0; i < m_members.size(); i++)
+    if (m_members[i]->order() > order && (m_members[i]->proper() or not proper))
+      order = m_members[i]->order();
+  if (order > 0)
+    for (size_t i = 0; i < m_members.size(); i++) {
+      if (m_members[i]->order() == order && (m_members[i]->proper() or not proper) && index == count++)
+        return dynamic_cast<Rotation&>(*m_members[i]);
+    }
+  return Rotation({0, 0, 1}, 1);
+}
 
 } // namespace molpro::point_charge_symmetry

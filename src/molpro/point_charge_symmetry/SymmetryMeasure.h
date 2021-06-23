@@ -72,6 +72,8 @@ Molecule molecule_localised(const CoordinateSystem& coordinate_system, const Mol
 
 bool test_group(const Molecule& molecule, const Group& group, double threshold = 1e-6, int verbosity = -1);
 
+Eigen::Matrix3d find_axis_frame(const Molecule& molecule, const Group& group);
+
 } // namespace molpro::point_charge_symmetry
 
 #endif // POINT_CHARGE_SYMMETRY_SRC_MOLPRO_POINT_CHARGE_SYMMETRY_SYMMETRYMEASURE_H_
