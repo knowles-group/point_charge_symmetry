@@ -35,6 +35,8 @@ public:
   virtual Operator* clone() const = 0;
   virtual Operator* clone(const CoordinateSystem& coordinate_system) const = 0;
   const CoordinateSystem& coordinate_system() const { return m_coordinate_system; }
+  virtual int order() const { return 0; }
+  virtual bool proper() const { return true; }
 
 protected:
   const CoordinateSystem& m_coordinate_system;
@@ -61,6 +63,7 @@ public:
   Operator* clone(const CoordinateSystem& coordinate_system) const override {
     return new Reflection(coordinate_system, m_normal);
   }
+  bool proper() const override { return false; }
 };
 
 class Rotation : public Operator {
@@ -80,6 +83,9 @@ public:
   Operator* clone(const CoordinateSystem& coordinate_system) const override {
     return new Rotation(coordinate_system, m_axis, m_order, m_proper, m_count);
   }
+  int order() const override { return m_order; }
+  bool proper() const override { return m_proper; }
+  const vec& axis() const {return m_axis;}
 };
 
 class Inversion : public Operator {
@@ -91,6 +97,7 @@ public:
   Operator* clone() const override { return new Inversion(*this); }
   Operator* clone(const CoordinateSystem& coordinate_system) const override { return new Inversion(coordinate_system); }
   std::string str(const std::string& title, bool coordinate_frame = false) const override;
+  bool proper() const override { return false; }
 };
 
 class Identity : public Operator {

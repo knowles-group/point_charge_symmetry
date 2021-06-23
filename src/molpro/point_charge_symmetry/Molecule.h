@@ -24,6 +24,8 @@ public:
   [[nodiscard]] Eigen::Matrix3d inertia_tensor() const;
   [[nodiscard]] Eigen::Matrix3d inertial_axes() const;
   void write(const std::string& filename, const std::string& title = "", const std::string& format = "xyz");
+  [[nodiscard]] size_t size() const { return m_atoms.size(); }
+  [[nodiscard]] Eigen::Vector3d findaxis(int order) const;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Molecule& op) {
