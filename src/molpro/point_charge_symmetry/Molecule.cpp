@@ -7,14 +7,14 @@
 #include <regex>
 #include <sstream>
 #include <unsupported/Eigen/MatrixFunctions>
-#define N_PERIODIC_TABLE 105
+#define N_PERIODIC_TABLE 106
 const char* const periodic_table[N_PERIODIC_TABLE] = {
-    "H",  "He", "Li", "Be", "B",  "C",  "N",  "O",  "F",  "Ne", "Na", "Mg", "Al", "Si", "P",  "S",  "Cl", "Ar",
-    "K",  "Ca", "Sc", "Ti", "V",  "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr",
-    "Rb", "Sr", "Y",  "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I",  "Xe",
-    "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf",
-    "Ta", "W",  "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th",
-    "Pa", "U",  "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf", "Db"};
+    "X",  "H",  "He", "Li", "Be", "B",  "C",  "N",  "O",  "F",  "Ne", "Na", "Mg", "Al", "Si", "P",  "S",  "Cl",
+    "Ar", "K",  "Ca", "Sc", "Ti", "V",  "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br",
+    "Kr", "Rb", "Sr", "Y",  "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I",
+    "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu",
+    "Hf", "Ta", "W",  "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac",
+    "Th", "Pa", "U",  "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf", "Db"};
 
 namespace molpro::point_charge_symmetry {
 static std::string upper_string(std::string s) {
@@ -30,19 +30,22 @@ Molecule::Molecule(const std::string& filename) {
   std::getline(f, m_title);
   std::string el;
   for (int i = 0; i < n; i++) {
-    double x, y, z, q = 0;
+    double x, y, z, q = -1;
     f >> el >> x >> y >> z;
     for (int e = 0; e < N_PERIODIC_TABLE; e++)
       if (upper_string(el) == upper_string(periodic_table[e]))
-        q = e + 1;
-    if (q == 0)
+        q = e;
+    if (q == -1)
       q = std::stoi(el);
+    if (q == 0)
+      q = 0.99; // charge of zero does not play well
     m_atoms.emplace_back(Eigen::Vector3d{x, y, z}, q, el);
   }
 }
 Molecule::Molecule(const Eigen::MatrixXd& coordinates, const Eigen::VectorXd& charges) {
   for (int i = 0; i < coordinates.cols(); i++) {
-    m_atoms.emplace_back(coordinates.col(i), charges(i), std::to_string(std::lround(charges(i))));
+    m_atoms.emplace_back(coordinates.col(i), charges(i) == 0 ? 0.99 : charges(i), // charge of zero does not play well
+                         std::to_string(std::lround(charges(i))));
   }
 }
 
@@ -140,7 +143,7 @@ Eigen::Vector3d Molecule::findaxis(int order) const {
       return result;
   }
   atoms.push_back(atom1);
-//    std::cout << "findaxis atom " << atom1 << " " << m_atoms[atom1].position.transpose() << std::endl;
+  //    std::cout << "findaxis atom " << atom1 << " " << m_atoms[atom1].position.transpose() << std::endl;
   using neighbour_t = std::pair<size_t, double>;
   std::set<neighbour_t> near_neighbours;
   neighbour_t nearest_neighbour{0, std::numeric_limits<double>::max()};
@@ -180,7 +183,7 @@ Eigen::Vector3d Molecule::findaxis(int order) const {
           atom3 = n2.first;
         }
       }
-//    std::cout << "atom1, atom2, atom3 " << atom1 << " " << atom2 << " " << atom3 << std::endl;
+  //    std::cout << "atom1, atom2, atom3 " << atom1 << " " << atom2 << " " << atom3 << std::endl;
   if (atom2 == atom1)
     return {0, 0, 0};
   atoms.push_back(atom2);
@@ -234,7 +237,7 @@ Eigen::Vector3d Molecule::findaxis(int order) const {
   }
   result = (this->m_atoms[atoms[0]].position - this->m_atoms[atoms[1]].position)
                .cross(this->m_atoms[atoms[0]].position - this->m_atoms[atoms[2]].position);
-//    std::cout << "plane normal " << result.transpose() / result.norm() << std::endl;
+  //    std::cout << "plane normal " << result.transpose() / result.norm() << std::endl;
   //    for (const auto& a : atoms)
   //      for (const auto& b : atoms)
   //    std::cout << "distance between atoms "<<a << ", "<<b<<" =

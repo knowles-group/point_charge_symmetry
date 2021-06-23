@@ -327,6 +327,7 @@ std::map<std::string, std::string> create_expected_groups() {
   expected_groups["cyclohexane"] = "D3d";
   expected_groups["s8"] = "D8h";
   expected_groups["phloroglucinol"] = "C3h";
+  expected_groups["dummy"] = "Cinfv";
   return expected_groups;
 }
 TEST(point_charge_symmetry, discover_group) {
