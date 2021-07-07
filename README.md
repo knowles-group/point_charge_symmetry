@@ -1,4 +1,7 @@
 ## Point Group Discovery and Repair
+
+[![license](https://img.shields.io/badge/license-MIT-green.svg)](https://gitlab.com/%{project_path}/-/blob/master/LICENCE)
+
 To use the command-line tool,
 
 ``
