@@ -17,6 +17,6 @@ foreach (t test-${PROJECT_NAME} test-bfgs)
     endif ()
 endforeach ()
 
-foreach (molecule pentagonx c60_from_klaus co2 adamantane n2-displaced Icosahedron c60_clean c60 phloroglucinol ethane benzene ferrocene ferrocene-2 dummy ar h2o h2o-nosym allene buckminsterfullerene hexamethylbenzene p4 sulfur-hexafluoride cyclohexane s8 methane ch4 allene45 n2)
+foreach (molecule pentagonx c60_from_klaus co2 adamantane n2-displaced Icosahedron c60_clean c60 phloroglucinol ethane benzene ferrocene ferrocene-2 dummy ar h2o h2o-nosym allene buckminsterfullerene hexamethylbenzene p4 sulfur-hexafluoride cyclohexane s8 methane ch4 allene45 n2 waterinf)
     configure_file(${molecule}.xyz . COPYONLY)
 endforeach ()

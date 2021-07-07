@@ -215,45 +215,57 @@ void SymmetryMeasure::adopt_inertial_axes() {
     std::copy(temporary_coordinate_system.m_parameters.begin(), temporary_coordinate_system.m_parameters.end(),
               parameters.begin());
   }
-  //  std::cout << "adopt_inertial_axes first inertial\n" << coordinate_system.axes() << std::endl;
-  //  std::cout << "centre of charge " << m_molecule.centre_of_charge() << std::endl;
-  //  std::cout <<"Group: "<<m_group<<std::endl;
+  //    std::cout << "adopt_inertial_axes first inertial\n" << coordinate_system.axes() << std::endl;
+  //    std::cout << "centre of charge " << m_molecule.centre_of_charge() << std::endl;
+  //    std::cout <<"Group: "<<m_group<<std::endl;
   int best_axis = 0;
   double best_axis_sm = 1e50;
   bool symmetric_top = false;
   for (int principal_axis = 0; principal_axis < 6; principal_axis++) {
     reset_neighbours();
-    //        std::cout << "try axes\n" << coordinate_system.axes() << std::endl;
+    //            std::cout << "try axes, principal_axis="<<principal_axis <<"\n" << coordinate_system.axes() <<
+    //            std::endl;
     //    auto sm = SymmetryMeasure(m_molecule, m_group);
     auto local_inertia_tensor =
         (coordinate_system.axes().transpose() * m_molecule.inertia_tensor() * coordinate_system.axes()).eval();
     //    std::cout << "local_inertia_tensor\n" << local_inertia_tensor << std::endl;
     double measure;
     m_inertia_principal_values = local_inertia_tensor.diagonal().eval();
-    if (std::abs(local_inertia_tensor(0, 0) - local_inertia_tensor(1, 1)) <
-        1e-5 * std::abs(local_inertia_tensor(0, 0) - local_inertia_tensor(2, 2))) {
+    //    std::cout << "local_inertia_tensor "<<local_inertia_tensor<<std::endl;
+    //    std::cout << "m_inertia_principal_values "<<m_inertia_principal_values<<std::endl;
+    //    std::cout << m_inertia_principal_values(0)-m_inertia_principal_values(1)<<std::endl;
+    //    std::cout << m_inertia_principal_values(0)-m_inertia_principal_values(2)<<std::endl;
+    //    std::cout << m_inertia_principal_values(1)-m_inertia_principal_values(2)<<std::endl;
+    if (
+        //         std::abs(local_inertia_tensor(0, 0) - local_inertia_tensor(1, 1)) < 1e-5 *
+        //         std::abs(local_inertia_tensor(0, 0) - local_inertia_tensor(2, 2))
+        std::abs(local_inertia_tensor(0, 0) - local_inertia_tensor(1, 1)) <
+        1e-2 * std::min(local_inertia_tensor(2, 2), double(1))
+        //         std::abs(vals[0]-vals[1]) < 1e-2 or std::abs(vals[2]-vals[1]) < 1e-2
+    ) {
       //      std::cout << local_inertia_tensor(0, 0) << " " << local_inertia_tensor(1, 1) << std::endl;
-      //      std::cout << "Symmetric top with axes\n" << coordinate_system.axes() << std::endl;
+      //            std::cout << "Symmetric top with axes\n" << coordinate_system.axes() << std::endl;
       measure = 0;
       symmetric_top = true;
     } else
       measure = (*this)();
-    //        std::cout << "Atomic coordinates in local frame\n" << std::endl;
-    //    for (const auto &atom : m_molecule.m_atoms)
-    //      std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
+    //            std::cout << "Atomic coordinates in local frame\n" << std::endl;
+    //        for (const auto &atom : m_molecule.m_atoms)
+    //          std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
     CoordinateSystem::vec out_of_plane{0, 0, 0};
     for (const auto& atom : m_molecule.m_atoms) {
       //      auto coords= coordinate_system.to_local(atom.position);
       out_of_plane += coordinate_system.to_local(atom.position).cwiseAbs();
       //      std::cout << coords.transpose()<<std::endl;
       //      std::cout << coordinate_system.to_local(atom.position).cwiseAbs().transpose()<<std::endl;
-      //      std::cout << out_of_plane.transpose()<<std::endl;
+      //            std::cout << out_of_plane.transpose()<<std::endl;
       //      std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
     }
     // TODO implement all recommended tie breakers, such as planar C2v molecules in yz plane
-    auto tie_breaker = out_of_plane.dot(CoordinateSystem::vec{3, 2, 1}) * 1e-6;
+    auto tie_breaker = out_of_plane.dot(CoordinateSystem::vec{3, 2, 1}) * 1e-6 / out_of_plane.norm();
+    //    std::cout << "tie_breaker="<<tie_breaker<<std::endl;
     measure += tie_breaker;
-    //    std::cout << "principal_axis=" << principal_axis << " sm=" << measure << std::endl;
+    //        std::cout << "principal_axis=" << principal_axis << " sm=" << measure << std::endl;
     //    std::cout << "out_of_plane "<<out_of_plane.transpose()<<std::endl;
     if (measure < best_axis_sm) {
       best_axis_sm = measure;
@@ -265,10 +277,10 @@ void SymmetryMeasure::adopt_inertial_axes() {
   for (int principal_axis = 0; principal_axis < best_axis; principal_axis++)
     coordinate_system.cycle_axes();
   reset_neighbours();
-  //  std::cout << "chosen initial coordinate system: " << best_axis << "\n" << coordinate_system << std::endl;
-  //  std::cout << "Atomic coordinates in local frame\n" << std::endl;
-  //  for (const auto& atom : m_molecule.m_atoms)
-  //    std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
+  //    std::cout << "chosen initial coordinate system: " << best_axis << "\n" << coordinate_system << std::endl;
+  //    std::cout << "Atomic coordinates in local frame\n" << std::endl;
+  //    for (const auto& atom : m_molecule.m_atoms)
+  //      std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
 }
 
 class Problem_optimise_frame : public molpro::linalg::itsolv::Problem<CoordinateSystem::parameters_t> {

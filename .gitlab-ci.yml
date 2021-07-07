@@ -41,8 +41,8 @@ build:
 pages:
   image: $CI_REGISTRY_IMAGE
   stage: deploy
-#  only:
-#    - tags
+  only:
+    - tags
   script:
     - PUBLIC=$PWD/public
     - mkdir -p $PUBLIC
