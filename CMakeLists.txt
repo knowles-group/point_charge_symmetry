@@ -1,5 +1,14 @@
 cmake_minimum_required(VERSION 3.16)
 project(point_charge_symmetry)
+include(FetchContent)
+FetchContent_Declare(
+        LibraryManager
+        GIT_REPOSITORY https://gitlab.com/molpro/librarymanager.git
+        GIT_TAG fef21c35ac00abea4d810ee8c8dbc34dcf8fa2e8
+)
+FetchContent_MakeAvailable(LibraryManager)
+
+LibraryManager_Project()
 set(CMAKE_CXX_STANDARD 17)
 
 add_subdirectory(dependencies)
@@ -8,12 +17,5 @@ add_subdirectory(src)
 if (${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
     enable_testing()
     add_subdirectory(test)
+    add_subdirectory(doc)
 endif ()
-
-# Documentation has to come last to make sure all dependencies have been added
-#include(DependencyManagerDocs)
-
-#DependencyManagerDocs_Add(${PROJECT_NAME}
-#        FILES README.md
-#        DOC_URL "https://molpro.gitlab.io/${PROJECT_NAME}/${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
-#        )
