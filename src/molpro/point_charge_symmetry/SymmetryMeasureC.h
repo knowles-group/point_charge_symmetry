@@ -11,7 +11,7 @@
  * @return The numerical value of the symmetry measure.
  */
 extern "C" double SymmetryMeasureValue(const char* groupname, size_t atoms, const double* coordinates,
-                                  const double* charges);
+                                       const double* charges);
 
 /*!
  * @brief Optimise the coordinate frame to minimise the symmetry measure for given coordinates and group
@@ -24,7 +24,7 @@ extern "C" double SymmetryMeasureValue(const char* groupname, size_t atoms, cons
  * @return 0 if successful
  */
 extern "C" int SymmetryMeasureOptimiseFrame(const char* groupname, size_t atoms, double* coordinates,
-                                             const double* charges);
+                                            const double* charges);
 
 /*!
  * @brief Discover the highest order point group for a set of charges

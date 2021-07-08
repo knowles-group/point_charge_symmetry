@@ -24,7 +24,7 @@ int SymmetryMeasureOptimiseFrame(const char *groupname, size_t atoms, double *co
   const Molecule &molecule0 = Molecule(xyz, q);
   CoordinateSystem cs;
   const auto group = Group(cs, std::string{groupname});
-  if (not molpro::point_charge_symmetry::test_group(molecule0, group,threshold))
+  if (not molpro::point_charge_symmetry::test_group(molecule0, group, threshold))
     return 1;
   molpro::point_charge_symmetry::SymmetryMeasure sm(molecule0, group);
   //  sm.adopt_inertial_axes();

@@ -27,7 +27,7 @@ CoordinateSystem& CoordinateSystem::operator=(const CoordinateSystem& source) {
 
 static std::array<double, 3> euler_from_axes(const CoordinateSystem::mat& u) {
   double alpha, beta, gamma;
-  beta = std::acos(std::min(double(1),std::max(double(-1),u(2, 2))));
+  beta = std::acos(std::min(double(1), std::max(double(-1), u(2, 2))));
   if (beta < 1e-6)
     beta = std::asin(std::sqrt(std::pow(u(0, 2), 2) + std::pow(u(1, 2), 2)));
   if (beta < 1e-12) {

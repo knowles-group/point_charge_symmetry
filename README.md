@@ -9,4 +9,5 @@ The program reads the molecular geometry in [XYZ](http://openbabel.org/wiki/XYZ_
 
 The geometry is then adjusted with the least-motion displacement that brings the symmetry-breaking measure to zero.
 
-The convenience script `pubchem-xyz.py` does a search by name on [PubChem](https://pubchem.ncbi.nlm.nih.gov), and creates XYZ files for any matching structures.
+The convenience script `pubchem-xyz.py` does a search by name on [PubChem](https://pubchem.ncbi.nlm.nih.gov), and
+creates XYZ files for any matching structures.

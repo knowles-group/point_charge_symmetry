@@ -15,7 +15,7 @@ public:
   // protected:
   mutable parameters_t m_parameters;
   const RotationParameterType m_rotation_parameter_type = RotationParameterType::Euler;
-  const double m_rotation_parameter_scale = double(0*1e-11)+1;
+  const double m_rotation_parameter_scale = double(0 * 1e-11) + 1;
 
 protected:
   mutable bool m_axis_permutation_rot90_next = false;
@@ -23,7 +23,7 @@ protected:
 public:
   using vec = Eigen::Vector3d;
   using mat = Eigen::Matrix3d;
-  CoordinateSystem& operator=(const CoordinateSystem& source) ;
+  CoordinateSystem& operator=(const CoordinateSystem& source);
   Eigen::Map<vec> origin() { return Eigen::Map<vec>(&m_parameters[0]); }
   Eigen::Map<const vec> origin() const { return Eigen::Map<const vec>(&m_parameters[0]); }
   const mat axes() const;
@@ -39,7 +39,7 @@ public:
   vec to_local(const vec& source) const;
   vec to_global(const vec& source) const;
   void cycle_axes() const;
-  std::array<std::array<double,2>,3> rotation_generator_ranges() const;
+  std::array<std::array<double, 2>, 3> rotation_generator_ranges() const;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const CoordinateSystem& op) {

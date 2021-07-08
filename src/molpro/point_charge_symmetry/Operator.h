@@ -85,7 +85,7 @@ public:
   }
   int order() const override { return m_order; }
   bool proper() const override { return m_proper; }
-  const vec& axis() const {return m_axis;}
+  const vec& axis() const { return m_axis; }
 };
 
 class Inversion : public Operator {

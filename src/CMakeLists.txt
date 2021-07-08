@@ -13,7 +13,7 @@ add_subdirectory(molpro)
 LibraryManager_Install(point_charge_symmetry)
 
 include(FetchContent)
-FetchContent_Declare(tclap GIT_REPOSITORY https://gitlab.com/molpro/tclap.git )
+FetchContent_Declare(tclap GIT_REPOSITORY https://gitlab.com/molpro/tclap.git)
 FetchContent_GetProperties(tclap)
 if (NOT tclap_POPULATED)
     FetchContent_Populate(tclap)

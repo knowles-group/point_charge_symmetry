@@ -16,9 +16,9 @@ protected:
 public:
   Group();
   Group(CoordinateSystem& coordinate_system);
-  Group (CoordinateSystem& coordinate_system, std::string name, bool generators_only = false);
-  Group (const std::string& name, bool generators_only = false);
-//  Group(std::string name);
+  Group(CoordinateSystem& coordinate_system, std::string name, bool generators_only = false);
+  Group(const std::string& name, bool generators_only = false);
+  //  Group(std::string name);
   Group(CoordinateSystem& coordinate_system, const Group& source);
   std::string name() const { return m_name; }
   std::string& name() { return m_name; }
@@ -28,7 +28,7 @@ public:
   void add(const Rotation& op) {
     m_members.emplace_back(new Rotation(m_coordinate_system, op.m_axis, op.m_order, op.m_proper, op.m_count));
   }
-  void clear() { m_members.clear();}
+  void clear() { m_members.clear(); }
   //  const double *data() const { return m_coordinate_system.data(); }
   //  double *data() { return m_coordinate_system.data(); }
   const CoordinateSystem& coordinate_system() const { return m_coordinate_system; }
@@ -39,13 +39,13 @@ public:
   const_iterator begin() const { return m_members.begin(); }
   iterator end() { return m_members.end(); }
   const_iterator end() const { return m_members.end(); }
-  size_t size() const {return m_members.size();}
+  size_t size() const { return m_members.size(); }
   Rotation highest_rotation(bool proper = true, size_t index = 0) const;
   Operator& operator[](size_t index) { return *(m_members[index]); }
   const Operator& operator[](size_t index) const { return *(m_members[index]); }
 };
 inline std::ostream& operator<<(std::ostream& os, const Group& g) {
-  os << "Group " << g.name() << ", order=" << g.end() - g.begin() << "\n"<<g.coordinate_system();
+  os << "Group " << g.name() << ", order=" << g.end() - g.begin() << "\n" << g.coordinate_system();
   for (const auto& el : g)
     os << "\nMember: " << *el;
   return os;

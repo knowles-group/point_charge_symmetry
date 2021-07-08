@@ -26,8 +26,8 @@ cache:
 build:
   image: $CI_REGISTRY_IMAGE
   stage: test
-#    only:
-#      - merge_requests
+  #    only:
+  #      - merge_requests
   tags:
     - linux-farm
   script:
