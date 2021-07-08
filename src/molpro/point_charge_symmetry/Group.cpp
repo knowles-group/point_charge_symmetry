@@ -219,7 +219,12 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
               "([S])([0-9]*[02468])"})) { // could be done more prettily with explicit proper rotations and inversion
     auto order = std::stoi(m.str(2));
     for (int count = 1; count < order; count++)
-      add(Rotation(zaxis, order, false, count));
+      if (count % 2)
+        add(Rotation(zaxis, order, false, count));
+      else if (count == order / 2)
+        add(Inversion());
+      else
+        add(Rotation(zaxis, order / 2, true, count / 2));
   }
 }
 

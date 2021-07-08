@@ -330,26 +330,29 @@ std::map<std::string, std::string> create_expected_groups() {
   expected_groups["dummy"] = "Cinfv";
   expected_groups["ar"] = "R3";
   expected_groups["waterinf"] = "Cs";
+  expected_groups["18-crown"] = "S6";
   return expected_groups;
 }
 TEST(point_charge_symmetry, discover_group) {
   //  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Discover groups");
   //  prof->set_max_depth(1);
   auto expected_groups = create_expected_groups();
-  //  expected_groups.clear();
+  //    expected_groups.clear();
   //  expected_groups["c60"] = "Ih";
   //  expected_groups["adamantane"] = "Td";
+  //    expected_groups["18-crown"] = "S6";
   for (const auto &n : expected_groups) {
     //    std::cout << "discover "<<n.first<<std::endl;
     Molecule molecule(n.first + ".xyz");
     auto group = molpro::point_charge_symmetry::discover_group(molecule, 1e-2, -1);
+    EXPECT_EQ(group.name(), n.second) << "Molecule: " << n.first << "\nfound group: " << group
+                                      << "\nexpected group: " << Group(n.second);
     CoordinateSystem coordinate_system = group.coordinate_system();
     Group groupwanted(coordinate_system, n.second);
     SymmetryMeasure sm(molecule, groupwanted);
     EXPECT_LE(sm(), 1e-3) << groupwanted.name() << n.second << " " << sm() << std::endl;
     for (size_t i = 0; i < groupwanted.size(); i++)
       EXPECT_LE(sm(i), 1e-3) << groupwanted[i].name() << sm(i) << std::endl;
-    EXPECT_EQ(group.name(), n.second) << n.first << ": " << group.name();
     std::cout << n.first << ": " << group.name() << ", measure=" << SymmetryMeasure(molecule, group)() << std::endl;
   }
   //  std::cout << *prof << std::endl;
@@ -359,7 +362,7 @@ TEST(point_charge_symmetry, test_group) {
   //  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Discover groups");
   //  prof->set_max_depth(1);
   auto expected_groups = create_expected_groups();
-  //    expected_groups.clear();
+  //      expected_groups.clear();
   //  expected_groups["c60"] = "Ih";
   //  expected_groups["waterinf"] = "Cs";
   for (const auto &n : expected_groups) {
@@ -367,9 +370,12 @@ TEST(point_charge_symmetry, test_group) {
     Molecule molecule(n.first + ".xyz");
     CoordinateSystem cs;
     auto group = Group(cs, n.second);
-    EXPECT_TRUE(test_group(molecule, group, 1e-3));
-    //    std::cout << "coordinate system after test_group\n" << cs << std::endl;
-    //    std::cout << "coordinate system after test_group\n" << group.coordinate_system() << std::endl;
+    EXPECT_TRUE(test_group(molecule, group, 1e-3)) << "coordinate system after test_group\n"
+                                                   << cs << std::endl
+                                                   << "coordinate system after test_group\n"
+                                                   << group.coordinate_system() << std::endl
+                                                   << "Group\n"
+                                                   << group;
     //    if (true) {
     //      Group grot(cs);
     //      grot.add(group.highest_rotation());
@@ -378,7 +384,7 @@ TEST(point_charge_symmetry, test_group) {
     //    }
     SymmetryMeasure sm(molecule, group);
     for (size_t i = 0; i < group.size(); i++)
-      EXPECT_LE(sm(i), 1e-3) << group[i] << " " << sm(i) << std::endl;
+      EXPECT_LE(sm(i), 1e-3) << "Testing symmetry element " << group[i] << " " << sm(i) << std::endl;
     //    for (size_t i = 0; i < group.size(); i++)
     //      EXPECT_LE(sm(i), 1e-8) << group[i].name() << sm(i) << std::endl;
     //    sm.refine_frame(1);

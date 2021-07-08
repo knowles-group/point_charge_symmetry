@@ -600,7 +600,8 @@ Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_syst
           }
         }
       } else {
-        for (const auto& n : std::vector<std::string>{"C" + o + "h", "C" + o + "v", "S" + o, "C" + o}) {
+        auto o2 = std::to_string(axis_order * 2);
+        for (const auto& n : std::vector<std::string>{"C" + o + "h", "C" + o + "v", "S" + o2, "C" + o}) {
           //       std::cout << "explore "<<n<<std::endl;
           if (n != "S2" and test_group(molecule, Group(coordinate_system, n, generators_only), threshold, verbosity))
             return Group(coordinate_system, n);
