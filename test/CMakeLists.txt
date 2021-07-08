@@ -8,7 +8,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 
 include(GoogleTest)
-foreach (t test-${PROJECT_NAME} test-bfgs)
+foreach (t test-${PROJECT_NAME})
     add_executable(${t} ${t}.cpp)
     target_link_libraries(${t} PUBLIC gmock_main molpro::${PROJECT_NAME})
     if (NOT CMAKE_CROSSCOMPILING)
