@@ -306,6 +306,7 @@ TEST(point_charge_symmetry, group_factory) {
 std::map<std::string, std::string> create_expected_groups() {
   std::map<std::string, std::string> expected_groups;
   //  expected_groups["n2"] = "Dinfh";
+  expected_groups["ethene"] = "D2h";
   expected_groups["h2o"] = "C2v";
   expected_groups["h2o-nosym"] = "C2v";
   expected_groups["ferrocene"] = "D5d";
@@ -598,5 +599,25 @@ TEST(point_charge_symmetry, C) {
     auto foundgroup = SymmetryMeasureDiscoverGroup(1e-3, q.size(), xyz.data(), q.data());
     EXPECT_EQ(std::string{foundgroup}, n.second) << "n.first=" << n.first;
     free(foundgroup);
+  }
+}
+
+TEST(point_charge_symmetry, randomise) {
+  const Molecule molecule("ch4.xyz");
+  const double amplitude = 1e-3;
+//  std::cout << "original molecule\n" << molecule << std::endl;
+  for (int repeat = 0; repeat < 100; ++repeat) {
+    auto randomised = molecule;
+    randomised.randomise(amplitude);
+//    std::cout << "randomised molecule\n" << randomised << std::endl;
+    for (size_t i = 0; i < molecule.size(); ++i) {
+      EXPECT_GT((randomised.m_atoms[i].position - molecule.m_atoms[i].position).norm(), 0)
+          << "original atom: " << molecule.m_atoms[i].position.transpose()
+          << "\nrandomised atom: " << randomised.m_atoms[i].position.transpose();
+      EXPECT_LE((randomised.m_atoms[i].position - molecule.m_atoms[i].position).norm(),
+                amplitude * std::sqrt(double(3)))
+          << "original atom: " << molecule.m_atoms[i].position.transpose()
+          << "\nrandomised atom: " << randomised.m_atoms[i].position.transpose();
+    }
   }
 }

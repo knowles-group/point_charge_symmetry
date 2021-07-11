@@ -289,7 +289,7 @@ class Problem_optimise_frame : public molpro::linalg::itsolv::Problem<Coordinate
 public:
   Problem_optimise_frame(SymmetryMeasure& sm) : m_sm(sm) {}
   value_t residual(const container_t& parameters, container_t& residual) const override {
-    constexpr bool optimize_origin = false;
+    constexpr bool optimize_origin = true;
     //    std::cout << "parameters: "<<parameters<<std::endl;
     //    residual = m_sm.coordinate_system_gradient(-1, 1);
     //    if (std::inner_product(residual.begin(), residual.end(), residual.begin(), double(0)) > 1e-6) {
@@ -327,9 +327,9 @@ int SymmetryMeasure::refine_frame(int verbosity) {
   auto problem = Problem_optimise_frame(*this);
   CoordinateSystem::parameters_t grad;
   solver->set_verbosity(linalg::itsolv::Verbosity::None);
-  if (verbosity > 0)
-    solver->set_verbosity(linalg::itsolv::Verbosity::Iteration);
   if (verbosity > 1)
+    solver->set_verbosity(linalg::itsolv::Verbosity::Iteration);
+  if (verbosity > 2)
     solver->set_verbosity(linalg::itsolv::Verbosity::Detailed);
   solver->set_max_iter(100);
   auto result = solver->solve(parameters, grad, problem, false);
@@ -363,7 +363,7 @@ Molecule SymmetryMeasure::refine(int repeat) const {
     auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector>(
         "BFGS", "max_size_qspace=12,convergence_threshold=1e-7");
     solver->set_verbosity(linalg::itsolv::Verbosity::None);
-    if (verbosity >= 0)
+    if (verbosity >= 1)
       solver->set_verbosity(linalg::itsolv::Verbosity::Iteration);
     auto problem = Problem_refine(sm, molecule);
     auto grad = parameters;
@@ -563,7 +563,8 @@ Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_syst
     Group c2x(coordinate_system);
     c2x.name() = "pseudo-C2x";
     c2x.add(Rotation(coordinate_system, {0, 0, 1}, axis_order));
-    c2x.add(Rotation(coordinate_system, {std::cos(double(.001)), std::sin(double(.001)), 0}, 2));
+    double angle_break_symmetry = 0.01;
+    c2x.add(Rotation(coordinate_system, {std::cos(angle_break_symmetry), std::sin(angle_break_symmetry), 0}, 2));
     Group sigma_h(coordinate_system);
     sigma_h.name() = "pseudo-sigma_h";
     sigma_h.add(Rotation(coordinate_system, {0, 0, 1}, axis_order));

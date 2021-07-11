@@ -26,12 +26,19 @@ public:
   void write(const std::string& filename, const std::string& title = "", const std::string& format = "xyz");
   [[nodiscard]] size_t size() const { return m_atoms.size(); }
   [[nodiscard]] Eigen::Vector3d findaxis(int order) const;
+  /*!
+   * @brief Add noise to the geometry, with each coordinate displaced randomly
+   * @param amplitude Range of noise. Coordinate displacements are a random number in [-amplitude,amplitude)
+   */
+  void randomise(double amplitude);
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Molecule& op) {
   os << op.str();
   return os;
 }
+
+double distance(const Molecule& molecule1, const Molecule& molecule2);
 } // namespace molpro::point_charge_symmetry
 
 #endif // POINT_CHARGE_SYMMETRY_SRC_MOLPRO_POINT_CHARGE_SYMMETRY_MOLECULE_H_
