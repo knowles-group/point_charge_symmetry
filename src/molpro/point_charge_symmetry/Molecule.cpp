@@ -4,6 +4,7 @@
 #include <cmath>
 #include <molpro/linalg/itsolv/SolverFactory.h>
 #include <numeric>
+#include <random>
 #include <regex>
 #include <sstream>
 #include <unsupported/Eigen/MatrixFunctions>
@@ -244,4 +245,22 @@ Eigen::Vector3d Molecule::findaxis(int order) const {
   //    "<<(m_atoms[a].position-m_atoms[b].position).norm()<<std::endl;
   return result / result.norm();
 }
+void Molecule::randomise(double amplitude) {
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_real_distribution<double> dis(-amplitude, amplitude);
+  for (auto& atom : m_atoms)
+    for (int i = 0; i < 3; i++)
+      atom.position(i) += dis(gen);
+}
+
+double distance(const Molecule& molecule1, const Molecule& molecule2) {
+  double dist = 0;
+  for (size_t i = 0; i < molecule1.size(); ++i)
+    dist += (molecule1.m_atoms[i].position - molecule2.m_atoms[i].position)
+                .dot(molecule1.m_atoms[i].position - molecule2.m_atoms[i].position);
+  dist = std::sqrt(dist);
+  return dist;
+}
+
 } // namespace molpro::point_charge_symmetry

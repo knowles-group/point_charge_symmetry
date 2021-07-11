@@ -22,6 +22,10 @@ int main(int argc, char* argv[]) {
                                              "filename", cmd);
     TCLAP::ValueArg<int> profiler_depth("p", "profiler", "Maximum depth of execution time profiling", false, -1,
                                         "integer", cmd);
+    TCLAP::ValueArg<int> repeat("r", "repeat", "Number of executions", false, 1, "integer", cmd);
+    TCLAP::ValueArg<double> noise("n", "noise", "Mean noise added to geometries", false, 0, "float", cmd);
+    TCLAP::SwitchArg inertial("i", "inertial", "Whether to use inertial axes instead of optimising frame", cmd, false);
+    TCLAP::SwitchArg no_frame_optimise("s", "noopt", "Whether to skip frame optimisation", cmd, false);
     cmd.parse(argc, argv);
     //    std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("symmetry_measure");
     //    prof->set_max_depth(1);
@@ -30,42 +34,61 @@ int main(int argc, char* argv[]) {
     if (not quiet.getValue() and not given_group.isSet())
       std::cout << "Look for symmetry in " << input_file.getValue() << " with acceptance threshold "
                 << tolerance.getValue() << std::endl;
-    Molecule molecule(input_file.getValue());
-    if (not quiet.getValue() and verbose.getValue() > 0)
-      std::cout << molecule << std::endl;
-    CoordinateSystem cs;
-    auto group = given_group.isSet() ? Group(cs, given_group.getValue())
-                                     : discover_group(molecule, cs, tolerance.getValue(), verbose.getValue() - 1);
-    SymmetryMeasure sm(molecule, group);
-    sm.refine_frame();
-    if (not quiet.getValue() and verbose.getValue() > 3)
-      for (int i = 0; i < group.end() - group.begin(); i++)
-        std::cout << "Symmetry operation " << i << " (" << group[i].name() << ") symmetry-breaking measure = " << sm(i)
-                  << std::endl;
-    if (not quiet.getValue()) {
-      std::cout << (given_group.isSet() ? "Given group " : "Discovered group ") << group.name()
-                << ", symmetry-breaking measure = " << sm() << std::endl;
-      if (verbose.getValue() > 1)
-        std::cout << group << std::endl;
-      if (verbose.getValue() > 1)
-        std::cout << cs << std::endl;
-    }
+    double total_measure{0};
+    for (int count = 0; count < repeat.getValue(); ++count) {
+      Molecule molecule(input_file.getValue());
+      //      std::cout << "geometry before randomise\n"<<molecule<<std::endl;
+      //      std::cout << noise.getValue()<<std::endl;
+      molecule.randomise(noise.getValue());
+      //      std::cout << "geometry after randomise\n"<<molecule<<std::endl;
+      if (not quiet.getValue() and verbose.getValue() > 0)
+        std::cout << molecule << std::endl;
+      CoordinateSystem cs;
+      auto group = given_group.isSet() ? Group(cs, given_group.getValue())
+                                       : discover_group(molecule, cs, tolerance.getValue(), verbose.getValue() - 1);
+      SymmetryMeasure sm(molecule, group);
+      //      std::cout << "symmetry measure before inertial "<<sm()<<std::endl;
+      if (not no_frame_optimise.getValue())
+        sm.adopt_inertial_axes();
+      //      std::cout << "symmetry measure after inertial "<<sm()<<std::endl;
+      if (not inertial.getValue() and not no_frame_optimise.getValue())
+        sm.refine_frame();
+      if (not quiet.getValue() and verbose.getValue() > 3)
+        for (int i = 0; i < group.end() - group.begin(); i++)
+          std::cout << "Symmetry operation " << i << " (" << group[i].name()
+                    << ") symmetry-breaking measure = " << sm(i) << std::endl;
+      total_measure += sm();
+      if (not quiet.getValue() and count == 0) {
+        std::cout << (given_group.isSet() ? "Given group " : "Discovered group ") << group.name()
+                  << ", symmetry-breaking measure = " << sm() << std::endl;
+        if (verbose.getValue() > 1)
+          std::cout << group << std::endl;
+        if (verbose.getValue() > 1)
+          std::cout << cs << std::endl;
+      }
 
-    if (not quiet.getValue() and verbose.getValue() > 2)
-      std::cout << "Refine geometry " << std::endl;
-    molecule = sm.refine(3);
-    cs = CoordinateSystem();
-    if (not quiet.getValue())
-      std::cout << "After geometry refinement, symmetry-breaking measure = "
-                << SymmetryMeasure(molecule, Group(group.name()))() << std::endl;
-    if (not quiet.getValue() and verbose.getValue() > 0)
-      std::cout << molecule << std::endl;
+      if (not quiet.getValue() and verbose.getValue() > 2)
+        std::cout << "Refine geometry " << std::endl;
+      auto original_molecule = molecule_localised(cs, molecule);
+      //          original_molecule.
+      molecule = sm.refine(3);
+      cs = CoordinateSystem();
+      if (not quiet.getValue() and count == 0)
+        std::cout << "After geometry refinement, symmetry-breaking measure = "
+                  << SymmetryMeasure(molecule, Group(group.name()))()
+                  << ", distance from original = " << distance(molecule, original_molecule) << std::endl;
+      if (not quiet.getValue() and verbose.getValue() > 0)
+        std::cout << molecule << std::endl;
 
-    if (output_file.isSet()) {
-      if (not quiet.getValue())
-        std::cout << "Write geometry to " << output_file.getValue() << std::endl;
-      molecule_localised(cs, molecule).write(output_file.getValue());
+      if (output_file.isSet()) {
+        if (not quiet.getValue())
+          std::cout << "Write geometry to " << output_file.getValue() << std::endl;
+        molecule_localised(cs, molecule).write(output_file.getValue());
+      }
     }
+    if (repeat.getValue() > 1)
+      std::cout << "Noise=" << noise.getValue() << ", repeat=" << repeat.getValue()
+                << ", mean symmetry measure=" << total_measure / repeat.getValue() << std::endl;
     if (profiler_depth.getValue() > 0)
       std::cout << *molpro::Profiler::single() << std::endl;
   } catch (TCLAP::ArgException& e) // catch any exceptions
