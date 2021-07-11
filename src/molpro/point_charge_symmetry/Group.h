@@ -51,6 +51,8 @@ inline std::ostream& operator<<(std::ostream& os, const Group& g) {
   return os;
 }
 
+//Group generate(const Group& generator);
+
 } // namespace molpro::point_charge_symmetry
 
 #endif // POINT_CHARGE_SYMMETRY_SRC_MOLPRO_POINT_CHARGE_SYMMETRY_GROUP_H_

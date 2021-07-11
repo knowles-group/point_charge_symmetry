@@ -22,6 +22,7 @@ Group::Group(CoordinateSystem& coordinate_system, const Group& source)
 
 Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generators_only)
     : m_coordinate_system(coordinate_system), m_name(name) {
+//  std::cout << "Group::Group " << name << " " << generators_only << std::endl;
   using vec = CoordinateSystem::vec;
   const vec zaxis{0, 0, 1};
   const auto all = not generators_only;
@@ -153,9 +154,11 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
     name.replace(1, 3, "11");
   }
 
-  if (std::regex_match(name, m, std::regex{"[CD][0-9]*[02468]h"}) or
-      std::regex_match(name, m, std::regex{"D[0-9]*[13579]d"}) or
-      std::regex_match(name, m, std::regex{"Ih|Th|Oh|Dinfh|Ci"}))
+  if (all and (std::regex_match(name, m, std::regex{"[CD][0-9]*[02468]h"}) or
+               std::regex_match(name, m, std::regex{"D[0-9]*[13579]d"}) or
+               std::regex_match(name, m, std::regex{"Ih|Th|Oh|Dinfh"})))
+    add(Inversion());
+  if (name == "Ci")
     add(Inversion());
 
   if (std::regex_match(name, m, std::regex{"Dinfh|Cs|[CD][1-9][0-9]*h"}))
@@ -166,34 +169,36 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
       std::regex_match(name, m, std::regex{"([D])([1-9]*[02468])([h])"})) {
     auto order = std::stoi(m.str(2));
     auto angle = std::acos(double(-1)) / order;
-    for (int count = 0; count < order; count++)
+    for (int count = 0; count < (all ? order : 1); count++)
       add(Reflection({std::cos(count * angle), std::sin(count * angle), 0}));
   }
   if (std::regex_match(name, m, std::regex{"([D])([1-9]*[13579])([h])"})) {
     auto order = std::stoi(m.str(2));
     auto angle = std::acos(double(-1)) / order;
-    for (int count = 0; count < order; count++)
+    for (int count = 0; count < (all ? order : 1); count++)
       add(Reflection({std::cos((count + double(0.5)) * angle), std::sin((count + double(0.5)) * angle), 0}));
   }
 
   if (std::regex_match(name, m, std::regex{"([D])([1-9][0-9]*)([^v])?"})) {
     auto order = std::stoi(m.str(2));
     //    for (double angle = 0; angle < std::acos(double(-1)) - 1e-10; angle += std::acos(double(-1)) / order)
-    for (int count = 0; count < (all ? order : 2); count++) {
+    for (int count = 0; count < (all ? order : (std::regex_match(name,m,std::regex{"D[0-9]*h"}) ? 0 : 1)); count++) {
+//      std::cout << "count=" << count << std::endl;
       double angle = (std::regex_match(name, m, std::regex{"D[0-9]*[02468]d"}) ? (count + 0.5) : count) *
                      std::acos(double(-1)) / order;
+//      std::cout << "adding C2 for " << name << ", angle=" << angle * 180 / std::acos(double(-1)) << std::endl;
       add(Rotation({std::cos(angle), std::sin(angle), 0}, 2));
     }
   }
 
   if (std::regex_match(name, m, std::regex{"([CD])([1-9][0-9]*)([hvd]*)"})) {
     auto order = std::stoi(m.str(2));
-    for (int count = 1; count < order; count++)
+    for (int count = 1; count < (all ? order : 2); count++)
       add(Rotation(zaxis, order, true, count));
   }
-  if (std::regex_match(name, m, std::regex{"([CD])([0-9]*[02468])(h)"})) {
+  if (all and std::regex_match(name, m, std::regex{"([CD])([0-9]*[02468])(h)"})) {
     auto order = std::stoi(m.str(2));
-    for (int count = 0; count < order / 2; count++)
+    for (int count = 0; count < (all ? order / 2 : 1); count++)
       if (count * 2 + 1 != order / 2)
         add(Rotation(zaxis, order, false, count * 2 + 1));
     if (order > 2)
@@ -201,7 +206,7 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
         if (count * 2 + 1 != ((order % 4) ? order / 2 : order / 4))
           add(Rotation(zaxis, order / 2, false, count * 2 + 1));
   }
-  if (std::regex_match(name, m, std::regex{"([CD])([0-9]*[13579])(h)"})) {
+  if ( all and std::regex_match(name, m, std::regex{"([CD])([0-9]*[13579])(h)"})) {
     auto order = std::stoi(m.str(2));
     for (int count = 0; count < order; count++)
       if (count != (order - 1) / 2)
@@ -245,4 +250,11 @@ Rotation Group::highest_rotation(bool proper, size_t index) const {
   return Rotation({0, 0, 1}, 1);
 }
 
+// Group generate(const Group& generator) {
+//  TODO finish implementation
+//  for (size_t last_size = g.size(); last_size < g.size();) {
+//    last_size = g.size();
+//  }
+//  return g;
+//}
 } // namespace molpro::point_charge_symmetry

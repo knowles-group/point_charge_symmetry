@@ -605,11 +605,11 @@ TEST(point_charge_symmetry, C) {
 TEST(point_charge_symmetry, randomise) {
   const Molecule molecule("ch4.xyz");
   const double amplitude = 1e-3;
-//  std::cout << "original molecule\n" << molecule << std::endl;
+  //  std::cout << "original molecule\n" << molecule << std::endl;
   for (int repeat = 0; repeat < 100; ++repeat) {
     auto randomised = molecule;
     randomised.randomise(amplitude);
-//    std::cout << "randomised molecule\n" << randomised << std::endl;
+    //    std::cout << "randomised molecule\n" << randomised << std::endl;
     for (size_t i = 0; i < molecule.size(); ++i) {
       EXPECT_GT((randomised.m_atoms[i].position - molecule.m_atoms[i].position).norm(), 0)
           << "original atom: " << molecule.m_atoms[i].position.transpose()
@@ -619,5 +619,23 @@ TEST(point_charge_symmetry, randomise) {
           << "original atom: " << molecule.m_atoms[i].position.transpose()
           << "\nrandomised atom: " << randomised.m_atoms[i].position.transpose();
     }
+  }
+}
+
+TEST(point_charge_symmetry, generators) {
+  std::map<std::string, int> generator_set_sizes;
+  generator_set_sizes["Ci"] = 1;
+  generator_set_sizes["Cs"] = 1;
+  generator_set_sizes["C2"] = 1;
+  generator_set_sizes["C2v"] = 2;
+  generator_set_sizes["C2h"] = 2;
+  generator_set_sizes["D2"] = 2;
+  generator_set_sizes["D2h"] = 3;
+  generator_set_sizes["D3h"] = 3;
+  for (const auto gs : generator_set_sizes) {
+    std::cout << gs.first << " : " << gs.second << std::endl;
+    EXPECT_EQ(Group(gs.first, true).size(), gs.second) << "Group generators:\n"
+                                                       << Group(gs.first, true) << "\nFull group:\n"
+                                                       << Group(gs.first, false);
   }
 }
