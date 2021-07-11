@@ -345,15 +345,17 @@ TEST(point_charge_symmetry, discover_group) {
   for (const auto &n : expected_groups) {
     //    std::cout << "discover "<<n.first<<std::endl;
     Molecule molecule(n.first + ".xyz");
-    auto group = molpro::point_charge_symmetry::discover_group(molecule, 1e-2, -1);
-    EXPECT_EQ(group.name(), n.second) << "Molecule: " << n.first << "\nfound group: " << group
-                                      << "\nexpected group: " << Group(n.second);
+    auto group = molpro::point_charge_symmetry::discover_group(molecule, 1e-3, -1);
+    EXPECT_EQ(group.name(), n.second) << "Molecule: " << n.first << "\n"
+                                      << molecule << "\nfound group (generators): " << Group(group.name(), true)
+                                      << "\nfound group (full): " << group << "\nexpected group: " << Group(n.second);
     CoordinateSystem coordinate_system = group.coordinate_system();
-    Group groupwanted(coordinate_system, n.second);
+    Group groupwanted(coordinate_system, n.second,true);
     SymmetryMeasure sm(molecule, groupwanted);
     EXPECT_LE(sm(), 1e-3) << groupwanted.name() << n.second << " " << sm() << std::endl;
     for (size_t i = 0; i < groupwanted.size(); i++)
       EXPECT_LE(sm(i), 1e-3) << groupwanted[i].name() << sm(i) << std::endl;
+//    std::cout << n.first << ": " << group.name() << ", measure=" << SymmetryMeasure(molecule, Group(group.name(),true))() << std::endl;
     std::cout << n.first << ": " << group.name() << ", measure=" << SymmetryMeasure(molecule, group)() << std::endl;
   }
   //  std::cout << *prof << std::endl;
