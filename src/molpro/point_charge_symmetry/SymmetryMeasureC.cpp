@@ -55,7 +55,7 @@ void SymmetryMeasureRefine(const char *groupname, size_t atoms, double *coordina
   auto molecule1 = Molecule(xyz, q);
   molpro::point_charge_symmetry::SymmetryMeasure sm(molecule1, group);
   auto molecule = sm.refine();
-  for (int i = 0; i < atoms; i++)
+  for (size_t i = 0; i < atoms; i++)
     xyz.col(i) = molecule.m_atoms[i].position;
   //  CoordinateSystem cs2;
   //  const auto group2 = Group(cs2, std::string{groupname});
