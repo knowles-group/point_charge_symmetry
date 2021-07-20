@@ -262,5 +262,20 @@ double distance(const Molecule& molecule1, const Molecule& molecule2) {
   dist = std::sqrt(dist);
   return dist;
 }
+double compare(const Molecule& moleculeA, const Molecule& moleculeB) {
+  double result = 0;
+  auto distmod = [](auto& posi, auto& posj) {
+    auto r = (posi - posj).norm();
+    return (1 - std::exp(-r) * (1 + r * (1 + r / 3)));
+  };
+  for (size_t i = 0; i < moleculeA.size(); ++i) {
+    for (size_t j = 0; j < i; ++j) {
+      result += std::abs(distmod(moleculeA.m_atoms[i].position, moleculeA.m_atoms[j].position) -
+                         distmod(moleculeB.m_atoms[i].position, moleculeB.m_atoms[j].position)) /
+                (moleculeA.size() * (moleculeA.size() - 1) / 2);
+    }
+  }
+  return result;
+}
 
 } // namespace molpro::point_charge_symmetry
