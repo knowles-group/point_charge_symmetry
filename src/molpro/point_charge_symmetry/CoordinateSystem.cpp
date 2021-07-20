@@ -91,7 +91,7 @@ void CoordinateSystem::from_axes(const mat& axes) const {
     throw std::runtime_error("Axes must be proper rotation");
   switch (m_rotation_parameter_type) {
   case RotationParameterType::Log: {
-    auto generator = axes.log();
+    auto generator = axes.log().eval();
     m_parameters[3 + 2] = generator(1, 0);
     m_parameters[3 + 1] = generator(2, 0);
     m_parameters[3 + 0] = generator(2, 1);

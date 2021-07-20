@@ -44,8 +44,9 @@ TEST(point_charge_symmetry, Euler) {
       auto u = cs.axes();
       cs.from_axes(u);
       auto pnew = std::array<double, 3>{cs.m_parameters[3], cs.m_parameters[4], cs.m_parameters[5]};
-      if (std::abs(p[1]) > 1e-12)
+      if (std::abs(p[1]) > 1e-12) {
         EXPECT_THAT(pnew, ::testing::Pointwise(::testing::DoubleNear(1e-10), p));
+      }
       //      cout << cs << std::endl;
       auto unew = cs.axes();
       ASSERT_THAT(std::vector<double>(&unew(0, 0), &unew(0, 0) + 9),
@@ -119,17 +120,17 @@ TEST(point_charge_symmetry, axes_gradient) {
   axes << 1 / std::sqrt(3), 1 / std::sqrt(3), 1 / std::sqrt(3), 2 / std::sqrt(6), -1 / std::sqrt(6), -1 / std::sqrt(6),
       0, 1 / std::sqrt(2), -1 / std::sqrt(2);
   CoordinateSystem coords(RotationParameterType::Euler, {0, 0, 0}, axes);
-  std::cout << "axes:\n" << axes << std::endl;
+//  std::cout << "axes:\n" << axes << std::endl;
   vec displacement{2e-6, 2e-6, 2e-6};
   auto coords_minus = coords;
   coords_minus.axis_generator() -= displacement;
   auto coords_plus = coords;
   coords_plus.axis_generator() += displacement;
   auto reference = ((coords_plus.axes() - coords_minus.axes()) / (2 * displacement.norm())).eval();
-  std::cout << "coords.axes():\n" << coords.axes() << std::endl;
-  std::cout << "coords_plus.axes():\n" << coords_plus.axes() << std::endl;
-  std::cout << "coords_minus.axes():\n" << coords_minus.axes() << std::endl;
-  std::cout << "reference:\n" << reference << std::endl;
+//  std::cout << "coords.axes():\n" << coords.axes() << std::endl;
+//  std::cout << "coords_plus.axes():\n" << coords_plus.axes() << std::endl;
+//  std::cout << "coords_minus.axes():\n" << coords_minus.axes() << std::endl;
+//  std::cout << "reference:\n" << reference << std::endl;
   for (int logstep = -7; logstep < 1; logstep++) {
     std::vector<mat> tested;
     const auto step = std::pow(double(10), logstep);
@@ -138,8 +139,8 @@ TEST(point_charge_symmetry, axes_gradient) {
       tested.emplace_back(mat::Zero());
       for (int i = 0; i < 3; i++)
         tested.back() += displacement[i] * axes_gradient[i] / displacement.norm();
-      std::cout << "tested[" << tested.size() - 1 << "]:\n" << tested.back() << std::endl;
-      std::cout << "reference-tested:\n" << reference - tested.back() << std::endl;
+//      std::cout << "tested[" << tested.size() - 1 << "]:\n" << tested.back() << std::endl;
+//      std::cout << "reference-tested:\n" << reference - tested.back() << std::endl;
       const auto tolerance = std::max(1e-8, 2 * std::pow(step, displacements * 2));
       EXPECT_LT((reference - tested.back()).norm(), tolerance)
           << "step=" << step << " , displacements=" << displacements
@@ -153,22 +154,22 @@ TEST(point_charge_symmetry, axes_gradient) {
 TEST(point_charge_symmetry, Molecule) {
   //  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Molecule");
   Molecule water("h2o.xyz");
-  std::cout << water << std::endl;
+//  std::cout << water << std::endl;
   Group group;
   group.name() = "C2v";
   group.add(Identity());
   group.add(Rotation({0, 0, 1}, 2));
   group.add(Reflection({1, 0, 0}));
   group.add(Reflection({0, 1, 0}));
-  auto sm = SymmetryMeasure(water, group);
-  std::cout << sm << std::endl;
-  int i = 0;
-  for (const auto &op : group) {
-
-    std::cout << "Operator symmetry measure: " << op->name() << " " << sm(i) << std::endl;
-    i++;
-  }
-  std::cout << group.name() << " symmetry measure: " << sm() << std::endl;
+//  auto sm = SymmetryMeasure(water, group);
+//  std::cout << sm << std::endl;
+//  int i = 0;
+//  for (const auto &op : group) {
+//
+//    std::cout << "Operator symmetry measure: " << op->name() << " " << sm(i) << std::endl;
+//    i++;
+//  }
+//  std::cout << group.name() << " symmetry measure: " << sm() << std::endl;
   //  std::cout << "CoordinateSystem data";
   //  for (int i = 0; i < 6; i++)
   //    std::cout << " " << c2v.coordinate_system().data()[i];
@@ -477,9 +478,10 @@ TEST(point_charge_symmetry, refine) {
         for (int i = 0; i < 3; i++)
           c0.push_back(atom.position(i));
       auto g0 = c0;
-      auto v0 = problem.residual(c0, g0);
+//      auto v0 =
+      problem.residual(c0, g0);
       double step = 1e-4;
-      for (int i = 0; i < c0.size(); i++) {
+      for (size_t i = 0; i < c0.size(); i++) {
         auto c = c0;
         auto g = g0;
         c[i] += 2 * step;
@@ -493,7 +495,7 @@ TEST(point_charge_symmetry, refine) {
         auto gradn = (vmm - 8 * vm + 8 * vp - vpp) / (12 * step);
         EXPECT_NEAR(gradn, g0[i], std::max(1e-10, double(1e-10 * g0[i])));
       }
-      v0 = problem.residual(c0, g0);
+//      v0 = problem.residual(c0, g0);
       //    std::cout << "after gradient check value="<<problem.residual(c0,g0)<<std::endl;
     }
 

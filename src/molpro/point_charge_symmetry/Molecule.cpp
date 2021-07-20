@@ -132,7 +132,7 @@ Eigen::Vector3d Molecule::findaxis(int order) const {
     distance.push_back(dist > distance_threshold ? dist : std::numeric_limits<double>::max());
   }
   std::vector<size_t> atoms;
-  auto atom1 = std::min_element(distance.begin(), distance.end()) - distance.begin(); // the nearest distant atom
+  size_t atom1 = std::min_element(distance.begin(), distance.end()) - distance.begin(); // the nearest distant atom
   { // first of all see if this atom could itself define the axis
     result = this->m_atoms[atom1].position - centre;
     auto group = Group();
