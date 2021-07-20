@@ -76,7 +76,9 @@ int main(int argc, char* argv[]) {
       if (not quiet.getValue() and count == 0)
         std::cout << "After geometry refinement, symmetry-breaking measure = "
                   << SymmetryMeasure(molecule, Group(group.name()))()
-                  << ", distance from original = " << distance(molecule, original_molecule) << std::endl;
+                  << ", distance from original = " << distance(molecule, original_molecule)
+            << ", comparison measure with original = " << compare(molecule, original_molecule)
+            << std::endl;
       if (not quiet.getValue() and verbose.getValue() > 0)
         std::cout << molecule << std::endl;
 

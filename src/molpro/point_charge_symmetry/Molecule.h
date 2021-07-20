@@ -39,6 +39,19 @@ inline std::ostream& operator<<(std::ostream& os, const Molecule& op) {
 }
 
 double distance(const Molecule& molecule1, const Molecule& molecule2);
+
+/*!
+ * @brief Compute a cooordinate-frame-independent measure of difference between two molecules.
+ *
+ * For each pair of atoms, we calculate for each molecule f0(rij) = 1-exp(-rij)(1+rij(1+rij/3))), which is rij*rij/6
+ * for small rij, but tends asymptotically to 1 for large rij. This has the effect of avoiding overweighting of deviations in contributions between distant atoms.
+ * The measure is then sum_{i>j} |f0(rij,A)-f0(rij,B)| / (n*(n-1)/2), which is bounded by 0,1
+ * @param moleculeA
+ * @param moleculeB
+ * @return
+ */
+double compare(const Molecule& moleculeA, const Molecule& moleculeB);
+
 } // namespace molpro::point_charge_symmetry
 
 #endif // POINT_CHARGE_SYMMETRY_SRC_MOLPRO_POINT_CHARGE_SYMMETRY_MOLECULE_H_
