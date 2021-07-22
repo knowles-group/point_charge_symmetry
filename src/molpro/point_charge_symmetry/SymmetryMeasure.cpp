@@ -80,8 +80,8 @@ double SymmetryMeasure::operator()(int operator_index, int functional_form, int 
         std::cout << " " << (*op)->coordinate_system().data()[i];
       std::cout << std::endl;
     }
-    for (int a = 0; a < m_molecule.m_atoms.size(); a++) {
-      int ai = m_neighbours[op - m_group.begin()][a];
+    for (size_t a = 0; a < m_molecule.m_atoms.size(); a++) {
+      size_t ai = m_neighbours[op - m_group.begin()][a];
       auto dist = ((**op)(m_molecule.m_atoms[a].position) - m_molecule.m_atoms[ai].position).norm();
       const auto zr = m_molecule.m_atoms[a].charge * dist;
       if (verbosity > 1) {
@@ -118,11 +118,11 @@ CoordinateSystem::parameters_t SymmetryMeasure::coordinate_system_gradient(int o
   auto end = operator_index < 0 ? m_group.end() : m_group.begin() + operator_index + 1;
   for (auto op = start; op < end; op++) {
     //    std::cout << "Operator " << (*op)->name() << std::endl;
-    for (int a = 0; a < m_molecule.m_atoms.size(); a++) {
+    for (size_t a = 0; a < m_molecule.m_atoms.size(); a++) {
       CoordinateSystem::parameters_t grad_d{0, 0, 0, 0, 0, 0};
       //            std::cout << "Atom " << a << m_molecule.m_atoms[a].position.transpose() << std::endl;
       //            std::cout << "Mapped Atom " << a << (**op)(m_molecule.m_atoms[a].position).transpose() << std::endl;
-      int ai = m_neighbours[op - m_group.begin()][a];
+      size_t ai = m_neighbours[op - m_group.begin()][a];
       //            std::cout << "Image " << ai << m_molecule.m_atoms[ai].position.transpose() << std::endl;
       auto d = ((**op)(m_molecule.m_atoms[a].position) - m_molecule.m_atoms[ai].position).eval();
       //      std::cout << "d "<<d.transpose()<<std::endl;
@@ -163,10 +163,10 @@ std::vector<double> SymmetryMeasure::atom_gradient(int operator_index, int funct
     CoordinateSystem::mat w; // T_t u^\dagger
     for (int j = 0; j < 3; j++)
       w.col(j) = (*op)->operator_local(axes.row(j));
-    for (int a = 0; a < m_molecule.m_atoms.size(); a++) {
+    for (size_t a = 0; a < m_molecule.m_atoms.size(); a++) {
       //            std::cout << "Atom " << a << m_molecule.m_atoms[a].position.transpose() << std::endl;
       //            std::cout << "Mapped Atom " << a << (**op)(m_molecule.m_atoms[a].position).transpose() << std::endl;
-      int ai = m_neighbours[op - m_group.begin()][a];
+      size_t ai = m_neighbours[op - m_group.begin()][a];
       //            std::cout << "Image " << ai << m_molecule.m_atoms[ai].position.transpose() << std::endl;
       auto d = ((**op)(m_molecule.m_atoms[a].position) - m_molecule.m_atoms[ai].position).eval();
       //      std::cout << "d "<<d.transpose()<<std::endl;
@@ -220,7 +220,7 @@ void SymmetryMeasure::adopt_inertial_axes() {
   //    std::cout <<"Group: "<<m_group<<std::endl;
   int best_axis = 0;
   double best_axis_sm = 1e50;
-  bool symmetric_top = false;
+  //  bool symmetric_top = false;
   for (int principal_axis = 0; principal_axis < 6; principal_axis++) {
     reset_neighbours();
     //            std::cout << "try axes, principal_axis="<<principal_axis <<"\n" << coordinate_system.axes() <<
@@ -246,7 +246,7 @@ void SymmetryMeasure::adopt_inertial_axes() {
       //      std::cout << local_inertia_tensor(0, 0) << " " << local_inertia_tensor(1, 1) << std::endl;
       //            std::cout << "Symmetric top with axes\n" << coordinate_system.axes() << std::endl;
       measure = 0;
-      symmetric_top = true;
+      //      symmetric_top = true;
     } else
       measure = (*this)();
     //            std::cout << "Atomic coordinates in local frame\n" << std::endl;
@@ -346,7 +346,7 @@ std::ostream& operator<<(std::ostream& s, const std::vector<T>& v) {
   return s;
 }
 
-Molecule SymmetryMeasure::refine(int repeat) const {
+Molecule SymmetryMeasure::refine(double distance_penalty, bool project, int repeat) const {
   auto prof = molpro::Profiler::single()->push("SymmetryMeasure::refine");
   auto molecule = molecule_localised(m_group.coordinate_system(), this->m_molecule);
   //  std::cout << "refine initial molecule\n"<<molecule<<std::endl;
@@ -365,7 +365,7 @@ Molecule SymmetryMeasure::refine(int repeat) const {
     solver->set_verbosity(linalg::itsolv::Verbosity::None);
     if (verbosity >= 1)
       solver->set_verbosity(linalg::itsolv::Verbosity::Iteration);
-    auto problem = Problem_refine(sm, molecule);
+    auto problem = Problem_refine(sm, molecule, distance_penalty, project);
     auto grad = parameters;
     solver->solve(parameters, grad, problem);
     size_t j = 0;
@@ -442,7 +442,7 @@ bool test_group(const Molecule& molecule, const Group& group, double threshold, 
       //      std::cout << "nscan=" << nscan << std::endl;
       double best_measure = 1e50;
       CoordinateSystem::parameters_t best_parameters;
-      auto parameter_ranges = grouprot.coordinate_system().rotation_generator_ranges();
+      //      auto parameter_ranges = grouprot.coordinate_system().rotation_generator_ranges();
       auto axis = grouprot.highest_rotation().axis();
       double angle = std::acos(double(-1)) * 2 / (nscan);
       Eigen::Matrix3d genx, geny, genz;

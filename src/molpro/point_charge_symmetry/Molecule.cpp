@@ -132,7 +132,7 @@ Eigen::Vector3d Molecule::findaxis(int order) const {
     distance.push_back(dist > distance_threshold ? dist : std::numeric_limits<double>::max());
   }
   std::vector<size_t> atoms;
-  auto atom1 = std::min_element(distance.begin(), distance.end()) - distance.begin(); // the nearest distant atom
+  size_t atom1 = std::min_element(distance.begin(), distance.end()) - distance.begin(); // the nearest distant atom
   { // first of all see if this atom could itself define the axis
     result = this->m_atoms[atom1].position - centre;
     auto group = Group();
@@ -254,13 +254,45 @@ void Molecule::randomise(double amplitude) {
       atom.position(i) += dis(gen);
 }
 
-double distance(const Molecule& molecule1, const Molecule& molecule2) {
+double cartesian_distance(const Molecule& molecule1, const Molecule& molecule2) {
   double dist = 0;
   for (size_t i = 0; i < molecule1.size(); ++i)
     dist += (molecule1.m_atoms[i].position - molecule2.m_atoms[i].position)
                 .dot(molecule1.m_atoms[i].position - molecule2.m_atoms[i].position);
   dist = std::sqrt(dist);
   return dist;
+}
+std::pair<double, std::vector<double>> distance(const Molecule& molecule, const Molecule& molecule0) {
+  std::vector<double> gradient(3 * molecule.size(), 0);
+  double result = 0;
+  auto distmod = [](auto& posi, auto& posj) {
+    auto r = (posi - posj).norm();
+    return (1 - std::exp(-r) * (1 + r * (1 + r / 3)));
+  };
+  auto distmodgrad = [](auto& posi, auto& posj) {
+    auto r = (posi - posj).norm();
+    return std::exp(-r) * r * (1 + r) / 3;
+  };
+  const auto scalefac = 1.0 / (molecule.size() * (molecule.size() - 1) / 2);
+  for (size_t A = 0; A < molecule.size(); ++A) {
+    for (size_t B = 0; B < A; ++B) {
+      const auto posA = molecule.m_atoms[A].position;
+      const auto posB = molecule.m_atoms[B].position;
+      const auto pos0A = molecule0.m_atoms[A].position;
+      const auto pos0B = molecule0.m_atoms[B].position;
+      result += std::pow(distmod(posA, posB) - distmod(pos0A, pos0B), 2) * scalefac;
+      //      std::cout << "interatomic distances "<<distmod(pos0A,pos0B)<<" -> "<<distmod(posA,posB)<<std::endl;
+      for (size_t alpha = 0; alpha < 3; ++alpha)
+        if ((posA - posB).norm() > 1e-10) {
+          gradient[A * 3 + alpha] += 2 * scalefac * (distmod(posA, posB) - distmod(pos0A, pos0B)) *
+                                     distmodgrad(posA, posB) * (posA(alpha) - posB(alpha)) / (posA - posB).norm();
+          gradient[B * 3 + alpha] += 2 * scalefac * (distmod(posB, posA) - distmod(pos0B, pos0A)) *
+                                     distmodgrad(posB, posA) * (posB(alpha) - posA(alpha)) / (posB - posA).norm();
+        }
+    }
+  }
+  //  std::cout << "result "<<result<<std::endl;
+  return {result, gradient};
 }
 
 } // namespace molpro::point_charge_symmetry

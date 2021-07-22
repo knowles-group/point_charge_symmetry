@@ -26,6 +26,10 @@ int main(int argc, char* argv[]) {
     TCLAP::ValueArg<double> noise("n", "noise", "Mean noise added to geometries", false, 0, "float", cmd);
     TCLAP::SwitchArg inertial("i", "inertial", "Whether to use inertial axes instead of optimising frame", cmd, false);
     TCLAP::SwitchArg no_frame_optimise("s", "noopt", "Whether to skip frame optimisation", cmd, false);
+    TCLAP::SwitchArg project_refine("P", "noproject", "Whether to dskioo projection in structure refinement", cmd,
+                                    false);
+    TCLAP::ValueArg<double> distance_penalty("d", "distance-penalty", "Penalty on distance in structure refinement",
+                                             false, 1e-3, "float", cmd);
     cmd.parse(argc, argv);
     //    std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("symmetry_measure");
     //    prof->set_max_depth(1);
@@ -71,12 +75,14 @@ int main(int argc, char* argv[]) {
         std::cout << "Refine geometry " << std::endl;
       auto original_molecule = molecule_localised(cs, molecule);
       //          original_molecule.
-      molecule = sm.refine(3);
+      molecule = sm.refine(distance_penalty.getValue(), project_refine.getValue());
       cs = CoordinateSystem();
       if (not quiet.getValue() and count == 0)
         std::cout << "After geometry refinement, symmetry-breaking measure = "
                   << SymmetryMeasure(molecule, Group(group.name()))()
-                  << ", distance from original = " << distance(molecule, original_molecule) << std::endl;
+                  << ", cartesian distance from original = " << cartesian_distance(molecule, original_molecule)
+                  << ", comparison measure with original = " << distance(molecule, original_molecule).first
+                  << std::endl;
       if (not quiet.getValue() and verbose.getValue() > 0)
         std::cout << molecule << std::endl;
 

@@ -9,15 +9,16 @@ namespace molpro::point_charge_symmetry {
 class Problem_refine : public molpro::linalg::itsolv::Problem<std::vector<double>> {
   SymmetryMeasure& m_sm;
   Molecule& m_molecule;
-  bool m_project = false;
-  double m_symmetric_penalty = 0;
+  double m_distance_penalty = 0;
   std::unique_ptr<Projector> m_projector;
+  const Molecule m_reference_molecule = Molecule{{}, {}};
 
 public:
-  Problem_refine(SymmetryMeasure& sm, Molecule& molecule)
-      : m_sm(sm), m_molecule(molecule),
-        m_projector((m_project or m_symmetric_penalty > 0) ? std::make_unique<Projector>(m_sm.group(), m_molecule)
-                                                           : nullptr) {}
+  Problem_refine(SymmetryMeasure& sm, Molecule& molecule, double distance_penalty = 0, bool project = false)
+      : m_sm(sm), m_molecule(molecule), m_distance_penalty(std::move(distance_penalty)),
+        m_projector(project ? std::make_unique<Projector>(m_sm.group(), m_molecule) : nullptr),
+        m_reference_molecule(molecule) {
+  }
   value_t residual(const container_t& parameters, container_t& residual) const override {
     size_t j = 0;
     for (auto& atom : m_molecule.m_atoms)
@@ -25,7 +26,7 @@ public:
         atom.position(i) = parameters[j++];
     auto value = m_sm(-1, 1);
     residual = m_sm.atom_gradient(-1, 1);
-    if (m_project) {
+    if (m_projector != nullptr) {
       std::cout << "parameters";
       for (const auto& e : parameters)
         std::cout << " " << e;
@@ -39,6 +40,12 @@ public:
       for (const auto& e : residual)
         std::cout << " " << e;
       std::cout << std::endl;
+    }
+    if (m_distance_penalty > 0) {
+      auto dist = distance(m_molecule, m_reference_molecule);
+      value += m_distance_penalty * dist.first;
+      std::transform(residual.begin(), residual.end(), dist.second.begin(), residual.begin(),
+                     [this](double a, double b) { return a + m_distance_penalty * b; });
     }
     return value;
   }

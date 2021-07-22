@@ -4,7 +4,7 @@
 
 namespace molpro::point_charge_symmetry {
 Projector::Projector(const Group& group, const Molecule& molecule) : m_n3(molecule.m_atoms.size() * 3) {
-  //  std::cout << "group " << group.name() << std::endl;
+  //    std::cout << "Projector::Projector group " << group.name() << std::endl;
   auto prof = molpro::Profiler::single()->push("Projector::Projector");
   auto ginv = double(1) / (group.end() - group.begin());
   Eigen::MatrixXd Q(m_n3, m_n3);
@@ -44,6 +44,7 @@ std::vector<double> Projector::symmetric(std::vector<double> vector) const {
   assert(m_n3 == vector.size());
   auto V = Eigen::Map<const Eigen::MatrixXd>(m_V.data(), m_n3, m_V.size() / m_n3);
   auto result = (V * V.transpose() * Eigen::Map<Eigen::VectorXd>(vector.data(), m_n3)).eval();
+  //  std::cout << "V\n"<<V<<std::endl;
   return std::vector<double>(result.eval().data(), result.eval().data() + m_n3);
 }
 
