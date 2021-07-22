@@ -43,7 +43,7 @@ public:
            not spherical_top();
   }
 
-  [[nodiscard]] Molecule refine(int repeat = 1) const;
+  [[nodiscard]] Molecule refine(double distance_penalty = 0.001, bool project = false, int repeat = 1) const;
   [[nodiscard]] CoordinateSystem::vec inertia_principal_values() const { return m_inertia_principal_values; }
 
   const Molecule& m_molecule;

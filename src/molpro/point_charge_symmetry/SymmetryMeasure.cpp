@@ -220,7 +220,7 @@ void SymmetryMeasure::adopt_inertial_axes() {
   //    std::cout <<"Group: "<<m_group<<std::endl;
   int best_axis = 0;
   double best_axis_sm = 1e50;
-//  bool symmetric_top = false;
+  //  bool symmetric_top = false;
   for (int principal_axis = 0; principal_axis < 6; principal_axis++) {
     reset_neighbours();
     //            std::cout << "try axes, principal_axis="<<principal_axis <<"\n" << coordinate_system.axes() <<
@@ -246,7 +246,7 @@ void SymmetryMeasure::adopt_inertial_axes() {
       //      std::cout << local_inertia_tensor(0, 0) << " " << local_inertia_tensor(1, 1) << std::endl;
       //            std::cout << "Symmetric top with axes\n" << coordinate_system.axes() << std::endl;
       measure = 0;
-//      symmetric_top = true;
+      //      symmetric_top = true;
     } else
       measure = (*this)();
     //            std::cout << "Atomic coordinates in local frame\n" << std::endl;
@@ -346,7 +346,7 @@ std::ostream& operator<<(std::ostream& s, const std::vector<T>& v) {
   return s;
 }
 
-Molecule SymmetryMeasure::refine(int repeat) const {
+Molecule SymmetryMeasure::refine(double distance_penalty, bool project, int repeat) const {
   auto prof = molpro::Profiler::single()->push("SymmetryMeasure::refine");
   auto molecule = molecule_localised(m_group.coordinate_system(), this->m_molecule);
   //  std::cout << "refine initial molecule\n"<<molecule<<std::endl;
@@ -365,7 +365,7 @@ Molecule SymmetryMeasure::refine(int repeat) const {
     solver->set_verbosity(linalg::itsolv::Verbosity::None);
     if (verbosity >= 1)
       solver->set_verbosity(linalg::itsolv::Verbosity::Iteration);
-    auto problem = Problem_refine(sm, molecule);
+    auto problem = Problem_refine(sm, molecule, distance_penalty, project);
     auto grad = parameters;
     solver->solve(parameters, grad, problem);
     size_t j = 0;
@@ -442,7 +442,7 @@ bool test_group(const Molecule& molecule, const Group& group, double threshold, 
       //      std::cout << "nscan=" << nscan << std::endl;
       double best_measure = 1e50;
       CoordinateSystem::parameters_t best_parameters;
-//      auto parameter_ranges = grouprot.coordinate_system().rotation_generator_ranges();
+      //      auto parameter_ranges = grouprot.coordinate_system().rotation_generator_ranges();
       auto axis = grouprot.highest_rotation().axis();
       double angle = std::acos(double(-1)) * 2 / (nscan);
       Eigen::Matrix3d genx, geny, genz;
