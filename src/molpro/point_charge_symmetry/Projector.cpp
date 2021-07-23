@@ -6,7 +6,7 @@ namespace molpro::point_charge_symmetry {
 Projector::Projector(const Group& group, const Molecule& molecule) : m_n3(molecule.m_atoms.size() * 3) {
   //    std::cout << "Projector::Projector group " << group.name() << std::endl;
   auto prof = molpro::Profiler::single()->push("Projector::Projector");
-  auto ginv = double(1) / (group.end() - group.begin());
+  auto ginv = double(1) / (group.size());
   Eigen::MatrixXd Q(m_n3, m_n3);
   Q.setZero();
   SymmetryMeasure sm(molecule, group);

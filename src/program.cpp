@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
       if (not inertial.getValue() and not no_frame_optimise.getValue())
         sm.refine_frame();
       if (not quiet.getValue() and verbose.getValue() > 3)
-        for (int i = 0; i < group.end() - group.begin(); i++)
+        for (size_t i = 0; i < group.size(); i++)
           std::cout << "Symmetry operation " << i << " (" << group[i].name()
                     << ") symmetry-breaking measure = " << sm(i) << std::endl;
       total_measure += sm();

@@ -46,6 +46,7 @@ public:
   GenericOperator operator*(const Operator& other) const;
   bool operator==(const Operator& other) const;
   bool operator!=(const Operator& other) const { return not((*this) == other); }
+//  bool operator<(const Operator& other) const {throw ""; return true;}
 
 protected:
   const CoordinateSystem& m_coordinate_system;

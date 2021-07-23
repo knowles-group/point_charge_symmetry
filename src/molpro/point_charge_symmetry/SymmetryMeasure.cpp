@@ -68,11 +68,12 @@ void SymmetryMeasure::reset_neighbours() {
 double SymmetryMeasure::operator()(int operator_index, int functional_form, int verbosity) const {
   auto p = molpro::Profiler::single()->push("SymmetryMeasure()");
   double result = 0;
-  auto start = operator_index < 0 ? m_group.begin() : m_group.begin() + operator_index;
-  auto end = operator_index < 0 ? m_group.end() : m_group.begin() + operator_index + 1;
+  auto start = operator_index < 0 ? m_group.begin() : m_group.find(m_group[operator_index]);
+  auto end = operator_index < 0 ? m_group.end() : m_group.find(m_group[operator_index]);
+  operator_index = std::max(operator_index, 0);
   if (verbosity > -1)
     std::cout << "!! SymmetryMeasure() " << std::endl;
-  for (auto op = start; op < end; op++) {
+  for (auto op = start; op != end; op++, ++operator_index) {
     if (verbosity > 0) {
       std::cout << "Operator " << (*op)->name() << std::endl;
       std::cout << "Frame parameters";
@@ -81,7 +82,7 @@ double SymmetryMeasure::operator()(int operator_index, int functional_form, int 
       std::cout << std::endl;
     }
     for (size_t a = 0; a < m_molecule.m_atoms.size(); a++) {
-      size_t ai = m_neighbours[op - m_group.begin()][a];
+      size_t ai = m_neighbours[operator_index][a];
       auto dist = ((**op)(m_molecule.m_atoms[a].position) - m_molecule.m_atoms[ai].position).norm();
       const auto zr = m_molecule.m_atoms[a].charge * dist;
       if (verbosity > 1) {
@@ -114,15 +115,16 @@ CoordinateSystem::parameters_t SymmetryMeasure::coordinate_system_gradient(int o
                                                                            int functional_form) const {
   auto p = molpro::Profiler::single()->push("SymmetryMeasure::coordinate_system_gradient()");
   CoordinateSystem::parameters_t result{0, 0, 0, 0, 0, 0};
-  auto start = operator_index < 0 ? m_group.begin() : m_group.begin() + operator_index;
-  auto end = operator_index < 0 ? m_group.end() : m_group.begin() + operator_index + 1;
-  for (auto op = start; op < end; op++) {
+  auto start = operator_index < 0 ? m_group.begin() : m_group.find(m_group[operator_index]);
+  auto end = operator_index < 0 ? m_group.end() : m_group.find(m_group[operator_index]);
+  operator_index = std::max(operator_index, 0);
+  for (auto op = start; op != end; op++, ++operator_index) {
     //    std::cout << "Operator " << (*op)->name() << std::endl;
     for (size_t a = 0; a < m_molecule.m_atoms.size(); a++) {
       CoordinateSystem::parameters_t grad_d{0, 0, 0, 0, 0, 0};
       //            std::cout << "Atom " << a << m_molecule.m_atoms[a].position.transpose() << std::endl;
       //            std::cout << "Mapped Atom " << a << (**op)(m_molecule.m_atoms[a].position).transpose() << std::endl;
-      size_t ai = m_neighbours[op - m_group.begin()][a];
+      size_t ai = m_neighbours[operator_index][a];
       //            std::cout << "Image " << ai << m_molecule.m_atoms[ai].position.transpose() << std::endl;
       auto d = ((**op)(m_molecule.m_atoms[a].position) - m_molecule.m_atoms[ai].position).eval();
       //      std::cout << "d "<<d.transpose()<<std::endl;
@@ -156,9 +158,10 @@ std::vector<double> SymmetryMeasure::atom_gradient(int operator_index, int funct
   auto p = molpro::Profiler::single()->push("SymmetryMeasure::atom_gradient()");
   std::vector<double> result(m_molecule.m_atoms.size() * 3, 0);
   const auto axes = m_group.coordinate_system().axes();
-  auto start = operator_index < 0 ? m_group.begin() : m_group.begin() + operator_index;
-  auto end = operator_index < 0 ? m_group.end() : m_group.begin() + operator_index + 1;
-  for (auto op = start; op < end; op++) {
+  auto start = operator_index < 0 ? m_group.begin() : m_group.find(m_group[operator_index]);
+  auto end = operator_index < 0 ? m_group.end() : m_group.find(m_group[operator_index]);
+  operator_index = std::max(operator_index, 0);
+  for (auto op = start; op != end; op++, ++operator_index) {
     //    std::cout << "Operator " << (*op)->name() << std::endl;
     CoordinateSystem::mat w; // T_t u^\dagger
     for (int j = 0; j < 3; j++)
@@ -166,7 +169,7 @@ std::vector<double> SymmetryMeasure::atom_gradient(int operator_index, int funct
     for (size_t a = 0; a < m_molecule.m_atoms.size(); a++) {
       //            std::cout << "Atom " << a << m_molecule.m_atoms[a].position.transpose() << std::endl;
       //            std::cout << "Mapped Atom " << a << (**op)(m_molecule.m_atoms[a].position).transpose() << std::endl;
-      size_t ai = m_neighbours[op - m_group.begin()][a];
+      size_t ai = m_neighbours[operator_index][a];
       //            std::cout << "Image " << ai << m_molecule.m_atoms[ai].position.transpose() << std::endl;
       auto d = ((**op)(m_molecule.m_atoms[a].position) - m_molecule.m_atoms[ai].position).eval();
       //      std::cout << "d "<<d.transpose()<<std::endl;
@@ -443,7 +446,8 @@ bool test_group(const Molecule& molecule, const Group& group, double threshold, 
       double best_measure = 1e50;
       CoordinateSystem::parameters_t best_parameters;
       //      auto parameter_ranges = grouprot.coordinate_system().rotation_generator_ranges();
-      auto axis = grouprot.highest_rotation().axis();
+      auto axis = group.highest_rotation().axis();
+      //      std::cout << "spin axis = " << axis.transpose() << std::endl;
       double angle = std::acos(double(-1)) * 2 / (nscan);
       Eigen::Matrix3d genx, geny, genz;
       genx << 0, 0, 0, 0, 0, 1, 0, -1, 0;
@@ -508,7 +512,8 @@ Eigen::Matrix3d find_axis_frame(const Molecule& molecule, const Group& group) {
   if (axis.norm() == 0)
     return Eigen::Matrix3d::Identity();
   //    throw std::runtime_error("failure to find molecular rotation axis of order " + std::to_string(toprot.order()));
-  //  std::cout << "found axis " << axis.transpose() << std::endl;
+  //    std::cout << "found axis " << axis.transpose() << std::endl;
+  //    std::cout << "toprot.axis "<<toprot.axis().transpose()<<std::endl;
   Eigen::Matrix3d R;
   R.col(2) = axis.cross(toprot.axis());
   //  std::cout << "r3 " << R.col(2).transpose() << std::endl;

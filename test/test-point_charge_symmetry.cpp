@@ -110,15 +110,9 @@ TEST(point_charge_symmetry, operator_representation) {
 
 TEST(point_charge_symmetry, generate_group) {
   CoordinateSystem cs;
-  auto group = Group(cs, "C2v", true);
-  std::cout << group << std::endl;
-  group.add((*(*group.begin())) * (*(*(group.begin() + 1))));
-  std::cout << group << std::endl;
-  for (const auto &op : group)
-    std::cout << "op:\n" << (*op)() << std::endl;
   auto generators = Group(cs, "C2v", true);
-  auto full_group = generate(generators);
-  std::cout << full_group << std::endl;
+  //  auto full_group = generate(generators);
+  //  std::cout << full_group << std::endl;
 }
 
 TEST(point_charge_symmetry, Group) {
@@ -315,7 +309,7 @@ TEST(point_charge_symmetry, group_factory) {
   for (const auto &n : orders) {
     auto g = molpro::point_charge_symmetry::Group(n.first);
     //    std::cout << g << std::endl;
-    EXPECT_EQ(g.end() - g.begin(), n.second) << "Wrong order for group " << g;
+    EXPECT_EQ(g.size(), n.second) << "Wrong order for group " << g;
     //    for (const auto &op1 : g)
     //      for (const auto &op2 : g) {
     //        if (&op1 != &op2) EXPECT_NE(op1,op2);
@@ -373,8 +367,11 @@ TEST(point_charge_symmetry, discover_group) {
     Group groupwanted(coordinate_system, n.second, true);
     SymmetryMeasure sm(molecule, groupwanted);
     EXPECT_LE(sm(), 1e-3) << groupwanted.name() << n.second << " " << sm() << std::endl;
-    for (size_t i = 0; i < groupwanted.size(); i++)
-      EXPECT_LE(sm(i), 1e-3) << groupwanted[i].name() << sm(i) << std::endl;
+    int i = 0;
+    for (const auto &member : groupwanted) {
+      EXPECT_LE(sm(i), 1e-3) << member->name() << sm(i) << std::endl;
+      ++i;
+    }
     //    std::cout << n.first << ": " << group.name() << ", measure=" << SymmetryMeasure(molecule,
     //    Group(group.name(),true))() << std::endl;
     std::cout << n.first << ": " << group.name() << ", measure=" << SymmetryMeasure(molecule, group)() << std::endl;
@@ -386,15 +383,17 @@ TEST(point_charge_symmetry, test_group) {
   //  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Discover groups");
   //  prof->set_max_depth(1);
   auto expected_groups = create_expected_groups();
-  //      expected_groups.clear();
-  //  expected_groups["c60"] = "Ih";
+  //    expected_groups.clear();
+  //    expected_groups["adamantane"] = "Td";
+  //    expected_groups["c60"] = "Ih";
+  //    expected_groups["c60_from_klaus"] = "Ih";
   //  expected_groups["waterinf"] = "Cs";
   for (const auto &n : expected_groups) {
     std::cout << "try " << n.first << std::endl;
     Molecule molecule(n.first + ".xyz");
     CoordinateSystem cs;
     auto group = Group(cs, n.second);
-    EXPECT_TRUE(test_group(molecule, group, 1e-3)) << "coordinate system after test_group\n"
+    ASSERT_TRUE(test_group(molecule, group, 1e-3)) << "coordinate system after test_group\n"
                                                    << cs << std::endl
                                                    << "coordinate system after test_group\n"
                                                    << group.coordinate_system() << std::endl
@@ -706,7 +705,7 @@ TEST(point_charge_symmetry, generators) {
   generator_set_sizes["D2"] = 2;
   generator_set_sizes["D2h"] = 3;
   generator_set_sizes["D3h"] = 3;
-  for (const auto& gs : generator_set_sizes) {
+  for (const auto &gs : generator_set_sizes) {
     std::cout << gs.first << " : " << gs.second << std::endl;
     EXPECT_EQ(Group(gs.first, true).size(), gs.second) << "Group generators:\n"
                                                        << Group(gs.first, true) << "\nFull group:\n"

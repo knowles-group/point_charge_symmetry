@@ -16,7 +16,7 @@ Group::Group() : m_coordinate_system(s_group_default_coordinate_system) {}
 Group::Group(CoordinateSystem& coordinate_system, const Group& source)
     : m_coordinate_system(coordinate_system), m_name(source.m_name) {
   for (const auto& m : source.m_members) {
-    m_members.emplace_back(m->clone(m_coordinate_system));
+    m_members.emplace(m->clone(m_coordinate_system));
   }
 }
 
@@ -239,27 +239,35 @@ Group::Group(const std::string& name, bool generators_only)
 Rotation Group::highest_rotation(bool proper, size_t index) const {
   size_t count = 0;
   int order = 0;
-  for (size_t i = 0; i < m_members.size(); i++)
-    if (m_members[i]->order() > order && (m_members[i]->proper() or not proper))
-      order = m_members[i]->order();
+  for (const auto& member : m_members)
+    if (member->order() > order && (member->proper() or not proper))
+      order = member->order();
   if (order > 0)
-    for (size_t i = 0; i < m_members.size(); i++) {
-      if (m_members[i]->order() == order && (m_members[i]->proper() or not proper) && index == count++)
-        return dynamic_cast<Rotation&>(*m_members[i]);
-    }
+    for (const auto& member : m_members)
+      if (member->order() == order && (member->proper() or not proper) && index == count++)
+        return dynamic_cast<Rotation&>(*member);
   return Rotation({0, 0, 1}, 1);
 }
 
 Group generate(const Group& generator) {
-//  auto g = generator;
-Group g("C2v",true);
-    for (size_t last_size = 0; last_size < g.size();) {
-      last_size = g.size();
-      const auto oldg = Group(const_cast<CoordinateSystem&>(g.coordinate_system()),g);
-      for (const auto& o1 : oldg)
-        for (const auto& o2 : oldg)
-          g.add((*o1) * (*o2));
-    }
+  //  auto g = generator;
+  Group g("C2v", true);
+  for (size_t last_size = 0; last_size < g.size();) {
+    last_size = g.size();
+    const auto oldg = Group(const_cast<CoordinateSystem&>(g.coordinate_system()), g);
+    for (const auto& o1 : oldg)
+      for (const auto& o2 : oldg)
+        g.add((*o1) * (*o2));
+  }
   return g;
+}
+
+const Operator& Group::operator[](size_t index) const {
+  size_t i = 0;
+  for (const auto& member : m_members) {
+    if (++i > index)
+      return *member;
+  }
+  throw std::runtime_error("index out of range");
 }
 } // namespace molpro::point_charge_symmetry
