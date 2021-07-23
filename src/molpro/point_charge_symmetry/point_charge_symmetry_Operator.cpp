@@ -1,5 +1,5 @@
 #include "Operator.h"
-//#include <iostream>
+#include <iostream>
 #include <memory>
 //#include <molpro/Profiler.h>
 #include <sstream>
@@ -16,6 +16,14 @@ Operator::vec Operator::operator()(vec v) const {
          m_coordinate_system.axes() *
              operator_local((m_coordinate_system.axes().transpose() * (v - m_coordinate_system.origin()))).eval();
 }
+Operator::mat Operator::operator()() const {
+  mat result;
+  mat identity{mat::Identity()};
+  for (Eigen::Index i = 0; i < 3; ++i)
+    result.col(i) = (*this)(identity.col(i));
+  return result;
+}
+Operator::vec Operator::operator_local(vec v) const { return m_local_representation * v; }
 std::array<Operator::vec, 6> Operator::operator_gradient(vec v, int numerical, double step) const {
   //  auto p = molpro::Profiler::single()->push("Operator::operator_gradient()");
   std::array<Operator::vec, 6> result;
@@ -56,6 +64,10 @@ std::array<Operator::vec, 6> Operator::operator_gradient(vec v, int numerical, d
   return result;
 }
 
+GenericOperator::GenericOperator() : GenericOperator(s_default_coordinate_system) {}
+GenericOperator::GenericOperator(const CoordinateSystem& coordinate_system) : Operator(coordinate_system) {
+  m_name = "generic";
+}
 Reflection::Reflection(vec normal) : Reflection(s_default_coordinate_system, std::move(normal)) {}
 Reflection::Reflection(const CoordinateSystem& coordinate_system, vec normal)
     : Operator(coordinate_system), m_normal(normal.normalized()) {
@@ -68,11 +80,12 @@ Reflection::Reflection(const CoordinateSystem& coordinate_system, vec normal)
     m_name += "_h";
   else if (std::abs(m_normal(1)) < 0.01)
     m_name += "_v";
+  this->m_local_representation = mat::Identity() - m_normal * m_normal.transpose() * 2;
 }
-Operator::vec Reflection::operator_local(vec v) const {
-  v -= 2 * m_normal.dot(v) * m_normal;
-  return v;
-}
+// Operator::vec Reflection::operator_local(vec v) const {
+//   v -= 2 * m_normal.dot(v) * m_normal;
+//   return v;
+// }
 Rotation::Rotation(vec axis, int order, bool proper, int count)
     : Rotation(s_default_coordinate_system, std::move(axis), std::move(order), std::move(proper), std::move(count)) {}
 Rotation::Rotation(const CoordinateSystem& coordinate_system, vec axis, int order, bool proper, int count)
@@ -87,22 +100,37 @@ Rotation::Rotation(const CoordinateSystem& coordinate_system, vec axis, int orde
     m_name += "z";
   if (m_count > 1)
     m_name += "^" + std::to_string(m_count);
-}
-Operator::vec Rotation::operator_local(vec v) const {
-  auto aa = Eigen::AngleAxis<double>((double)2 * m_count * std::acos(double(-1)) / m_order, m_axis);
-  v = aa * v;
+  this->m_local_representation =
+      Eigen::AngleAxis<double>((double)2 * m_count * std::acos(double(-1)) / m_order, m_axis);
   if (not m_proper)
-    v -= 2 * m_axis.dot(v) * m_axis;
-  return v;
+    this->m_local_representation -= 2 * m_axis * m_axis.transpose();
 }
 
-Inversion::Inversion() : Operator(s_default_coordinate_system) {}
-Inversion::Inversion(const CoordinateSystem& coordinate_system) : Operator(coordinate_system) { m_name = "i"; }
-Operator::vec Inversion::operator_local(vec v) const { return -v; }
+Inversion::Inversion() : Inversion(s_default_coordinate_system) {}
+Inversion::Inversion(const CoordinateSystem& coordinate_system) : Operator(coordinate_system) {
+  m_name = "i";
+  this->m_local_representation = -mat::Identity();
+}
 
 Identity::Identity() : Identity(s_default_coordinate_system) {}
-Identity::Identity(const CoordinateSystem& coordinate_system) : Operator(coordinate_system) { m_name = "E"; }
-Operator::vec Identity::operator_local(vec v) const { return v; }
+Identity::Identity(const CoordinateSystem& coordinate_system) : Operator(coordinate_system) {
+  m_name = "E";
+  this->m_local_representation = mat::Identity();
+}
+GenericOperator::GenericOperator(const Operator& A, const Operator& B) : Operator(A.coordinate_system()) {
+  std::cout <<"A: "<<A<<std::endl;
+  std::cout <<"B: "<<B<<std::endl;
+  if (A.coordinate_system() != B.coordinate_system())
+    throw std::runtime_error("Incompatible coordinate systems");
+  m_name = A.name() + " * " + B.name();
+  std::cout << "m_name "<<m_name<<std::endl;
+  this->m_local_representation = A() * B();
+  for (Eigen::Index i = 0; i < 3; ++i)
+    for (Eigen::Index j = 0; j < 3; ++j)
+      if (std::abs(m_local_representation(i, j)) < 1e-12)
+        m_local_representation(i, j) = 0;
+}
+GenericOperator Operator::operator*(const Operator& other) const { return GenericOperator(*this, other); }
 
 std::string Operator::str(const std::string& title, bool coordinate_frame) const {
   std::stringstream result;
@@ -115,7 +143,15 @@ std::string Operator::str(const std::string& title, bool coordinate_frame) const
   }
   return result.str();
 }
+bool Operator::operator==(const Operator& other) const { return ((*this)() - other()).norm() < 1e-12; }
 
+std::string GenericOperator::str(const std::string& title, bool coordinate_frame) const {
+  std::stringstream result;
+  result << "Generic Operator " << title;
+  result << Operator::str(title, coordinate_frame);
+  result << ", transformation:\n" << this->m_local_representation << std::endl;
+  return result.str();
+}
 std::string Reflection::str(const std::string& title, bool coordinate_frame) const {
   std::stringstream result;
   result << "Reflection " << title;

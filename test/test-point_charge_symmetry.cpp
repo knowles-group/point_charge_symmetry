@@ -102,6 +102,25 @@ TEST(point_charge_symmetry, rotated_operations) {
   test_operation({-1, -1, 1}, Reflection(coords, {-1, 1, 0}), {1, 1, 1});
 }
 
+TEST(point_charge_symmetry, operator_representation) {
+  CoordinateSystem cs;
+  auto x3 = Rotation(cs, {0, 0, 1}, 3);
+  ASSERT_EQ(x3 * x3 * x3, Identity()) << x3 * x3 * x3;
+}
+
+TEST(point_charge_symmetry, generate_group) {
+  CoordinateSystem cs;
+  auto group = Group(cs, "C2v", true);
+  std::cout << group << std::endl;
+  group.add((*(*group.begin())) * (*(*(group.begin() + 1))));
+  std::cout << group << std::endl;
+  for (const auto &op : group)
+    std::cout << "op:\n" << (*op)() << std::endl;
+  auto generators = Group(cs, "C2v", true);
+  auto full_group = generate(generators);
+  std::cout << full_group << std::endl;
+}
+
 TEST(point_charge_symmetry, Group) {
   mat axes;
   axes << 0, 1, 0, -1, 0, 0, 0, 0, 1;
@@ -351,12 +370,13 @@ TEST(point_charge_symmetry, discover_group) {
                                       << molecule << "\nfound group (generators): " << Group(group.name(), true)
                                       << "\nfound group (full): " << group << "\nexpected group: " << Group(n.second);
     CoordinateSystem coordinate_system = group.coordinate_system();
-    Group groupwanted(coordinate_system, n.second,true);
+    Group groupwanted(coordinate_system, n.second, true);
     SymmetryMeasure sm(molecule, groupwanted);
     EXPECT_LE(sm(), 1e-3) << groupwanted.name() << n.second << " " << sm() << std::endl;
     for (size_t i = 0; i < groupwanted.size(); i++)
       EXPECT_LE(sm(i), 1e-3) << groupwanted[i].name() << sm(i) << std::endl;
-//    std::cout << n.first << ": " << group.name() << ", measure=" << SymmetryMeasure(molecule, Group(group.name(),true))() << std::endl;
+    //    std::cout << n.first << ": " << group.name() << ", measure=" << SymmetryMeasure(molecule,
+    //    Group(group.name(),true))() << std::endl;
     std::cout << n.first << ": " << group.name() << ", measure=" << SymmetryMeasure(molecule, group)() << std::endl;
   }
   //  std::cout << *prof << std::endl;
@@ -686,7 +706,7 @@ TEST(point_charge_symmetry, generators) {
   generator_set_sizes["D2"] = 2;
   generator_set_sizes["D2h"] = 3;
   generator_set_sizes["D3h"] = 3;
-  for (const auto gs : generator_set_sizes) {
+  for (const auto& gs : generator_set_sizes) {
     std::cout << gs.first << " : " << gs.second << std::endl;
     EXPECT_EQ(Group(gs.first, true).size(), gs.second) << "Group generators:\n"
                                                        << Group(gs.first, true) << "\nFull group:\n"

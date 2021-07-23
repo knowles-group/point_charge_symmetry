@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <set>
 
 namespace molpro::point_charge_symmetry {
 static CoordinateSystem s_group_default_coordinate_system;
@@ -22,6 +23,7 @@ public:
   Group(CoordinateSystem& coordinate_system, const Group& source);
   std::string name() const { return m_name; }
   std::string& name() { return m_name; }
+  void add(GenericOperator op) { m_members.emplace_back(new GenericOperator(op)); }
   void add(Identity op) { m_members.emplace_back(new Identity(m_coordinate_system)); }
   void add(Inversion op) { m_members.emplace_back(new Inversion(m_coordinate_system)); }
   void add(Reflection op) { m_members.emplace_back(new Reflection(m_coordinate_system, op.m_normal)); }
@@ -51,7 +53,7 @@ inline std::ostream& operator<<(std::ostream& os, const Group& g) {
   return os;
 }
 
-//Group generate(const Group& generator);
+Group generate(const Group& generator);
 
 } // namespace molpro::point_charge_symmetry
 

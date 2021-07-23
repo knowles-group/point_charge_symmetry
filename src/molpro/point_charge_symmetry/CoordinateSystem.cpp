@@ -116,6 +116,7 @@ void CoordinateSystem::from_axes(const mat& axes) const {
     break;
   }
 }
+bool CoordinateSystem::operator==(const CoordinateSystem& other) const { return true; } // TODO implement
 const CoordinateSystem::mat CoordinateSystem::axes() const {
   switch (m_rotation_parameter_type) {
   case RotationParameterType::Log: {

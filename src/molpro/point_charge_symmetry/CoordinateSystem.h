@@ -40,6 +40,8 @@ public:
   vec to_global(const vec& source) const;
   void cycle_axes() const;
   std::array<std::array<double, 2>, 3> rotation_generator_ranges() const;
+  bool operator==(const CoordinateSystem& other) const;
+  bool operator!=(const CoordinateSystem& other) const { return not((*this) == other); }
 };
 
 inline std::ostream& operator<<(std::ostream& os, const CoordinateSystem& op) {
