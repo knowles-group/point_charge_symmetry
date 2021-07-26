@@ -32,8 +32,8 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
   std::smatch m;
 
   if (all and (std::regex_match(name, m, std::regex{"[CD][0-9]*[02468]h"}) or
-      std::regex_match(name, m, std::regex{"D[0-9]*[13579]d"}) or
-      std::regex_match(name, m, std::regex{"Ih|Th|Oh|Dinfh"})))
+               std::regex_match(name, m, std::regex{"D[0-9]*[13579]d"}) or
+               std::regex_match(name, m, std::regex{"Ih|Th|Oh|Dinfh"})))
     add(Inversion());
   if (name == "Ci")
     add(Inversion());
@@ -103,21 +103,25 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
   if (name[0] == 'O') {
     for (int axis = 0; axis < 3; axis++) {
       for (int count = 1; count < 4; count += 2) {
-        add(Rotation(Eigen::Matrix3d::Identity().col(axis), 4, true, count));
-        if (all and name == "Oh")
+        if (all or (name == "O" and axis == 0 and count == 1))
+          add(Rotation(Eigen::Matrix3d::Identity().col(axis), 4, true, count));
+        if (name == "Oh" and (all or (axis == 0 and count == 1)))
           add(Rotation(Eigen::Matrix3d::Identity().col(axis), 4, false, count));
       }
-      add(Rotation(Eigen::Matrix3d::Identity().col(axis), 2, true, 1));
-      if (name == "Oh")
+      if (all)
+        add(Rotation(Eigen::Matrix3d::Identity().col(axis), 2, true, 1));
+      if (name == "Oh" and all)
         add(Reflection(Eigen::Matrix3d::Identity().col(axis)));
       Eigen::Vector3d vec{1, 1, 1};
       vec(axis) = 0;
-      add(Rotation(vec, 2));
-      if (name == "Oh")
+      if (all)
+        add(Rotation(vec, 2));
+      if (name == "Oh" and all)
         add(Reflection(vec));
       vec((axis + 1) % 3) = -1;
-      add(Rotation(vec, 2));
-      if (name == "Oh")
+      if (all)
+        add(Rotation(vec, 2));
+      if (name == "Oh" and all)
         add(Reflection(vec));
     }
     for (int corner = 0; corner < (all ? 4 : 2); corner++) {
@@ -125,25 +129,27 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
       for (int count = 1; count < 3; count++) {
         const vec& axis = vec{std::cos((2 * corner + 1) * acos(double(-1)) / 4),
                               std::sin((2 * corner + 1) * acos(double(-1)) / 4), sq2};
-        add(Rotation(axis, 3, true, count));
-        if (name == "Oh")
+        if (all or (name == "O" and corner == 0 and count == 1))
+          add(Rotation(axis, 3, true, count));
+        if (name == "Oh" and (all or (corner == 0 and count == 1)))
           add(Rotation(axis, 6, false, count * 4 - 3));
       }
     }
   }
   if (name[0] == 'T') {
     for (int axis = 0; axis < 3; axis++) {
-      if (name == "Th")
+      if (name == "Th" and (all or axis == 0))
         add(Reflection(Eigen::Matrix3d::Identity().col(axis)));
-      add(Rotation(Eigen::Matrix3d::Identity().col(axis), 2, true, 1));
-      if (name == "Td")
+      if (all or (name == "T" and axis == 0))
+        add(Rotation(Eigen::Matrix3d::Identity().col(axis), 2, true, 1));
+      if (name == "Td" and (all or axis == 0))
         add(Rotation(Eigen::Matrix3d::Identity().col(axis), 4, false, 1));
-      if (name == "Td")
+      if (name == "Td" and all)
         add(Rotation(Eigen::Matrix3d::Identity().col(axis), 4, false, 3));
-      if (name == "Td")
+      if (name == "Td" and all)
         add(Reflection(Eigen::Matrix3d::Identity().col((axis + 1) % 3) +
                        Eigen::Matrix3d::Identity().col((axis + 2) % 3)));
-      if (name == "Td")
+      if (name == "Td" and all)
         add(Reflection(Eigen::Matrix3d::Identity().col((axis + 1) % 3) -
                        Eigen::Matrix3d::Identity().col((axis + 2) % 3)));
     }
@@ -152,8 +158,9 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
       for (int count = 1; count < 3; count++) {
         const vec axis = vec{std::cos((2 * corner + 1) * acos(double(-1)) / 4),
                              std::sin((2 * corner + 1) * acos(double(-1)) / 4), sq2};
-        add(Rotation(axis, 3, true, count));
-        if (name == "Th")
+        if (all or (corner == 0 and count == 1))
+          add(Rotation(axis, 3, true, count));
+        if (name == "Th" and all)
           add(Rotation(axis, 6, false, count * 4 - 3));
       }
     }
@@ -162,7 +169,6 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
     m_name = name;
     name.replace(1, 3, "10");
   }
-
 
   if (std::regex_match(name, m, std::regex{"Dinfh|Cs|[CD][1-9][0-9]*h"}))
     add(Reflection(zaxis));

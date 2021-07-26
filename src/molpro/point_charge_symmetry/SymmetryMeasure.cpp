@@ -377,14 +377,15 @@ Molecule SymmetryMeasure::refine(double distance_penalty, bool project, int repe
         atom.position(i) = parameters[j++];
     //    std::cout << "in refine, from problem object final symmetry measure " << problem.residual(parameters, grad)
     //              << std::endl;
-    //    std::cout << "in refine, final symmetry measure " << sm(-1) << std::endl;
-    //    std::cout << "in refine, final symmetry measure " << sm(-1, 0) << std::endl;
-    //    std::cout << "in refine, final symmetry measure " << sm(-1, 1) << std::endl;
+    std::cout << "in refine, final symmetry measure " << sm(-1) << std::endl;
+    std::cout << "in refine, final symmetry measure " << sm(-1, 0) << std::endl;
+    std::cout << "in refine, final symmetry measure " << sm(-1, 1) << std::endl;
   }
   return molecule;
 }
 
 bool test_group(const Molecule& molecule, const Group& group, double threshold, int verbosity) {
+  //  std::cout << "test_group " << group.name() << "(" << group.size() << ") for " << molecule.m_title << std::endl;
   auto prof = molpro::Profiler::single()->push("SymmetryMeasure::test_group");
   if (verbosity >= 0)
     std::cout << "test_group " << group.name() << std::endl;
@@ -512,8 +513,8 @@ Eigen::Matrix3d find_axis_frame(const Molecule& molecule, const Group& group) {
   if (axis.norm() == 0)
     return Eigen::Matrix3d::Identity();
   //    throw std::runtime_error("failure to find molecular rotation axis of order " + std::to_string(toprot.order()));
-//  std::cout << "found axis " << axis.transpose() << std::endl;
-//  std::cout << "coordinate system rotation:\n" << group.coordinate_system().axes() << std::endl;
+  //  std::cout << "found axis " << axis.transpose() << std::endl;
+  //  std::cout << "coordinate system rotation:\n" << group.coordinate_system().axes() << std::endl;
   //  auto toprotaxis =  group.coordinate_system().axes()*toprot.axis();
   auto toprotaxis = toprot.axis();
   //  std::cout << "toprot.axis "<< toprotaxis.transpose()<<std::endl;
@@ -547,9 +548,9 @@ Eigen::Matrix3d find_axis_frame(const Molecule& molecule, const Group& group) {
 
 static CoordinateSystem s_default_coordinate_system;
 
-Group discover_group(const Molecule& molecule, double threshold, int verbosity) {
-  return discover_group(molecule, s_default_coordinate_system, threshold, verbosity);
-}
+// Group discover_group(const Molecule& molecule, double threshold, int verbosity) {
+//   return discover_group(molecule, s_default_coordinate_system, threshold, verbosity);
+// }
 
 Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_system, double threshold, int verbosity) {
   auto p = molpro::Profiler::single()->push("SymmetryMeasure::discover_group(" + molecule.m_title + ")");
@@ -561,9 +562,27 @@ Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_syst
   constexpr size_t maximum_axis_order = 10;
   Group result;
   // special?
-  for (const auto& n : std::vector<std::string>{"R3", "Dinfh", "Cinfv", "Oh", "O", "Td", "Ih", "I"})
-    if (test_group(molecule, Group(coordinate_system, n, generators_only), threshold, verbosity))
+  for (const auto& n : std::vector<std::string>{"R3", "Dinfh", "Cinfv", "Oh", "O", "Td", "Ih", "I"}) {
+
+    //    if (n == "Ih") {
+    //      CoordinateSystem cs;
+    //      std::cout << "coordinate system before first test_group "<<cs<<std::endl;
+    //      std::cout << "in discover_group, test_group=" << test_group(molecule, Group(cs,
+    //      n,false),threshold,verbosity) << std::endl; std::cout << "coordinate system after first test_group
+    //      "<<cs<<std::endl;
+    //    }
+    //    std::cout << "coordinate system before second test_group "<<coordinate_system<<std::endl;
+    coordinate_system.from_axes(Eigen::Matrix3d::Identity());
+    if (test_group(molecule,
+                   Group(coordinate_system, n,
+                         false // TODO make this work with generators for spherical tops. At the moment it allegedly
+                               // doesn't because of the algorithm to find a starting set of axes
+                         ),
+                   threshold, verbosity))
       return Group(coordinate_system, n);
+    //    std::cout << "coordinate system after second test_group "<<coordinate_system<<std::endl;
+    //    std::cout << "Didn't find " << n << std::endl;
+  }
 
   // axis?
   for (int axis_order = maximum_axis_order; axis_order > 1; axis_order--) {

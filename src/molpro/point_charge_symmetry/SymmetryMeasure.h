@@ -66,7 +66,7 @@ inline std::ostream& operator<<(std::ostream& os, const SymmetryMeasure& sm) {
 
 Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_system, double threshold = 1e-10,
                      int verbosity = -1);
-Group discover_group(const Molecule& molecule, double threshold = 1e-10, int verbosity = -1);
+//Group discover_group(const Molecule& molecule, double threshold = 1e-10, int verbosity = -1);
 
 Molecule molecule_localised(const CoordinateSystem& coordinate_system, const Molecule& source);
 

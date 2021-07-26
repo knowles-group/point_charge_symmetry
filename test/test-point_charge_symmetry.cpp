@@ -110,17 +110,6 @@ TEST(point_charge_symmetry, operator_representation) {
   ASSERT_EQ(x3 * x3 * x3, Identity()) << x3 * x3 * x3;
 }
 
-TEST(point_charge_symmetry, generate_group) {
-  CoordinateSystem cs;
-  auto generators = Group(cs, "Ih", true);
-  std::cout << "generator set\n" << generators << std::endl;
-  auto full_group = generate(generators);
-  std::cout << "full group\n" << full_group << std::endl;
-  //    std::cout << "C2z\n"<< Rotation({0,0,1},2)()<<std::endl;
-  //  std::cout << "sigma_yz\n"<< Reflection({1,0,0})()<<std::endl;
-  //  std::cout << "sigma_yz * C2z\n"<< (Reflection({1,0,0}),Rotation({0,0,1},2))()<<std::endl;
-}
-
 TEST(point_charge_symmetry, Group) {
   mat axes;
   axes << 0, 1, 0, -1, 0, 0, 0, 0, 1;
@@ -288,7 +277,7 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
     std::cout << atom.name << ": " << coordinate_system.to_local(atom.position).transpose() << std::endl;
 }
 
-TEST(point_charge_symmetry, group_factory) {
+std::map<std::string, int> create_expected_orders() {
   std::map<std::string, int> orders;
   orders["Dinfh"] = 40;
   orders["Cinfv"] = 20;
@@ -311,6 +300,10 @@ TEST(point_charge_symmetry, group_factory) {
     orders[std::string{"C"} + std::to_string(i) + "v"] = i * 2;
     orders[std::string{"C"} + std::to_string(i)] = i;
   }
+  return orders;
+}
+TEST(point_charge_symmetry, group_factory) {
+  auto orders = create_expected_orders();
   for (const auto &n : orders) {
     auto g = molpro::point_charge_symmetry::Group(n.first);
     //    std::cout << g << std::endl;
@@ -364,7 +357,16 @@ TEST(point_charge_symmetry, discover_group) {
   for (const auto &n : expected_groups) {
     //    std::cout << "discover "<<n.first<<std::endl;
     Molecule molecule(n.first + ".xyz");
-    auto group = molpro::point_charge_symmetry::discover_group(molecule, 1e-3, -1);
+    if (n.second == "Ih") {
+      std::cout << test_group(molecule, Group("Ih", false)) << std::endl;
+      std::cout << test_group(molecule, Group("Ih", true)) << std::endl;
+    }
+    CoordinateSystem cs;
+    auto group = molpro::point_charge_symmetry::discover_group(molecule, cs, 1e-3, -1);
+    if (n.second == "Ih") {
+      std::cout << test_group(molecule, Group("Ih", false)) << std::endl;
+      std::cout << test_group(molecule, Group("Ih", true)) << std::endl;
+    }
     EXPECT_EQ(group.name(), n.second) << "Molecule: " << n.first << "\n"
                                       << molecule << "\nfound group (generators): " << Group(group.name(), true)
                                       << "\nfound group (full): " << group << "\nexpected group: " << Group(n.second);
@@ -484,8 +486,8 @@ TEST(point_charge_symmetry, refine) {
   //  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("refine");
   std::vector<std::string> tests{"c60_clean",  "c60",         "methane", "ch4",       "allene", "allene45",
                                  "adamantane", "cyclohexane", "h2o",     "h2o-nosym", "co2"};
-  //  tests.clear();
-  //  tests.push_back("adamantane");
+    tests.clear();
+    tests.push_back("adamantane");
   for (const auto &test : tests) {
     //    std::cout << "test " << test << std::endl;
     Molecule molecule(test + ".xyz");
@@ -494,8 +496,8 @@ TEST(point_charge_symmetry, refine) {
     auto group = discover_group(molecule, cs, 1e-6, -1);
     SymmetryMeasure sm(molecule, group);
     std::cout << "test " << test << std::endl;
-    //          std::cout << molecule << std::endl;
-    //          std::cout << sm() << std::endl;
+//              std::cout << molecule << std::endl;
+//              std::cout << "symmetry measure after discovery "<<sm() << std::endl;
 
     {
       auto problem = Problem_refine(sm, molecule, 0);
@@ -506,6 +508,7 @@ TEST(point_charge_symmetry, refine) {
       auto g0 = c0;
       //      auto v0 =
       problem.residual(c0, g0);
+//      std::cout << "initial residual "<<g0[0]<<g0[1]<<g0[2]<<std::endl;
       double step = 1e-4;
       for (size_t i = 0; i < c0.size(); i++) {
         auto c = c0;
@@ -520,6 +523,7 @@ TEST(point_charge_symmetry, refine) {
         auto vmm = problem.residual(c, g);
         auto gradn = (vmm - 8 * vm + 8 * vp - vpp) / (12 * step);
         EXPECT_NEAR(gradn, g0[i], std::max(1e-10, double(1e-10 * g0[i])));
+        c[i] += 2 * step;
       }
       //      v0 = problem.residual(c0, g0);
       //    std::cout << "after gradient check value="<<problem.residual(c0,g0)<<std::endl;
@@ -529,8 +533,9 @@ TEST(point_charge_symmetry, refine) {
     //    std::cout << projector
 
     auto newmolecule = sm.refine();
-    double error = SymmetryMeasure(newmolecule, Group(group.name()))();
-    ASSERT_LE(error, 1e-12);
+    auto newgroup = Group(group.name());
+    double error = SymmetryMeasure(newmolecule, newgroup)();
+    EXPECT_LE(error, 1e-12);
     std::cout << error << std::endl;
     //  std::cout << newmolecule << std::endl;
   }
@@ -701,23 +706,34 @@ TEST(point_charge_symmetry, randomise) {
   }
 }
 
-TEST(point_charge_symmetry, generators) {
-  auto nIh = generate(Group("Ih"));
-  EXPECT_EQ(nIh.size(), 120);
+std::map<std::string, int> create_expected_generator_set_sizes() {
   std::map<std::string, int> generator_set_sizes;
   generator_set_sizes["Ci"] = 1;
   generator_set_sizes["Cs"] = 1;
-  generator_set_sizes["C2"] = 1;
-  generator_set_sizes["C2v"] = 2;
-  generator_set_sizes["C2h"] = 2;
-  generator_set_sizes["D2"] = 2;
-  generator_set_sizes["D2h"] = 3;
-  generator_set_sizes["D3h"] = 3;
+  generator_set_sizes["Td"] = 2;
+  generator_set_sizes["Th"] = 2;
+  generator_set_sizes["T"] = 2;
+  generator_set_sizes["O"] = 2;
+  generator_set_sizes["Oh"] = 2;
+  for (int n = 2; n < 11; ++n) {
+    generator_set_sizes["C" + std::to_string(n)] = 1;
+    generator_set_sizes["C" + std::to_string(n) + "v"] = 2;
+    generator_set_sizes["C" + std::to_string(n) + "h"] = 2; // TODO for odd n>6, should be 1
+    generator_set_sizes["D" + std::to_string(n) + "h"] = 3; // TODO for odd n, should be 2
+    generator_set_sizes["D" + std::to_string(n)] = 2;
+  }
+  return generator_set_sizes;
+}
+
+TEST(point_charge_symmetry, generators) {
+  auto generator_set_sizes = create_expected_generator_set_sizes();
+  auto orders = create_expected_orders();
   for (const auto &gs : generator_set_sizes) {
-    std::cout << gs.first << " : " << gs.second << std::endl;
+    //    std::cout << gs.first << " : " << gs.second << std::endl;
     EXPECT_EQ(Group(gs.first, true).size(), gs.second) << "Group generators:\n"
                                                        << Group(gs.first, true) << "\nFull group:\n"
                                                        << Group(gs.first, false);
+    EXPECT_EQ(generate(Group(gs.first, true)).size(), orders[gs.first]);
   }
 }
 

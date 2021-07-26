@@ -44,7 +44,8 @@ int SymmetryMeasureOptimiseFrame(const char *groupname, size_t atoms, double *co
 char *SymmetryMeasureDiscoverGroup(double threshold, size_t atoms, double *coordinates, const double *charges) {
   Eigen::Map<Eigen::MatrixXd> xyz(coordinates, 3, atoms);
   Eigen::Map<const Eigen::VectorXd> q(charges, atoms);
-  auto group = molpro::point_charge_symmetry::discover_group(Molecule(xyz, q), threshold);
+  CoordinateSystem cs;
+  auto group = molpro::point_charge_symmetry::discover_group(Molecule(xyz, q), cs, threshold);
   return strdup(group.name().c_str());
 }
 void SymmetryMeasureRefine(const char *groupname, size_t atoms, double *coordinates, const double *charges) {
