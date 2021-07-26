@@ -2,7 +2,9 @@
 #include <iostream>
 #include <memory>
 //#include <molpro/Profiler.h>
+#include "Euler.h"
 #include <sstream>
+#include <unsupported/Eigen/MatrixFunctions>
 #include <vector>
 
 namespace molpro::point_charge_symmetry {
@@ -117,18 +119,40 @@ Identity::Identity(const CoordinateSystem& coordinate_system) : Operator(coordin
   m_name = "E";
   this->m_local_representation = mat::Identity();
 }
+GenericOperator::GenericOperator(const CoordinateSystem& coordinate_system, const GenericOperator& source)
+    : Operator(coordinate_system) {
+  this->m_name = source.m_name;
+  this->m_local_representation = source.m_local_representation;
+}
 GenericOperator::GenericOperator(const Operator& A, const Operator& B) : Operator(A.coordinate_system()) {
-  std::cout <<"A: "<<A<<std::endl;
-  std::cout <<"B: "<<B<<std::endl;
+  //  std::cout << "A: " << A << std::endl;
+  //  std::cout << "B: " << B << std::endl;
   if (A.coordinate_system() != B.coordinate_system())
     throw std::runtime_error("Incompatible coordinate systems");
   m_name = A.name() + " * " + B.name();
-  std::cout << "m_name "<<m_name<<std::endl;
-  this->m_local_representation = A() * B();
+  //  std::cout << "m_name " << m_name << std::endl;
+  //  std::cout << "A():\n"<<A()<<std::endl;
+  //  std::cout << "B():\n" << B() << std::endl;
+  const mat BB = B().eval();
+  const mat AA = A().eval();
+  mat AB = (AA * BB).eval();
   for (Eigen::Index i = 0; i < 3; ++i)
-    for (Eigen::Index j = 0; j < 3; ++j)
-      if (std::abs(m_local_representation(i, j)) < 1e-12)
-        m_local_representation(i, j) = 0;
+    for (Eigen::Index j = 0; j < 3; ++j) {
+      if (std::abs(AA(i, j)) > 1)
+        throw std::runtime_error("unexpected values in A");
+      if (std::abs(BB(i, j)) > 1)
+        throw std::runtime_error("unexpected values in B");
+      if (std::abs(AB(i, j)) > 1 + 1e-12)
+        throw std::runtime_error("unexpected values in AB");
+      AB(i, j) = std::min(double(1), std::max(AB(i, j), double(-1)));
+      if (std::abs(AB(i, j)) < 1e-12)
+        AB(i, j) = 0;
+    }
+  //  std::cout << "AB\n" << AB << std::endl;
+  this->m_local_representation = AB.eval();
+  //  m_local_representation = (m_local_representation * mat::Identity()).eval(); // force evaluation
+  //    std::cout << "(*this)():\n"<<(*this)()<<std::endl;
+  //  std::cout << "m_local_representation\n" << m_local_representation << std::endl;
 }
 GenericOperator Operator::operator*(const Operator& other) const { return GenericOperator(*this, other); }
 
@@ -143,7 +167,27 @@ std::string Operator::str(const std::string& title, bool coordinate_frame) const
   }
   return result.str();
 }
-bool Operator::operator==(const Operator& other) const { return ((*this)() - other()).norm() < 1e-12; }
+bool Operator::operator==(const Operator& other) const { return not((*this) < other or (other < (*this))); }
+
+bool Operator::operator<(const Operator& other) const {
+  constexpr bool debug = false;
+  const double tolerance = 1e-12;
+  if (debug)
+    std::cout << "Operator::operator<: " << this->name() << "\n"
+              << (*this)() << ": " << other.name() << "\n"
+              << other() << std::endl;
+  auto thisu = (*this)();
+  auto otheru = other();
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      if (thisu(i, j) < otheru(i, j) - tolerance)
+        return true;
+      if (thisu(i, j) > otheru(i, j) + tolerance)
+        return false;
+    }
+  }
+  return false;
+}
 
 std::string GenericOperator::str(const std::string& title, bool coordinate_frame) const {
   std::stringstream result;

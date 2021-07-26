@@ -5,6 +5,7 @@
 #include <sstream>
 #include <unsupported/Eigen/MatrixFunctions>
 #include <vector>
+#include "Euler.h"
 
 namespace molpro::point_charge_symmetry {
 
@@ -23,67 +24,6 @@ CoordinateSystem& CoordinateSystem::operator=(const CoordinateSystem& source) {
   assert(m_rotation_parameter_type == source.m_rotation_parameter_type);
   m_axis_permutation_rot90_next = source.m_axis_permutation_rot90_next;
   return *this;
-}
-
-static std::array<double, 3> euler_from_axes(const CoordinateSystem::mat& u) {
-  double alpha, beta, gamma;
-  beta = std::acos(std::min(double(1), std::max(double(-1), u(2, 2))));
-  if (beta < 1e-6)
-    beta = std::asin(std::sqrt(std::pow(u(0, 2), 2) + std::pow(u(1, 2), 2)));
-  if (beta < 1e-12) {
-    alpha = std::atan2(u(1, 0), u(0, 0));
-    gamma = 0;
-  } else {
-    alpha = std::atan2(u(1, 2), u(0, 2));
-    gamma = std::atan2(u(2, 1), -u(2, 0));
-    auto pi = std::acos(double(-1));
-    if (gamma >= pi)
-      gamma -= pi;
-  }
-  return {alpha, beta, gamma};
-}
-
-static auto axes_gradient_from_euler(const Eigen::Vector3d& euler) {
-  std::array<CoordinateSystem::mat, 3> result;
-  auto c1 = std::cos(euler[0]);
-  auto s1 = std::sin(euler[0]);
-  auto c2 = std::cos(euler[1]);
-  auto s2 = std::sin(euler[1]);
-  auto c3 = std::cos(euler[2]);
-  auto s3 = std::sin(euler[2]);
-  result[0] << -c2 * c3 * s1 - c1 * s3, -c1 * c3 + c2 * s1 * s3, -s1 * s2, c1 * c2 * c3 - s1 * s3,
-      -c3 * s1 - c1 * c2 * s3, c1 * s2, 0, 0, 0;
-  result[1] << -c1 * c3 * s2, c1 * s2 * s3, c1 * c2, -c3 * s1 * s2, s1 * s2 * s3, c2 * s1, -c2 * c3, c2 * s3, -s2;
-  result[2] << -c3 * s1 - c1 * c2 * s3, -c1 * c2 * c3 + s1 * s3, 0, c1 * c3 - c2 * s1 * s3, -c2 * c3 * s1 - c1 * s3, 0,
-      s2 * s3, c3 * s2, 0;
-  return result;
-}
-
-static Eigen::Matrix3d axes_from_euler(const Eigen::Vector3d& euler) {
-  auto c1 = std::cos(euler[0]);
-  auto s1 = std::sin(euler[0]);
-  auto c2 = std::cos(euler[1]);
-  auto s2 = std::sin(euler[1]);
-  auto c3 = std::cos(euler[2]);
-  auto s3 = std::sin(euler[2]);
-  Eigen::Matrix3d result;
-  result << c1 * c2 * c3 - s1 * s3, -c3 * s1 - c1 * c2 * s3, c1 * s2, c2 * c3 * s1 + c1 * s3, c1 * c3 - c2 * s1 * s3,
-      s1 * s2, -c3 * s2, s2 * s3, c2;
-  if (false) {
-    if (result(0, 0) < 0 and result(1, 1) < 0) {
-      result.col(0) = -result.col(0);
-      result.col(1) = -result.col(1);
-    }
-    if (result(0, 0) < 0 and result(2, 2) < 0) {
-      result.col(0) = -result.col(0);
-      result.col(2) = -result.col(2);
-    }
-    if (result(1, 1) < 0 and result(2, 2) < 0) {
-      result.col(1) = -result.col(1);
-      result.col(2) = -result.col(2);
-    }
-  }
-  return result;
 }
 
 void CoordinateSystem::from_axes(const mat& axes) const {

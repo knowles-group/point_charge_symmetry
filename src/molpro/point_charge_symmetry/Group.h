@@ -9,14 +9,14 @@ namespace molpro::point_charge_symmetry {
 template <class T>
 class lesstarget {
 public:
-  bool operator()(const T& A, const T& B) { return (*A) < (*B); }
+  bool operator()(const T& A, const T& B) const { return (*A) < (*B); }
 };
 static CoordinateSystem s_group_default_coordinate_system;
 class Group {
 protected:
   CoordinateSystem& m_coordinate_system;
   std::set<std::unique_ptr<Operator>
-//      , lesstarget<std::unique_ptr<Operator>>
+      , lesstarget<std::unique_ptr<Operator>>
            > m_members;
   std::string m_name;
 

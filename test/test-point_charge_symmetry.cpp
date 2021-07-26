@@ -3,6 +3,8 @@
 #include <gtest/gtest.h>
 #include <iostream>
 //#include <molpro/Profiler.h>
+#include "../src/molpro/point_charge_symmetry/Euler.h"
+#include <Eigen/Core>
 #include <molpro/point_charge_symmetry/Group.h>
 #include <molpro/point_charge_symmetry/Molecule.h>
 #include <molpro/point_charge_symmetry/Operator.h>
@@ -110,9 +112,13 @@ TEST(point_charge_symmetry, operator_representation) {
 
 TEST(point_charge_symmetry, generate_group) {
   CoordinateSystem cs;
-  auto generators = Group(cs, "C2v", true);
-  //  auto full_group = generate(generators);
-  //  std::cout << full_group << std::endl;
+  auto generators = Group(cs, "Ih", true);
+  std::cout << "generator set\n" << generators << std::endl;
+  auto full_group = generate(generators);
+  std::cout << "full group\n" << full_group << std::endl;
+  //    std::cout << "C2z\n"<< Rotation({0,0,1},2)()<<std::endl;
+  //  std::cout << "sigma_yz\n"<< Reflection({1,0,0})()<<std::endl;
+  //  std::cout << "sigma_yz * C2z\n"<< (Reflection({1,0,0}),Rotation({0,0,1},2))()<<std::endl;
 }
 
 TEST(point_charge_symmetry, Group) {
@@ -283,10 +289,9 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
 }
 
 TEST(point_charge_symmetry, group_factory) {
-  //  std::cout<<"D5h generators\n" << molpro::point_charge_symmetry::Group("D5h",true)<<std::endl;
   std::map<std::string, int> orders;
-  orders["Dinfh"] = 44;
-  orders["Cinfv"] = 22;
+  orders["Dinfh"] = 40;
+  orders["Cinfv"] = 20;
   orders["C1"] = 1;
   orders["Ci"] = 2;
   orders["Cs"] = 2;
@@ -309,7 +314,7 @@ TEST(point_charge_symmetry, group_factory) {
   for (const auto &n : orders) {
     auto g = molpro::point_charge_symmetry::Group(n.first);
     //    std::cout << g << std::endl;
-    EXPECT_EQ(g.size(), n.second) << "Wrong order for group " << g;
+    EXPECT_EQ(g.size(), n.second) << "Wrong order for group " << n.first << "\n" << g;
     //    for (const auto &op1 : g)
     //      for (const auto &op2 : g) {
     //        if (&op1 != &op2) EXPECT_NE(op1,op2);
@@ -383,17 +388,17 @@ TEST(point_charge_symmetry, test_group) {
   //  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Discover groups");
   //  prof->set_max_depth(1);
   auto expected_groups = create_expected_groups();
-  //    expected_groups.clear();
+  //      expected_groups.clear();
   //    expected_groups["adamantane"] = "Td";
-  //    expected_groups["c60"] = "Ih";
-  //    expected_groups["c60_from_klaus"] = "Ih";
+  //      expected_groups["c60"] = "Ih";
+  //      expected_groups["c60_from_klaus"] = "Ih";
   //  expected_groups["waterinf"] = "Cs";
   for (const auto &n : expected_groups) {
     std::cout << "try " << n.first << std::endl;
     Molecule molecule(n.first + ".xyz");
     CoordinateSystem cs;
     auto group = Group(cs, n.second);
-    ASSERT_TRUE(test_group(molecule, group, 1e-3)) << "coordinate system after test_group\n"
+    EXPECT_TRUE(test_group(molecule, group, 1e-3)) << "coordinate system after test_group\n"
                                                    << cs << std::endl
                                                    << "coordinate system after test_group\n"
                                                    << group.coordinate_system() << std::endl
@@ -615,6 +620,7 @@ TEST(point_charge_symmetry, distance_gradient) {
   }
 }
 
+#include <molpro/point_charge_symmetry/Euler.h>
 #include <molpro/point_charge_symmetry/SymmetryMeasureC.h>
 TEST(point_charge_symmetry, C) {
 
@@ -696,6 +702,8 @@ TEST(point_charge_symmetry, randomise) {
 }
 
 TEST(point_charge_symmetry, generators) {
+  auto nIh = generate(Group("Ih"));
+  EXPECT_EQ(nIh.size(), 120);
   std::map<std::string, int> generator_set_sizes;
   generator_set_sizes["Ci"] = 1;
   generator_set_sizes["Cs"] = 1;
@@ -711,4 +719,16 @@ TEST(point_charge_symmetry, generators) {
                                                        << Group(gs.first, true) << "\nFull group:\n"
                                                        << Group(gs.first, false);
   }
+}
+
+TEST(point_charge_symmetry, euler_from_axes) {
+  const auto pi = std::acos(double(-1));
+  EXPECT_THAT(euler_from_axes(Eigen::Map<Eigen::Matrix3d>(std::vector<double>{-1, 0, 0, 0, 1, 0, 0, 0, -1}.data())),
+              ::testing::Pointwise(::testing::DoubleNear(1e-6), std::vector<double>{0, pi, 0}));
+  EXPECT_THAT(euler_from_axes(Eigen::Map<Eigen::Matrix3d>(std::vector<double>{1, 0, 0, 0, -1, 0, 0, 0, -1}.data())),
+              ::testing::Pointwise(::testing::DoubleNear(1e-6), std::vector<double>{pi / 2, pi, -pi / 2}));
+  EXPECT_THAT(euler_from_axes(Eigen::Map<Eigen::Matrix3d>(std::vector<double>{-1, 0, 0, 0, -1, 0, 0, 0, 1}.data())),
+              ::testing::Pointwise(::testing::DoubleNear(1e-6), std::vector<double>{pi, 0, 0}));
+  EXPECT_THAT(euler_from_axes(Eigen::Map<Eigen::Matrix3d>(std::vector<double>{1, 0, 0, 0, 1, 0, 0, 0, 1}.data())),
+              ::testing::Pointwise(::testing::DoubleNear(1e-6), std::vector<double>{0, 0, 0}));
 }

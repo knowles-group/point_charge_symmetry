@@ -512,10 +512,13 @@ Eigen::Matrix3d find_axis_frame(const Molecule& molecule, const Group& group) {
   if (axis.norm() == 0)
     return Eigen::Matrix3d::Identity();
   //    throw std::runtime_error("failure to find molecular rotation axis of order " + std::to_string(toprot.order()));
-  //    std::cout << "found axis " << axis.transpose() << std::endl;
-  //    std::cout << "toprot.axis "<<toprot.axis().transpose()<<std::endl;
+//  std::cout << "found axis " << axis.transpose() << std::endl;
+//  std::cout << "coordinate system rotation:\n" << group.coordinate_system().axes() << std::endl;
+  //  auto toprotaxis =  group.coordinate_system().axes()*toprot.axis();
+  auto toprotaxis = toprot.axis();
+  //  std::cout << "toprot.axis "<< toprotaxis.transpose()<<std::endl;
   Eigen::Matrix3d R;
-  R.col(2) = axis.cross(toprot.axis());
+  R.col(2) = axis.cross(toprotaxis);
   //  std::cout << "r3 " << R.col(2).transpose() << std::endl;
   R.col(0) = -R.col(2).cross(axis);
   R.col(1) = R.col(2).cross(R.col(0));
@@ -526,9 +529,9 @@ Eigen::Matrix3d find_axis_frame(const Molecule& molecule, const Group& group) {
   //    std::cout << "R(dag)*R\n" << R.transpose() * R <<std::endl;
   //      std::cout << "toprot.axis() "<<toprot.axis()<<" "<<axis.dot(toprot.axis()) <<" "<< axis.norm() <<" "<<
   //      toprot.axis().norm()<<std::endl;
-  auto angle = std::acos(
-      std::max(double(-1), std::min(double(1), axis.dot(toprot.axis()) / (axis.norm() * toprot.axis().norm()))));
-  //  std::cout << "angle=" << angle << std::endl;
+  auto angle =
+      std::acos(std::max(double(-1), std::min(double(1), axis.dot(toprotaxis) / (axis.norm() * toprotaxis.norm()))));
+  //    std::cout << "angle=" << angle <<" rad = "<<angle*180/std::acos(double(-1))<< std::endl;
 
   if (std::abs(angle) < 1e-12)
     return Eigen::Matrix3d::Identity();

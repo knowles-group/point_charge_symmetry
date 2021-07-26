@@ -42,11 +42,13 @@ public:
   virtual Operator* clone(const CoordinateSystem& coordinate_system) const = 0;
   const CoordinateSystem& coordinate_system() const { return m_coordinate_system; }
   virtual int order() const { return 0; }
+  virtual int count() const { return 1; }
   bool proper() const { return m_local_representation.determinant() > 0; }
   GenericOperator operator*(const Operator& other) const;
+  bool operator<(const Operator& other) const;
   bool operator==(const Operator& other) const;
   bool operator!=(const Operator& other) const { return not((*this) == other); }
-//  bool operator<(const Operator& other) const {throw ""; return true;}
+  //  bool operator<(const Operator& other) const {throw ""; return true;}
 
 protected:
   const CoordinateSystem& m_coordinate_system;
@@ -63,6 +65,7 @@ inline std::ostream& operator<<(std::ostream& os, const Operator& op) {
 class GenericOperator : public Operator {
 public:
   GenericOperator();
+  GenericOperator(const CoordinateSystem& coordinate_system, const GenericOperator& source);
   GenericOperator(const CoordinateSystem& coordinate_system);
   GenericOperator(const Operator& A, const Operator& B);
   //  vec operator_local(vec v) const override;
@@ -70,7 +73,7 @@ public:
   friend class Group;
   Operator* clone() const override { return new GenericOperator(*this); }
   Operator* clone(const CoordinateSystem& coordinate_system) const override {
-    return new GenericOperator(coordinate_system);
+    return new GenericOperator(coordinate_system, *this);
   }
 };
 class Reflection : public Operator {
@@ -107,6 +110,7 @@ public:
     return new Rotation(coordinate_system, m_axis, m_order, m_proper, m_count);
   }
   int order() const override { return m_order; }
+  int count() const override { return m_count; }
   const vec& axis() const { return m_axis; }
 };
 

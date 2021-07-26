@@ -28,7 +28,16 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
   const auto all = not generators_only;
   if (all)
     add(Identity());
+
   std::smatch m;
+
+  if (all and (std::regex_match(name, m, std::regex{"[CD][0-9]*[02468]h"}) or
+      std::regex_match(name, m, std::regex{"D[0-9]*[13579]d"}) or
+      std::regex_match(name, m, std::regex{"Ih|Th|Oh|Dinfh"})))
+    add(Inversion());
+  if (name == "Ci")
+    add(Inversion());
+
   if (name[0] == 'I') {
     auto gold = (1 + std::sqrt(double(5))) / 2;
     std::vector<vec> pentagons;
@@ -39,7 +48,7 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
         pentagons.push_back((yaxis * flip + gold * zaxis) / std::sqrt(2 + gold));
         if (pentagons.back().dot(pentagons.front()) < 0)
           pentagons.back() = -pentagons.back();
-        for (int count = 1; count < 5; count++) {
+        for (int count = 1; count < 6; count++) {
           add(Rotation(pentagons.back(), 5, true, count));
           if (name == "Ih")
             add(Rotation(pentagons.back(), 10, false, 2 * count - 1));
@@ -151,15 +160,9 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
   }
   if (name == "Cinfv" or name == "Dinfh") { // representative only
     m_name = name;
-    name.replace(1, 3, "11");
+    name.replace(1, 3, "10");
   }
 
-  if (all and (std::regex_match(name, m, std::regex{"[CD][0-9]*[02468]h"}) or
-               std::regex_match(name, m, std::regex{"D[0-9]*[13579]d"}) or
-               std::regex_match(name, m, std::regex{"Ih|Th|Oh|Dinfh"})))
-    add(Inversion());
-  if (name == "Ci")
-    add(Inversion());
 
   if (std::regex_match(name, m, std::regex{"Dinfh|Cs|[CD][1-9][0-9]*h"}))
     add(Reflection(zaxis));
@@ -244,20 +247,25 @@ Rotation Group::highest_rotation(bool proper, size_t index) const {
       order = member->order();
   if (order > 0)
     for (const auto& member : m_members)
-      if (member->order() == order && (member->proper() or not proper) && index == count++)
+      if (member->order() == order && member->count() == 1 && (member->proper() or not proper) && index == count++)
         return dynamic_cast<Rotation&>(*member);
   return Rotation({0, 0, 1}, 1);
 }
 
 Group generate(const Group& generator) {
   //  auto g = generator;
-  Group g("C2v", true);
+  Group g(generator.name(), true);
+  g.add(Identity());
   for (size_t last_size = 0; last_size < g.size();) {
     last_size = g.size();
+    //    std::cout << "generate iterate last_size="<<last_size<<std::endl;
     const auto oldg = Group(const_cast<CoordinateSystem&>(g.coordinate_system()), g);
+    //    std::cout << "oldg:\n"<<oldg<<std::endl;
     for (const auto& o1 : oldg)
       for (const auto& o2 : oldg)
         g.add((*o1) * (*o2));
+    //    std::cout << "generate iterate new size="<<g.size()<<std::endl;
+    //    std::cout << "group at end of iteration\n"<<g<<std::endl;
   }
   return g;
 }
