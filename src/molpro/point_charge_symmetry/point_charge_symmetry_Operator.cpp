@@ -9,10 +9,6 @@
 
 namespace molpro::point_charge_symmetry {
 
-static CoordinateSystem s_default_coordinate_system = CoordinateSystem();
-
-Operator::Operator() : Operator(s_default_coordinate_system) {}
-
 Operator::vec Operator::operator()(vec v) const {
   return m_coordinate_system.origin() +
          m_coordinate_system.axes() *
@@ -66,11 +62,9 @@ std::array<Operator::vec, 6> Operator::operator_gradient(vec v, int numerical, d
   return result;
 }
 
-GenericOperator::GenericOperator() : GenericOperator(s_default_coordinate_system) {}
 GenericOperator::GenericOperator(const CoordinateSystem& coordinate_system) : Operator(coordinate_system) {
   m_name = "generic";
 }
-Reflection::Reflection(vec normal) : Reflection(s_default_coordinate_system, std::move(normal)) {}
 Reflection::Reflection(const CoordinateSystem& coordinate_system, vec normal)
     : Operator(coordinate_system), m_normal(normal.normalized()) {
   m_name = "sigma";
@@ -88,8 +82,6 @@ Reflection::Reflection(const CoordinateSystem& coordinate_system, vec normal)
 //   v -= 2 * m_normal.dot(v) * m_normal;
 //   return v;
 // }
-Rotation::Rotation(vec axis, int order, bool proper, int count)
-    : Rotation(s_default_coordinate_system, std::move(axis), std::move(order), std::move(proper), std::move(count)) {}
 Rotation::Rotation(const CoordinateSystem& coordinate_system, vec axis, int order, bool proper, int count)
     : Operator(coordinate_system), m_axis(axis.normalized()), m_order(std::move(order)), m_proper(std::move(proper)),
       m_count(std::move(count)) {
@@ -108,13 +100,11 @@ Rotation::Rotation(const CoordinateSystem& coordinate_system, vec axis, int orde
     this->m_local_representation -= 2 * m_axis * m_axis.transpose();
 }
 
-Inversion::Inversion() : Inversion(s_default_coordinate_system) {}
 Inversion::Inversion(const CoordinateSystem& coordinate_system) : Operator(coordinate_system) {
   m_name = "i";
   this->m_local_representation = -mat::Identity();
 }
 
-Identity::Identity() : Identity(s_default_coordinate_system) {}
 Identity::Identity(const CoordinateSystem& coordinate_system) : Operator(coordinate_system) {
   m_name = "E";
   this->m_local_representation = mat::Identity();
@@ -161,9 +151,10 @@ std::string Operator::str(const std::string& title, bool coordinate_frame) const
   result << m_name;
   if (!title.empty())
     result << " " << title;
-  if (coordinate_frame) {
+  if (true or coordinate_frame) {
     result << ", origin: " << this->m_coordinate_system.origin().transpose();
     result << ", axes:\n" << this->m_coordinate_system.axes();
+    result << ", transformation:\n" << this->m_local_representation << std::endl;
   }
   return result.str();
 }

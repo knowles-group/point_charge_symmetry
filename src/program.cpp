@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
       cs = CoordinateSystem();
       if (not quiet.getValue() and count == 0)
         std::cout << "After geometry refinement, symmetry-breaking measure = "
-                  << SymmetryMeasure(molecule, Group(group.name()))()
+                  << SymmetryMeasure(molecule, Group(cs,group.name()))()
                   << ", cartesian distance from original = " << cartesian_distance(molecule, original_molecule)
                   << ", comparison measure with original = " << distance(molecule, original_molecule).first
                   << std::endl;

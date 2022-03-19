@@ -132,9 +132,10 @@ Eigen::Vector3d Molecule::findaxis(int order) const {
     distance.push_back(dist > distance_threshold ? dist : std::numeric_limits<double>::max());
   }
   for (int i = 0; i < 3; ++i) { // first of all try the raw coordinate axes
+    CoordinateSystem cs;
     result = Eigen::Matrix3d::Identity().col(i);
-    auto group = Group();
-    group.add(Rotation(result, order));
+    auto group = Group(cs);
+    group.add(Rotation(group.coordinate_system(), result, order));
     SymmetryMeasure sm(*this, group);
     if (sm() < 1e-3)
       return result;
@@ -143,8 +144,9 @@ Eigen::Vector3d Molecule::findaxis(int order) const {
   size_t atom1 = std::min_element(distance.begin(), distance.end()) - distance.begin(); // the nearest distant atom
   { // next see if this atom could itself define the axis
     result = this->m_atoms[atom1].position - centre;
-    auto group = Group();
-    group.add(Rotation(result, order));
+    CoordinateSystem cs;
+    auto group = Group(cs);
+    group.add(Rotation(group.coordinate_system(), result, order));
     SymmetryMeasure sm(*this, group);
     //    std::cout << "Trying nearest as axis definer " << result.transpose() << ", symmetry measure = " << sm()
     //              << std::endl;

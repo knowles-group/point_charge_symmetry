@@ -70,16 +70,17 @@ void test_operation(const vec &initial, const Operator &op, const vec &expected)
 }
 
 TEST(point_charge_symmetry, local_operations) {
-  test_operation({1, 1, 1}, Reflection({0, 0, 1}), {1, 1, -1});
-  test_operation({1, 1, 1}, Reflection({0, 0, -1}), {1, 1, -1});
-  test_operation({1, 1, 1}, Reflection({-1, -1, -1}), {-1, -1, -1});
-  test_operation({1, 1, 1}, Reflection({1, -1, 0}), {1, 1, 1});
-  test_operation({1, 1, 1}, Reflection({-1, 1, 0}), {1, 1, 1});
-  test_operation({-1, -1, 1}, Reflection({-1, 1, 0}), {-1, -1, 1});
-  test_operation({1, 1, 1}, Rotation({0, 0, 1}, 2), {-1, -1, 1});
-  test_operation({1, 1, 1}, Rotation({0, 0, 1}, 4), {-1, 1, 1});
-  test_operation({1, 1, 1}, Rotation({0, 0, 1}, 4, false), {-1, 1, -1});
-  test_operation({1, 1, 1}, Inversion(), {-1, -1, -1});
+  CoordinateSystem cs;
+  test_operation({1, 1, 1}, Reflection(cs, {0, 0, 1}), {1, 1, -1});
+  test_operation({1, 1, 1}, Reflection(cs, {0, 0, -1}), {1, 1, -1});
+  test_operation({1, 1, 1}, Reflection(cs, {-1, -1, -1}), {-1, -1, -1});
+  test_operation({1, 1, 1}, Reflection(cs, {1, -1, 0}), {1, 1, 1});
+  test_operation({1, 1, 1}, Reflection(cs, {-1, 1, 0}), {1, 1, 1});
+  test_operation({-1, -1, 1}, Reflection(cs, {-1, 1, 0}), {-1, -1, 1});
+  test_operation({1, 1, 1}, Rotation(cs, {0, 0, 1}, 2), {-1, -1, 1});
+  test_operation({1, 1, 1}, Rotation(cs, {0, 0, 1}, 4), {-1, 1, 1});
+  test_operation({1, 1, 1}, Rotation(cs, {0, 0, 1}, 4, false), {-1, 1, -1});
+  test_operation({1, 1, 1}, Inversion(cs ), {-1, -1, -1});
 }
 
 TEST(point_charge_symmetry, translated_operations) {
@@ -107,7 +108,7 @@ TEST(point_charge_symmetry, rotated_operations) {
 TEST(point_charge_symmetry, operator_representation) {
   CoordinateSystem cs;
   auto x3 = Rotation(cs, {0, 0, 1}, 3);
-  ASSERT_EQ(x3 * x3 * x3, Identity()) << x3 * x3 * x3;
+  ASSERT_EQ(x3 * x3 * x3, Identity(cs)) << x3 * x3 * x3;
 }
 
 TEST(point_charge_symmetry, Group) {
@@ -115,10 +116,10 @@ TEST(point_charge_symmetry, Group) {
   axes << 0, 1, 0, -1, 0, 0, 0, 0, 1;
   CoordinateSystem coords(RotationParameterType::Euler, {0, 0, 0});
   Group group(coords);
-  group.add(Identity());
-  group.add(Rotation({0, 0, 1}, 2));
-  group.add(Reflection({1, 0, 0}));
-  group.add(Reflection({0, 1, 0}));
+  group.add(Identity(coords));
+  group.add(Rotation(coords,{0, 0, 1}, 2));
+  group.add(Reflection(coords,{1, 0, 0}));
+  group.add(Reflection(coords,{0, 1, 0}));
 }
 
 TEST(point_charge_symmetry, axes_gradient) {
@@ -163,12 +164,13 @@ TEST(point_charge_symmetry, Molecule) {
   //  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Molecule");
   Molecule water("h2o.xyz");
   //  std::cout << water << std::endl;
-  Group group;
+  CoordinateSystem cs;
+  Group group(cs);
   group.name() = "C2v";
-  group.add(Identity());
-  group.add(Rotation({0, 0, 1}, 2));
-  group.add(Reflection({1, 0, 0}));
-  group.add(Reflection({0, 1, 0}));
+  group.add(Identity(cs));
+  group.add(Rotation(cs,{0, 0, 1}, 2));
+  group.add(Reflection(cs,{1, 0, 0}));
+  group.add(Reflection(cs,{0, 1, 0}));
   //  auto sm = SymmetryMeasure(water, group);
   //  std::cout << sm << std::endl;
   //  int i = 0;
@@ -305,7 +307,8 @@ std::map<std::string, int> create_expected_orders() {
 TEST(point_charge_symmetry, group_factory) {
   auto orders = create_expected_orders();
   for (const auto &n : orders) {
-    auto g = molpro::point_charge_symmetry::Group(n.first);
+    CoordinateSystem cs;
+    auto g = molpro::point_charge_symmetry::Group(cs, n.first);
     //    std::cout << g << std::endl;
     EXPECT_EQ(g.size(), n.second) << "Wrong order for group " << n.first << "\n" << g;
     //    for (const auto &op1 : g)
@@ -350,26 +353,27 @@ TEST(point_charge_symmetry, discover_group) {
   //  std::shared_ptr<molpro::Profiler> prof = molpro::Profiler::single("Discover groups");
   //  prof->set_max_depth(1);
   auto expected_groups = create_expected_groups();
-  //    expected_groups.clear();
-  //  expected_groups["c60"] = "Ih";
+//      expected_groups.clear();
+//    expected_groups["c60"] = "Ih";
   //  expected_groups["adamantane"] = "Td";
   //    expected_groups["18-crown"] = "S6";
   for (const auto &n : expected_groups) {
     //    std::cout << "discover "<<n.first<<std::endl;
     Molecule molecule(n.first + ".xyz");
     if (n.second == "Ih") {
-      std::cout << test_group(molecule, Group("Ih", false)) << std::endl;
-      std::cout << test_group(molecule, Group("Ih", true)) << std::endl;
+      CoordinateSystem cs;
+      std::cout << test_group(molecule, Group(cs,"Ih", false),1e-3,2) << std::endl;
+      std::cout << test_group(molecule, Group(cs,"Ih", true)) << std::endl;
     }
     CoordinateSystem cs;
     auto group = molpro::point_charge_symmetry::discover_group(molecule, cs, 1e-3, -1);
     if (n.second == "Ih") {
-      std::cout << test_group(molecule, Group("Ih", false)) << std::endl;
-      std::cout << test_group(molecule, Group("Ih", true)) << std::endl;
+      std::cout << test_group(molecule, Group(cs,"Ih", false)) << std::endl;
+      std::cout << test_group(molecule, Group(cs,"Ih", true)) << std::endl;
     }
     EXPECT_EQ(group.name(), n.second) << "Molecule: " << n.first << "\n"
-                                      << molecule << "\nfound group (generators): " << Group(group.name(), true)
-                                      << "\nfound group (full): " << group << "\nexpected group: " << Group(n.second);
+                                      << molecule << "\nfound group (generators): " << Group(cs,group.name(), true)
+                                      << "\nfound group (full): " << group << "\nexpected group: " << Group(cs,n.second);
     CoordinateSystem coordinate_system = group.coordinate_system();
     Group groupwanted(coordinate_system, n.second, true);
     SymmetryMeasure sm(molecule, groupwanted);
@@ -440,11 +444,11 @@ TEST(point_charge_symmetry, find_axis_frame) {
     CoordinateSystem cs(RotationParameterType::Euler, molecule.centre_of_charge());
     auto group = Group(cs, n.second);
     std::cout << group[1] << std::endl;
-    auto order = group.highest_rotation(true, 0).order();
+    auto order = group.highest_rotation(cs, true, 0).order();
     group.clear();
     //    group.add(Rotation({1, 3, -7}, order));
     //    group.add(Rotation({0, 0, 1}, order));
-    group.add(Rotation({0, -0.525731, 0.850651}, order));
+    group.add(Rotation(cs, {0, -0.525731, 0.850651}, order));
     if (order > 2) {
       //      std::cout << "try " << n.first << ", axis order=" << order << std::endl;
       //      std::cout << "inertial axes of molecule\n"<<molecule.inertial_axes()<<std::endl;
@@ -533,7 +537,8 @@ TEST(point_charge_symmetry, refine) {
     //    std::cout << projector
 
     auto newmolecule = sm.refine();
-    auto newgroup = Group(group.name());
+    CoordinateSystem cs2;
+    auto newgroup = Group(cs2, group.name());
     double error = SymmetryMeasure(newmolecule, newgroup)();
     EXPECT_LE(error, 1e-12);
     std::cout << error << std::endl;
@@ -640,7 +645,8 @@ TEST(point_charge_symmetry, C) {
   //  auto gr = discover_group(water,cs);
 
   auto expected_groups = create_expected_groups();
-  //    expected_groups.clear();
+      expected_groups.clear();
+  expected_groups["c60"] = "Ih";
   //    expected_groups["benzene"]="D6h";
   //  expected_groups["ch4"] = "Td";
   //    expected_groups["adamantane"] = "Td";
@@ -650,15 +656,18 @@ TEST(point_charge_symmetry, C) {
     //    std::cout << "try " << n.first << std::endl;
     Molecule molecule(n.first + ".xyz");
 
-    if (false and n.first == "adamantane") {
+    if (n.first == "c60") {
       CoordinateSystem cs;
       auto group = Group(cs, n.second);
       EXPECT_TRUE(test_group(molecule, group, 1e-3));
       auto sm = SymmetryMeasure(molecule, group);
       //        std::cout << sm() << std::endl;
       sm.refine_frame();
-      //      std::cout << "C++ style " << n.first << ":" << n.second << " " << sm() << std::endl;
+            std::cout << "C++ style " << n.first << ":" << n.second << " " << sm() << std::endl;
       ASSERT_LE(sm(), 1e-3) << "C++ style " << n.first << ":" << n.second;
+            const auto discovered_group = discover_group(molecule, cs, 1e-3,2).name();
+            ASSERT_EQ(discovered_group, n.second);
+      std::cout << "End of C++ style, discovered group="<<discovered_group<<std::endl;
     }
 
     std::vector<double> xyz, q;
@@ -728,12 +737,14 @@ std::map<std::string, int> create_expected_generator_set_sizes() {
 TEST(point_charge_symmetry, generators) {
   auto generator_set_sizes = create_expected_generator_set_sizes();
   auto orders = create_expected_orders();
+  CoordinateSystem cs;
   for (const auto &gs : generator_set_sizes) {
     //    std::cout << gs.first << " : " << gs.second << std::endl;
-    EXPECT_EQ(Group(gs.first, true).size(), gs.second) << "Group generators:\n"
-                                                       << Group(gs.first, true) << "\nFull group:\n"
-                                                       << Group(gs.first, false);
-    EXPECT_EQ(generate(Group(gs.first, true)).size(), orders[gs.first]);
+    auto group = Group(cs, gs.first, true);
+    EXPECT_EQ(group.size(), gs.second) << "Group generators:\n"
+                                                       << group << "\nFull group:\n"
+                                                       << Group(cs, gs.first, false);
+    EXPECT_EQ(generate(group).size(), orders[gs.first]);
   }
 }
 

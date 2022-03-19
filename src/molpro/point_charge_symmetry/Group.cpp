@@ -5,13 +5,8 @@
 
 namespace molpro::point_charge_symmetry {
 
-static CoordinateSystem s_default_coordinate_system;
 
 Group::Group(CoordinateSystem& coordinate_system) : m_coordinate_system(coordinate_system) {}
-
-// Group::Group(std::string name) : m_coordinate_system(s_group_default_coordinate_system), m_name(std::move(name)) {}
-
-Group::Group() : m_coordinate_system(s_group_default_coordinate_system) {}
 
 Group::Group(CoordinateSystem& coordinate_system, const Group& source)
     : m_coordinate_system(coordinate_system), m_name(source.m_name) {
@@ -27,16 +22,16 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
   const vec zaxis{0, 0, 1};
   const auto all = not generators_only;
   if (all)
-    add(Identity());
+    add(Identity(coordinate_system));
 
   std::smatch m;
 
   if (all and (std::regex_match(name, m, std::regex{"[CD][0-9]*[02468]h"}) or
                std::regex_match(name, m, std::regex{"D[0-9]*[13579]d"}) or
                std::regex_match(name, m, std::regex{"Ih|Th|Oh|Dinfh"})))
-    add(Inversion());
+    add(Inversion(coordinate_system));
   if (name == "Ci")
-    add(Inversion());
+    add(Inversion(coordinate_system));
 
   if (name[0] == 'I') {
     auto gold = (1 + std::sqrt(double(5))) / 2;
@@ -49,9 +44,9 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
         if (pentagons.back().dot(pentagons.front()) < 0)
           pentagons.back() = -pentagons.back();
         for (int count = 1; count < 6; count++) {
-          add(Rotation(pentagons.back(), 5, true, count));
+          add(Rotation(coordinate_system,pentagons.back(), 5, true, count));
           if (name == "Ih")
-            add(Rotation(pentagons.back(), 10, false, 2 * count - 1));
+            add(Rotation(coordinate_system,pentagons.back(), 10, false, 2 * count - 1));
         }
         //                std::cout << "pentagon "<<pentagons.back().transpose()<<std::endl;
       }
@@ -68,32 +63,32 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
         vec bisector, joiner;
         bisector = (pentagons[0] + pentagons[i + 1]) / std::sqrt(double(2));
         joiner = (pentagons[0] - pentagons[i + 1]);
-        add(Rotation(bisector, 2));
+        add(Rotation(coordinate_system, bisector, 2));
         if (name == "Ih")
-          add(Reflection(joiner.cross(bisector)));
+          add(Reflection(coordinate_system, joiner.cross(bisector)));
         bisector = (pentagons[(i + 1) % 5 + 1] + pentagons[i + 1]) / std::sqrt(double(2));
         joiner = (pentagons[(i + 1) % 5 + 1] - pentagons[i + 1]);
-        add(Rotation(bisector, 2));
+        add(Rotation(coordinate_system, bisector, 2));
         if (name == "Ih")
-          add(Reflection(joiner.cross(bisector)));
+          add(Reflection(coordinate_system, joiner.cross(bisector)));
         bisector = (-pentagons[(i + 2) % 5 + 1] + pentagons[i + 1]) / std::sqrt(double(2));
         joiner = (-pentagons[(i + 2) % 5 + 1] - pentagons[i + 1]);
-        add(Rotation(bisector, 2));
+        add(Rotation(coordinate_system, bisector, 2));
         if (name == "Ih")
-          add(Reflection(joiner.cross(bisector)));
+          add(Reflection(coordinate_system, joiner.cross(bisector)));
       }
       for (int i = 0; i < 5; i++)
         for (int count = 1; count < 3; count++) {
-          add(Rotation((pentagons[0] + pentagons[i + 1] + pentagons[(i + 1) % 5 + 1]) / std::sqrt(double(3)), 3, true,
+          add(Rotation(coordinate_system, (pentagons[0] + pentagons[i + 1] + pentagons[(i + 1) % 5 + 1]) / std::sqrt(double(3)), 3, true,
                        count));
           if (name == "Ih")
-            add(Rotation((pentagons[0] + pentagons[i + 1] + pentagons[(i + 1) % 5 + 1]) / std::sqrt(double(3)), 6,
+            add(Rotation(coordinate_system, (pentagons[0] + pentagons[i + 1] + pentagons[(i + 1) % 5 + 1]) / std::sqrt(double(3)), 6,
                          false, 4 * count - 3));
-          add(Rotation((-pentagons[(i + 3) % 5 + 1] + pentagons[i + 1] + pentagons[(i + 1) % 5 + 1]) /
+          add(Rotation(coordinate_system, (-pentagons[(i + 3) % 5 + 1] + pentagons[i + 1] + pentagons[(i + 1) % 5 + 1]) /
                            std::sqrt(double(3)),
                        3, true, count));
           if (name == "Ih")
-            add(Rotation((-pentagons[(i + 3) % 5 + 1] + pentagons[i + 1] + pentagons[(i + 1) % 5 + 1]) /
+            add(Rotation(coordinate_system, (-pentagons[(i + 3) % 5 + 1] + pentagons[i + 1] + pentagons[(i + 1) % 5 + 1]) /
                              std::sqrt(double(3)),
                          6, false, 4 * count - 3));
         }
@@ -104,25 +99,25 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
     for (int axis = 0; axis < 3; axis++) {
       for (int count = 1; count < 4; count += 2) {
         if (all or (name == "O" and axis == 0 and count == 1))
-          add(Rotation(Eigen::Matrix3d::Identity().col(axis), 4, true, count));
+          add(Rotation(coordinate_system, Eigen::Matrix3d::Identity().col(axis), 4, true, count));
         if (name == "Oh" and (all or (axis == 0 and count == 1)))
-          add(Rotation(Eigen::Matrix3d::Identity().col(axis), 4, false, count));
+          add(Rotation(coordinate_system, Eigen::Matrix3d::Identity().col(axis), 4, false, count));
       }
       if (all)
-        add(Rotation(Eigen::Matrix3d::Identity().col(axis), 2, true, 1));
+        add(Rotation(coordinate_system, Eigen::Matrix3d::Identity().col(axis), 2, true, 1));
       if (name == "Oh" and all)
-        add(Reflection(Eigen::Matrix3d::Identity().col(axis)));
+        add(Reflection(coordinate_system, Eigen::Matrix3d::Identity().col(axis)));
       Eigen::Vector3d vec{1, 1, 1};
       vec(axis) = 0;
       if (all)
-        add(Rotation(vec, 2));
+        add(Rotation(coordinate_system, vec, 2));
       if (name == "Oh" and all)
-        add(Reflection(vec));
+        add(Reflection(coordinate_system, vec));
       vec((axis + 1) % 3) = -1;
       if (all)
-        add(Rotation(vec, 2));
+        add(Rotation(coordinate_system, vec, 2));
       if (name == "Oh" and all)
-        add(Reflection(vec));
+        add(Reflection(coordinate_system, vec));
     }
     for (int corner = 0; corner < (all ? 4 : 2); corner++) {
       auto sq2 = std::sqrt(1 / double(2));
@@ -130,27 +125,27 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
         const vec& axis = vec{std::cos((2 * corner + 1) * acos(double(-1)) / 4),
                               std::sin((2 * corner + 1) * acos(double(-1)) / 4), sq2};
         if (all or (name == "O" and corner == 0 and count == 1))
-          add(Rotation(axis, 3, true, count));
+          add(Rotation(coordinate_system, axis, 3, true, count));
         if (name == "Oh" and (all or (corner == 0 and count == 1)))
-          add(Rotation(axis, 6, false, count * 4 - 3));
+          add(Rotation(coordinate_system, axis, 6, false, count * 4 - 3));
       }
     }
   }
   if (name[0] == 'T') {
     for (int axis = 0; axis < 3; axis++) {
       if (name == "Th" and (all or axis == 0))
-        add(Reflection(Eigen::Matrix3d::Identity().col(axis)));
+        add(Reflection(coordinate_system, Eigen::Matrix3d::Identity().col(axis)));
       if (all or (name == "T" and axis == 0))
-        add(Rotation(Eigen::Matrix3d::Identity().col(axis), 2, true, 1));
+        add(Rotation(coordinate_system, Eigen::Matrix3d::Identity().col(axis), 2, true, 1));
       if (name == "Td" and (all or axis == 0))
-        add(Rotation(Eigen::Matrix3d::Identity().col(axis), 4, false, 1));
+        add(Rotation(coordinate_system, Eigen::Matrix3d::Identity().col(axis), 4, false, 1));
       if (name == "Td" and all)
-        add(Rotation(Eigen::Matrix3d::Identity().col(axis), 4, false, 3));
+        add(Rotation(coordinate_system, Eigen::Matrix3d::Identity().col(axis), 4, false, 3));
       if (name == "Td" and all)
-        add(Reflection(Eigen::Matrix3d::Identity().col((axis + 1) % 3) +
+        add(Reflection(coordinate_system, Eigen::Matrix3d::Identity().col((axis + 1) % 3) +
                        Eigen::Matrix3d::Identity().col((axis + 2) % 3)));
       if (name == "Td" and all)
-        add(Reflection(Eigen::Matrix3d::Identity().col((axis + 1) % 3) -
+        add(Reflection(coordinate_system, Eigen::Matrix3d::Identity().col((axis + 1) % 3) -
                        Eigen::Matrix3d::Identity().col((axis + 2) % 3)));
     }
     for (int corner = 0; corner < (all ? 4 : 2); corner++) {
@@ -159,9 +154,9 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
         const vec axis = vec{std::cos((2 * corner + 1) * acos(double(-1)) / 4),
                              std::sin((2 * corner + 1) * acos(double(-1)) / 4), sq2};
         if (all or (corner == 0 and count == 1))
-          add(Rotation(axis, 3, true, count));
+          add(Rotation(coordinate_system, axis, 3, true, count));
         if (name == "Th" and all)
-          add(Rotation(axis, 6, false, count * 4 - 3));
+          add(Rotation(coordinate_system, axis, 6, false, count * 4 - 3));
       }
     }
   }
@@ -171,7 +166,7 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
   }
 
   if (std::regex_match(name, m, std::regex{"Dinfh|Cs|[CD][1-9][0-9]*h"}))
-    add(Reflection(zaxis));
+    add(Reflection(coordinate_system, zaxis));
 
   if (std::regex_match(name, m, std::regex{"([C])([1-9][0-9]*)([v])"}) or
       std::regex_match(name, m, std::regex{"([D])([1-9][0-9]*)([d])"}) or
@@ -179,13 +174,13 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
     auto order = std::stoi(m.str(2));
     auto angle = std::acos(double(-1)) / order;
     for (int count = 0; count < (all ? order : 1); count++)
-      add(Reflection({std::cos(count * angle), std::sin(count * angle), 0}));
+      add(Reflection(coordinate_system, {std::cos(count * angle), std::sin(count * angle), 0}));
   }
   if (std::regex_match(name, m, std::regex{"([D])([1-9]*[13579])([h])"})) {
     auto order = std::stoi(m.str(2));
     auto angle = std::acos(double(-1)) / order;
     for (int count = 0; count < (all ? order : 1); count++)
-      add(Reflection({std::cos((count + double(0.5)) * angle), std::sin((count + double(0.5)) * angle), 0}));
+      add(Reflection(coordinate_system, {std::cos((count + double(0.5)) * angle), std::sin((count + double(0.5)) * angle), 0}));
   }
 
   if (std::regex_match(name, m, std::regex{"([D])([1-9][0-9]*)([^v])?"})) {
@@ -196,36 +191,36 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
       double angle = (std::regex_match(name, m, std::regex{"D[0-9]*[02468]d"}) ? (count + 0.5) : count) *
                      std::acos(double(-1)) / order;
       //      std::cout << "adding C2 for " << name << ", angle=" << angle * 180 / std::acos(double(-1)) << std::endl;
-      add(Rotation({std::cos(angle), std::sin(angle), 0}, 2));
+      add(Rotation(coordinate_system, {std::cos(angle), std::sin(angle), 0}, 2));
     }
   }
 
   if (std::regex_match(name, m, std::regex{"([CD])([1-9][0-9]*)([hvd]*)"})) {
     auto order = std::stoi(m.str(2));
     for (int count = 1; count < (all ? order : 2); count++)
-      add(Rotation(zaxis, order, true, count));
+      add(Rotation(coordinate_system, zaxis, order, true, count));
   }
   if (all and std::regex_match(name, m, std::regex{"([CD])([0-9]*[02468])(h)"})) {
     auto order = std::stoi(m.str(2));
     for (int count = 0; count < (all ? order / 2 : 1); count++)
       if (count * 2 + 1 != order / 2)
-        add(Rotation(zaxis, order, false, count * 2 + 1));
+        add(Rotation(coordinate_system, zaxis, order, false, count * 2 + 1));
     if (order > 2)
       for (int count = 0; count < ((order % 4) ? order / 2 : order / 4); count++)
         if (count * 2 + 1 != ((order % 4) ? order / 2 : order / 4))
-          add(Rotation(zaxis, order / 2, false, count * 2 + 1));
+          add(Rotation(coordinate_system, zaxis, order / 2, false, count * 2 + 1));
   }
   if (all and std::regex_match(name, m, std::regex{"([CD])([0-9]*[13579])(h)"})) {
     auto order = std::stoi(m.str(2));
     for (int count = 0; count < order; count++)
       if (count != (order - 1) / 2)
-        add(Rotation(zaxis, order, false, count * 2 + 1));
+        add(Rotation(coordinate_system, zaxis, order, false, count * 2 + 1));
   }
   if (std::regex_match(name, m, std::regex{"([D])([1-9][0-9]*)(d)"})) {
     auto order = std::stoi(m.str(2));
     for (int count = 0; count < order; count++)
       if (2 * count != (order - 1))
-        add(Rotation(zaxis, 2 * order, false, count * 2 + 1));
+        add(Rotation(coordinate_system, zaxis, 2 * order, false, count * 2 + 1));
   }
   if (std::regex_match(
           name, m,
@@ -234,18 +229,15 @@ Group::Group(CoordinateSystem& coordinate_system, std::string name, bool generat
     auto order = std::stoi(m.str(2));
     for (int count = 1; count < order; count++)
       if (count % 2)
-        add(Rotation(zaxis, order, false, count));
+        add(Rotation(coordinate_system, zaxis, order, false, count));
       else if (count == order / 2)
-        add(Inversion());
+        add(Inversion(coordinate_system));
       else
-        add(Rotation(zaxis, order / 2, true, count / 2));
+        add(Rotation(coordinate_system, zaxis, order / 2, true, count / 2));
   }
 }
 
-Group::Group(const std::string& name, bool generators_only)
-    : Group(s_default_coordinate_system, name, generators_only) {}
-
-Rotation Group::highest_rotation(bool proper, size_t index) const {
+Rotation Group::highest_rotation(const CoordinateSystem& coordinate_system, bool proper, size_t index) const {
   size_t count = 0;
   int order = 0;
   for (const auto& member : m_members)
@@ -255,13 +247,14 @@ Rotation Group::highest_rotation(bool proper, size_t index) const {
     for (const auto& member : m_members)
       if (member->order() == order && member->count() == 1 && (member->proper() or not proper) && index == count++)
         return dynamic_cast<Rotation&>(*member);
-  return Rotation({0, 0, 1}, 1);
+  return Rotation(coordinate_system, {0, 0, 1}, 1);
 }
 
-Group generate(const Group& generator) {
+Group generate(Group& generator) {
   //  auto g = generator;
-  Group g(generator.name(), true);
-  g.add(Identity());
+  auto& coordinate_system = generator.m_coordinate_system;
+  Group g(coordinate_system,generator.name(), true);
+  g.add(Identity(coordinate_system));
   for (size_t last_size = 0; last_size < g.size();) {
     last_size = g.size();
     //    std::cout << "generate iterate last_size="<<last_size<<std::endl;

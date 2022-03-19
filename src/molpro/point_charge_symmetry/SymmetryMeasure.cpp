@@ -240,6 +240,15 @@ void SymmetryMeasure::adopt_inertial_axes() {
     //    std::cout << m_inertia_principal_values(0)-m_inertia_principal_values(2)<<std::endl;
     //    std::cout << m_inertia_principal_values(1)-m_inertia_principal_values(2)<<std::endl;
     if (
+      std::abs(local_inertia_tensor(0, 0) - local_inertia_tensor(1, 1)) < 1e-2 * std::min(local_inertia_tensor(2, 2), double(1))
+        and
+      std::abs(local_inertia_tensor(0, 0) - local_inertia_tensor(2, 2)) < 1e-2 * std::min(local_inertia_tensor(2, 2), double(1))
+        ) { // spherical top
+      std::cout << "found spherical top"<<std::endl;
+      coordinate_system.from_axes();
+      return;
+    }
+    if (
         //         std::abs(local_inertia_tensor(0, 0) - local_inertia_tensor(1, 1)) < 1e-5 *
         //         std::abs(local_inertia_tensor(0, 0) - local_inertia_tensor(2, 2))
         std::abs(local_inertia_tensor(0, 0) - local_inertia_tensor(1, 1)) <
@@ -353,7 +362,8 @@ Molecule SymmetryMeasure::refine(double distance_penalty, bool project, int repe
   auto prof = molpro::Profiler::single()->push("SymmetryMeasure::refine");
   auto molecule = molecule_localised(m_group.coordinate_system(), this->m_molecule);
   //  std::cout << "refine initial molecule\n"<<molecule<<std::endl;
-  auto group = Group(m_group.name());
+  CoordinateSystem cs;
+  auto group = Group(cs, m_group.name());
   //  std::cout << "refine initial group\n"<<group<<std::endl;
   for (int attempt = 0; attempt < repeat; attempt++) {
     auto sm = SymmetryMeasure(molecule, group);
@@ -413,10 +423,10 @@ bool test_group(const Molecule& molecule, const Group& group, double threshold, 
   }
   // scan
   if (sm0.spherical_top()) {
-    //    std::cout << "looking at spherical top, group=" << group.name() << std::endl;
+        std::cout << "looking at spherical top, group=" << group.name() << std::endl;
     //    std::cout << molecule << std::endl;
     group.coordinate_system().from_axes(find_axis_frame(molecule, group));
-    //    std::cout << "find_axis_frame gives " << group.coordinate_system() << std::endl;
+        std::cout << "find_axis_frame gives " << group.coordinate_system() << std::endl;
     //    if (true) {
     //      auto cs = group.coordinate_system();
     //      Group grot(cs);
@@ -430,34 +440,43 @@ bool test_group(const Molecule& molecule, const Group& group, double threshold, 
     //      std::cout << "Symmetry measure " << group[i].name() << " : " << sm(i) << std::endl;
     if (true) {
       CoordinateSystem cs = group.coordinate_system();
+      std::cout << "group.coordinate_system "<<group.coordinate_system()<<std::endl;
       Group grouprot(cs);
-      for (int index = 0; group.highest_rotation(true, index).order() > 1; index++) {
+      std::cout << "grouprot on construction "<<grouprot<<std::endl;
+      auto spin_axis= group.highest_rotation(cs, true, 0).axis();
+      for (int index = 0; group.highest_rotation(cs, true, index).order() > 1; index++) {
         //        std::cout << "consider\n"<<group.highest_rotation(true,index)<<std::endl;
         if (index == 0 or
-            std::abs(group.highest_rotation().axis().dot(group.highest_rotation(true, index).axis())) < 0.99) {
-          grouprot.add(group.highest_rotation(true, index));
+            std::abs(group.highest_rotation(cs, false, 0).axis().dot(group.highest_rotation(cs, true, index).axis())) <
+                0.99) {
+          grouprot.add(group.highest_rotation(cs, true, index));
           if (index > 0)
             break;
         }
       }
-      //      std::cout << "grouprot " << group.name() << "\n" << grouprot << std::endl;
+            std::cout << "grouprot " << group.name() << "\n" << grouprot << std::endl;
       SymmetryMeasure sm(molecule, grouprot);
       const int nscan = 360;
       //      std::cout << "nscan=" << nscan << std::endl;
       double best_measure = 1e50;
       CoordinateSystem::parameters_t best_parameters;
       //      auto parameter_ranges = grouprot.coordinate_system().rotation_generator_ranges();
-      auto axis = group.highest_rotation().axis();
-      //      std::cout << "spin axis = " << axis.transpose() << std::endl;
+//      auto axis = group.highest_rotation(cs, false, 0).axis();
+//      auto axis = dynamic_cast<Rotation*>(grouprot.begin()->get())->axis();
+      auto axis = spin_axis;
+            std::cout << "spin axis = " << axis.transpose() << std::endl;
       double angle = std::acos(double(-1)) * 2 / (nscan);
       Eigen::Matrix3d genx, geny, genz;
       genx << 0, 0, 0, 0, 0, 1, 0, -1, 0;
       geny << 0, 0, -1, 0, 0, 0, 1, 0, 0;
       genz << 0, 1, 0, -1, 0, 0, 0, 0, 0;
       Eigen::Matrix3d rot = (angle * (axis[0] * genx + axis[1] * geny + axis[2] * genz)).exp();
-      //      std::cout << "rotation matrix\n" << rot << std::endl;
+            std::cout << "rotation matrix\n" << rot << std::endl;
+
+      std::cout << "grouprot.coordinate_system() "<< grouprot.coordinate_system() <<std::endl;
       for (int xscan = 0; xscan < nscan; xscan++) {
         grouprot.coordinate_system().from_axes(grouprot.coordinate_system().axes() * rot);
+        std::cout << "new grouprot.coordinate_system() "<< grouprot.coordinate_system() <<std::endl;
         sm.reset_neighbours();
         auto measure = sm();
         if (verbosity > 1)
@@ -504,9 +523,10 @@ bool test_group(const Molecule& molecule, const Group& group, double threshold, 
   return d < threshold;
 }
 Eigen::Matrix3d find_axis_frame(const Molecule& molecule, const Group& group) {
-  auto toprot = group.highest_rotation(true, 0);
-  //  std::cout << "enter find_axis_frame, group " << group.name() << std::endl;
-  //  std::cout << toprot << "\norder? " << toprot.order() << std::endl;
+  CoordinateSystem cs;
+  auto toprot = group.highest_rotation(cs, true, 0);
+    std::cout << "enter find_axis_frame, group " << group.name() << std::endl;
+    std::cout << toprot << "\norder? " << toprot.order() << std::endl;
   if (toprot.order() < 3)
     return Eigen::Matrix3d::Identity();
   auto axis = molecule.findaxis(toprot.order());
@@ -517,7 +537,8 @@ Eigen::Matrix3d find_axis_frame(const Molecule& molecule, const Group& group) {
   //  std::cout << "coordinate system rotation:\n" << group.coordinate_system().axes() << std::endl;
   //  auto toprotaxis =  group.coordinate_system().axes()*toprot.axis();
   auto toprotaxis = toprot.axis();
-  //  std::cout << "toprot.axis "<< toprotaxis.transpose()<<std::endl;
+  std::cout << "axis "<<axis.transpose()<<std::endl;
+    std::cout << "toprot.axis "<< toprotaxis.transpose()<<std::endl;
   Eigen::Matrix3d R;
   R.col(2) = axis.cross(toprotaxis);
   //  std::cout << "r3 " << R.col(2).transpose() << std::endl;
@@ -525,14 +546,15 @@ Eigen::Matrix3d find_axis_frame(const Molecule& molecule, const Group& group) {
   R.col(1) = R.col(2).cross(R.col(0));
   for (int i = 0; i < 3; i++)
     R.col(i) /= R.col(i).norm();
-  //      std::cout << "rotation frame\n" << R << std::endl;
+  std::cout << "r3 " << R.col(2).transpose() << std::endl;
+        std::cout << "rotation frame\n" << R << std::endl;
   //    std::cout << "determinant of rotation frame\n"<<R.determinant()<<std::endl;
   //    std::cout << "R(dag)*R\n" << R.transpose() * R <<std::endl;
-  //      std::cout << "toprot.axis() "<<toprot.axis()<<" "<<axis.dot(toprot.axis()) <<" "<< axis.norm() <<" "<<
-  //      toprot.axis().norm()<<std::endl;
+        std::cout << "toprot.axis() "<<toprot.axis()<<" "<<axis.dot(toprot.axis()) <<" "<< axis.norm() <<" "<<
+        toprot.axis().norm()<<std::endl;
   auto angle =
       std::acos(std::max(double(-1), std::min(double(1), axis.dot(toprotaxis) / (axis.norm() * toprotaxis.norm()))));
-  //    std::cout << "angle=" << angle <<" rad = "<<angle*180/std::acos(double(-1))<< std::endl;
+      std::cout << "angle=" << angle <<" rad = "<<angle*180/std::acos(double(-1))<< std::endl;
 
   if (std::abs(angle) < 1e-12)
     return Eigen::Matrix3d::Identity();
@@ -542,15 +564,9 @@ Eigen::Matrix3d find_axis_frame(const Molecule& molecule, const Group& group) {
   //    std::cout << "determinant of rotation in rotation frame\n"<<rot.determinant()<<std::endl;
   auto new_axes = R * rot * R.inverse();
   //    std::cout << "determinant of new axes\n" << new_axes.determinant() << std::endl;
-  //  std::cout << "new axes\n" << new_axes << std::endl;
+    std::cout << "new axes\n" << new_axes << std::endl;
   return new_axes;
 }
-
-static CoordinateSystem s_default_coordinate_system;
-
-// Group discover_group(const Molecule& molecule, double threshold, int verbosity) {
-//   return discover_group(molecule, s_default_coordinate_system, threshold, verbosity);
-// }
 
 Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_system, double threshold, int verbosity) {
   auto p = molpro::Profiler::single()->push("SymmetryMeasure::discover_group(" + molecule.m_title + ")");
@@ -560,7 +576,8 @@ Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_syst
   const vec zaxis{0, 0, 1};
   const bool generators_only = true;
   constexpr size_t maximum_axis_order = 10;
-  Group result;
+  CoordinateSystem cs;
+  Group result(cs);
   // special?
   for (const auto& n : std::vector<std::string>{"R3", "Dinfh", "Cinfv", "Oh", "O", "Td", "Ih", "I"}) {
 
@@ -573,6 +590,7 @@ Group discover_group(const Molecule& molecule, CoordinateSystem& coordinate_syst
     //    }
     //    std::cout << "coordinate system before second test_group "<<coordinate_system<<std::endl;
     coordinate_system.from_axes(Eigen::Matrix3d::Identity());
+    coordinate_system.origin()=vec{0,0,0};
     if (test_group(molecule,
                    Group(coordinate_system, n,
                          false // TODO make this work with generators for spherical tops. At the moment it allegedly

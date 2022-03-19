@@ -11,7 +11,6 @@ class lesstarget {
 public:
   bool operator()(const T& A, const T& B) const { return (*A) < (*B); }
 };
-static CoordinateSystem s_group_default_coordinate_system;
 class Group {
 protected:
   CoordinateSystem& m_coordinate_system;
@@ -21,11 +20,8 @@ protected:
   std::string m_name;
 
 public:
-  Group();
   Group(CoordinateSystem& coordinate_system);
   Group(CoordinateSystem& coordinate_system, std::string name, bool generators_only = false);
-  Group(const std::string& name, bool generators_only = false);
-  //  Group(std::string name);
   Group(CoordinateSystem& coordinate_system, const Group& source);
   std::string name() const { return m_name; }
   std::string& name() { return m_name; }
@@ -48,7 +44,7 @@ public:
   iterator end() { return m_members.end(); }
   const_iterator end() const { return m_members.end(); }
   size_t size() const { return m_members.size(); }
-  Rotation highest_rotation(bool proper = true, size_t index = 0) const;
+  Rotation highest_rotation(const CoordinateSystem& coordinate_system, bool proper=true, size_t index=0) const;
   //  Operator& operator[](size_t index) { return *(m_members[index]); }
   const Operator& operator[](size_t index) const;
   const_iterator find(const Operator& key) const {
@@ -58,6 +54,7 @@ public:
     }
     throw std::runtime_error("bad key");
   }
+  friend Group generate(Group& generator);
 };
 inline std::ostream& operator<<(std::ostream& os, const Group& g) {
   os << "Group " << g.name() << ", order=" << g.size() << "\n" << g.coordinate_system();
@@ -66,7 +63,7 @@ inline std::ostream& operator<<(std::ostream& os, const Group& g) {
   return os;
 }
 
-Group generate(const Group& generator);
+Group generate(Group& generator);
 
 } // namespace molpro::point_charge_symmetry
 

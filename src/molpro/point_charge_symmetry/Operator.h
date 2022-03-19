@@ -15,7 +15,7 @@ public:
   using vec = CoordinateSystem::vec;
   using mat = CoordinateSystem::mat;
   virtual ~Operator() = default;
-  Operator();
+  Operator() = delete;
   Operator(const CoordinateSystem& coordinate_system) : m_coordinate_system(coordinate_system){};
   /*!
    * @brief Calculate the action of the operator on a vector in global coordinate space
@@ -100,7 +100,6 @@ protected:
   int m_count;
 
 public:
-  Rotation(vec axis, int order = 2, bool proper = true, int count = 1);
   Rotation(const CoordinateSystem& coordinate_system, vec axis, int order = 2, bool proper = true, int count = 1);
   //  vec operator_local(vec v) const override;
   std::string str(const std::string& title, bool coordinate_frame = false) const override;
@@ -116,7 +115,6 @@ public:
 
 class Inversion : public Operator {
 public:
-  Inversion();
   Inversion(const CoordinateSystem& coordinate_system);
   //  vec operator_local(vec v) const override;
   friend class Group;
@@ -127,7 +125,6 @@ public:
 
 class Identity : public Operator {
 public:
-  Identity();
   Identity(const CoordinateSystem& coordinate_system);
   //  vec operator_local(vec v) const override;
   friend class Group;
