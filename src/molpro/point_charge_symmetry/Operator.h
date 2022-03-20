@@ -26,6 +26,8 @@ public:
    * @brief Calculate the derivatives of the action of the operator on a vector in global coordinate space with respect
    * to the parameters defining the CoordinateSystem
    * @param v position vector of a point
+   * @param numerical Whether to different numerically instead of analytically. The value of the parameter is the number of +/- points used.
+   * @param step Step length for numerical differentiation
    * @return The derivatives of operator()(v) with respect to the origin, followed by the axis generator parameters
    */
   std::array<Operator::vec, 6> operator_gradient(vec v, int numerical = 0, double step = 2e-3) const;

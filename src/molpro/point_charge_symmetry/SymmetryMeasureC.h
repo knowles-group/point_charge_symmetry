@@ -28,7 +28,7 @@ extern "C" int SymmetryMeasureOptimiseFrame(const char* groupname, size_t atoms,
 
 /*!
  * @brief Discover the highest order point group for a set of charges
- * @param Threshold for symmetry measure in order to accept membership of group
+ * @param threshold for symmetry measure in order to accept membership of group
  * @param atoms The number of point charges
  * @param coordinates cartesian coordinates running fastest, ie Fortran dimension (3,atoms). On exit they are
  * changed to values expressing position in the new coordinate frame, but relative distances and angles are
@@ -47,7 +47,6 @@ extern "C" char* SymmetryMeasureDiscoverGroup(double threshold, size_t atoms, do
  * changed to values expressing position in the new coordinate frame, and minimising the symmetry measure; relative
  * distances and angles are not preserved.
  * @param charges Charges of atoms, dimension (atoms)
- * @return The value of the symmetry measure after refinement
  */
 extern "C" void SymmetryMeasureRefine(const char* groupname, size_t atoms, double* coordinates, const double* charges);
 
