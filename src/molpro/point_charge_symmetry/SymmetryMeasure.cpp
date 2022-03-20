@@ -361,7 +361,7 @@ Molecule SymmetryMeasure::refine(double distance_penalty, bool project, int repe
         parameters.push_back(atom.position(i));
     const int verbosity = -1;
     auto solver = molpro::linalg::itsolv::create_Optimize<Rvector, Rvector>(
-        "BFGS", "max_size_qspace=12,convergence_threshold=1e-7");
+        "BFGS", "max_size_qspace=12,convergence_threshold=1e-11");
     solver->set_verbosity(linalg::itsolv::Verbosity::None);
     if (verbosity >= 1)
       solver->set_verbosity(linalg::itsolv::Verbosity::Iteration);
