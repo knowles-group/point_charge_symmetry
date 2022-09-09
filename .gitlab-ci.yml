@@ -13,8 +13,8 @@ build-image:
     - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $CI_REGISTRY_IMAGE
   stage: image
   only:
-    refs:
-      - master
+#    refs:
+#      - master
     changes:
       - Dockerfile
       - .gitlab-ci.yml
