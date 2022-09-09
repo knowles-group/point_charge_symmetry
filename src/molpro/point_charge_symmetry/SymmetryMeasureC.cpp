@@ -1,3 +1,4 @@
+#include "molpro_config.h"
 #include "SymmetryMeasureC.h"
 #include "Group.h"
 #include "Molecule.h"

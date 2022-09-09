@@ -4,7 +4,7 @@ module point_charge_symmetry
   interface
     function SymmetryMeasureValueC(groupname, atoms, coordinates, charges) bind(C, name = 'SymmetryMeasureValue')
       use iso_c_binding
-      real(c_double) :: SymmetryMeasureValue
+      real(c_double) :: SymmetryMeasureValueC
       character(c_char), dimension(*), intent(in) :: groupname
       integer(c_size_t), value, intent(in) :: atoms
       real(c_double), dimension(*), intent(in) :: coordinates
@@ -13,7 +13,7 @@ module point_charge_symmetry
 
     function SymmetryMeasureOptimiseFrameC(groupname, atoms, coordinates, charges) bind(C, name = 'SymmetryMeasureOptimiseFrame')
       use iso_c_binding
-      integer(c_int) :: SymmetryMeasureOptimiseFrame
+      integer(c_int) :: SymmetryMeasureOptimiseFrameC
       character(c_char), dimension(*), intent(in) :: groupname
       integer(c_size_t), value, intent(in) :: atoms
       real(c_double), dimension(*), intent(inout) :: coordinates
