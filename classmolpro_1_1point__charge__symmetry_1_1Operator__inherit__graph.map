@@ -1,0 +1,7 @@
+<map id="molpro::point_charge_symmetry::Operator" name="molpro::point_charge_symmetry::Operator">
+<area shape="rect" id="node1" title=" " alt="" coords="5,104,165,145"/>
+<area shape="rect" id="node2" href="$classmolpro_1_1point__charge__symmetry_1_1Identity.html" title=" " alt="" coords="217,5,377,47"/>
+<area shape="rect" id="node3" href="$classmolpro_1_1point__charge__symmetry_1_1Inversion.html" title=" " alt="" coords="216,71,379,112"/>
+<area shape="rect" id="node4" href="$classmolpro_1_1point__charge__symmetry_1_1Reflection.html" title=" " alt="" coords="213,136,381,177"/>
+<area shape="rect" id="node5" href="$classmolpro_1_1point__charge__symmetry_1_1Rotation.html" title=" " alt="" coords="217,201,377,243"/>
+</map>

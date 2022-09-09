@@ -1,0 +1,5 @@
+<map id="molpro::point_charge_symmetry::Reflection" name="molpro::point_charge_symmetry::Reflection">
+<area shape="rect" id="node1" title=" " alt="" coords="33,200,201,241"/>
+<area shape="rect" id="node2" href="$classmolpro_1_1point__charge__symmetry_1_1Operator.html" title=" " alt="" coords="37,109,197,151"/>
+<area shape="rect" id="node3" href="$classmolpro_1_1point__charge__symmetry_1_1CoordinateSystem.html" title="Hold the definition of a coordinate system &#45; origin and axes." alt="" coords="5,5,228,47"/>
+</map>
