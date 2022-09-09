@@ -1,8 +1,8 @@
 include(FetchContent)
 FetchContent_Declare(
         LibraryManager
-        GIT_REPOSITORY https://gitlab.com/molpro/LibraryManager.git
-        GIT_TAG 0.7.2
+        GIT_REPOSITORY https://github.com/molpro/library-manager.git
+        GIT_TAG 0.11.5
 )
 FetchContent_MakeAvailable(LibraryManager)
 LibraryManager_Project(point_charge_symmetry)
@@ -13,7 +13,7 @@ add_subdirectory(molpro)
 LibraryManager_Install(point_charge_symmetry)
 
 include(FetchContent)
-FetchContent_Declare(tclap GIT_REPOSITORY https://gitlab.com/molpro/tclap.git)
+FetchContent_Declare(tclap GIT_REPOSITORY https://github.com/molpro/tclap.git)
 FetchContent_GetProperties(tclap)
 if (NOT tclap_POPULATED)
     FetchContent_Populate(tclap)

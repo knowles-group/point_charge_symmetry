@@ -7,6 +7,6 @@ endforeach ()
 
 DependencyManagerDocs_Add(${PROJECT_NAME}
         FILES ../README.md
-        DOC_URL "https://molpro.gitlab.io/point_charge_symmetry/${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
-        DEPENDS Profiler LinearAlgebra utilities # projects whose documentation has to be built before current project.
+        DOC_URL "https://knowles-group.github.io/point_charge_symmetry"
+        DEPENDS profiler iterative-solver utilities # projects whose documentation has to be built before current project.
         )
