@@ -1,28 +1,4 @@
 var searchData=
 [
-  ['m_5fatoms_42',['m_atoms',['../classmolpro_1_1point__charge__symmetry_1_1Molecule.html#a203f22c659931fd192607af4c18b46e9',1,'molpro::point_charge_symmetry::Molecule']]],
-  ['m_5faxis_43',['m_axis',['../classmolpro_1_1point__charge__symmetry_1_1Rotation.html#abb6ee136f2a0bbb5f657ebe8c56bc334',1,'molpro::point_charge_symmetry::Rotation']]],
-  ['m_5faxis_5fpermutation_5frot90_5fnext_44',['m_axis_permutation_rot90_next',['../classmolpro_1_1point__charge__symmetry_1_1CoordinateSystem.html#ad19380dc340caec7d84a2cc9d1f1f837',1,'molpro::point_charge_symmetry::CoordinateSystem']]],
-  ['m_5fcoordinate_5fsystem_45',['m_coordinate_system',['../classmolpro_1_1point__charge__symmetry_1_1Operator.html#a99f00f9ab327c17009812c7253b24c71',1,'molpro::point_charge_symmetry::Operator::m_coordinate_system()'],['../classmolpro_1_1point__charge__symmetry_1_1Group.html#a5981a8cec50271e54f2dbf0db83391a3',1,'molpro::point_charge_symmetry::Group::m_coordinate_system()']]],
-  ['m_5fcount_46',['m_count',['../classmolpro_1_1point__charge__symmetry_1_1Rotation.html#a4ef3446238b6e82bfbf1a555acdbe319',1,'molpro::point_charge_symmetry::Rotation']]],
-  ['m_5fgroup_47',['m_group',['../classmolpro_1_1point__charge__symmetry_1_1SymmetryMeasure.html#a68f942e5e77ab84b4f0ca8d8227c50d6',1,'molpro::point_charge_symmetry::SymmetryMeasure']]],
-  ['m_5finertia_5fprincipal_5fvalues_48',['m_inertia_principal_values',['../classmolpro_1_1point__charge__symmetry_1_1SymmetryMeasure.html#a88a69f971c31e92cc71a63b8379a679c',1,'molpro::point_charge_symmetry::SymmetryMeasure']]],
-  ['m_5fmembers_49',['m_members',['../classmolpro_1_1point__charge__symmetry_1_1Group.html#aaac4a21c988a5e1e2c1c9b1b46c21757',1,'molpro::point_charge_symmetry::Group']]],
-  ['m_5fmolecule_50',['m_molecule',['../classmolpro_1_1point__charge__symmetry_1_1SymmetryMeasure.html#afa6bc5ce0ed7f6f62a06b48cc70130da',1,'molpro::point_charge_symmetry::SymmetryMeasure']]],
-  ['m_5fn3_51',['m_n3',['../classmolpro_1_1point__charge__symmetry_1_1Projector.html#a16015db0cf1df216f57a110447dd7085',1,'molpro::point_charge_symmetry::Projector']]],
-  ['m_5fname_52',['m_name',['../classmolpro_1_1point__charge__symmetry_1_1Operator.html#a7af58a306d03c37434b273430bcdb605',1,'molpro::point_charge_symmetry::Operator::m_name()'],['../classmolpro_1_1point__charge__symmetry_1_1Group.html#a862e78d8c77beb38f4e9d4d0689db638',1,'molpro::point_charge_symmetry::Group::m_name()']]],
-  ['m_5fneighbours_53',['m_neighbours',['../classmolpro_1_1point__charge__symmetry_1_1SymmetryMeasure.html#ae04d437a6b951c7adce7834054abdedb',1,'molpro::point_charge_symmetry::SymmetryMeasure']]],
-  ['m_5fnormal_54',['m_normal',['../classmolpro_1_1point__charge__symmetry_1_1Reflection.html#ad903d80f4f45d470eec7abab9277a4af',1,'molpro::point_charge_symmetry::Reflection']]],
-  ['m_5forder_55',['m_order',['../classmolpro_1_1point__charge__symmetry_1_1Rotation.html#ab8dc095c03eb0f72db997dc95b9ce161',1,'molpro::point_charge_symmetry::Rotation']]],
-  ['m_5fparameters_56',['m_parameters',['../classmolpro_1_1point__charge__symmetry_1_1CoordinateSystem.html#a84ddd78d489ed7b9cee5299f01b13c06',1,'molpro::point_charge_symmetry::CoordinateSystem']]],
-  ['m_5fproper_57',['m_proper',['../classmolpro_1_1point__charge__symmetry_1_1Rotation.html#a07f01f5be2969b39a601b2969715fad5',1,'molpro::point_charge_symmetry::Rotation']]],
-  ['m_5frotation_5fparameter_5fscale_58',['m_rotation_parameter_scale',['../classmolpro_1_1point__charge__symmetry_1_1CoordinateSystem.html#a880dd02ce8bf89ec2efa20e9ad5c0a9b',1,'molpro::point_charge_symmetry::CoordinateSystem']]],
-  ['m_5frotation_5fparameter_5ftype_59',['m_rotation_parameter_type',['../classmolpro_1_1point__charge__symmetry_1_1CoordinateSystem.html#a6f25e0750bf7b0885e868de574e514ac',1,'molpro::point_charge_symmetry::CoordinateSystem']]],
-  ['m_5ftitle_60',['m_title',['../classmolpro_1_1point__charge__symmetry_1_1Molecule.html#a4cc69ad89625abb8645a4d3b5d2344b8',1,'molpro::point_charge_symmetry::Molecule']]],
-  ['m_5fv_61',['m_V',['../classmolpro_1_1point__charge__symmetry_1_1Projector.html#a2b7e1cf7e3df03798c0a3f148be59325',1,'molpro::point_charge_symmetry::Projector']]],
-  ['mat_62',['mat',['../classmolpro_1_1point__charge__symmetry_1_1Operator.html#a1ce1b799e1e3c52486733f12880a645d',1,'molpro::point_charge_symmetry::Operator::mat()'],['../classmolpro_1_1point__charge__symmetry_1_1CoordinateSystem.html#a9df61c083097e7ea89d5ad62b9d2bed5',1,'molpro::point_charge_symmetry::CoordinateSystem::mat()']]],
-  ['molecule_63',['Molecule',['../classmolpro_1_1point__charge__symmetry_1_1Molecule.html#aa11f66935c6058ab9b6e5a467b58f3b3',1,'molpro::point_charge_symmetry::Molecule::Molecule(const std::string &amp;filename)'],['../classmolpro_1_1point__charge__symmetry_1_1Molecule.html#a2fbbb47c6bd3dd56a461d24a95c73c0f',1,'molpro::point_charge_symmetry::Molecule::Molecule(const Eigen::MatrixXd &amp;coordinates, const Eigen::VectorXd &amp;charges)'],['../classmolpro_1_1point__charge__symmetry_1_1Molecule.html',1,'molpro::point_charge_symmetry::Molecule']]],
-  ['molecule_5flocalised_64',['molecule_localised',['../namespacemolpro_1_1point__charge__symmetry.html#a3e17936a15cca8f213f033c322053f09',1,'molpro::point_charge_symmetry']]],
-  ['molpro_65',['molpro',['../namespacemolpro.html',1,'']]],
-  ['point_5fcharge_5fsymmetry_66',['point_charge_symmetry',['../namespacemolpro_1_1point__charge__symmetry.html',1,'molpro']]]
+  ['log_100',['Log',['../namespacemolpro_1_1point__charge__symmetry.html#a98f75420a563d8c7ffdd3bc95ae992eaace0be71e33226e4c1db2bcea5959f16b',1,'molpro::point_charge_symmetry']]]
 ];

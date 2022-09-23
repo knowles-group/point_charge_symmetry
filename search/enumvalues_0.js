@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['euler_221',['Euler',['../namespacemolpro_1_1point__charge__symmetry.html#a98f75420a563d8c7ffdd3bc95ae992eaa0a7532036415f2491bf5f952220827b8',1,'molpro::point_charge_symmetry']]]
+  ['calls_507',['calls',['https://molpro.github.io/profiler/namespacemolpro_1_1profiler.html#ae9e00894b27b784dadfc76b56d63a602af2bb91e8e7436eaa944c378d44066a79',1,'molpro::profiler']]],
+  ['cpu_508',['cpu',['https://molpro.github.io/profiler/namespacemolpro_1_1profiler.html#ae9e00894b27b784dadfc76b56d63a602ad9747e2da342bdb995f6389533ad1a3d',1,'molpro::profiler']]]
 ];

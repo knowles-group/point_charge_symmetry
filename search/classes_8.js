@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['symmetrymeasure_118',['SymmetryMeasure',['../classmolpro_1_1point__charge__symmetry_1_1SymmetryMeasure.html',1,'molpro::point_charge_symmetry']]]
+  ['reflection_268',['Reflection',['../classmolpro_1_1point__charge__symmetry_1_1Reflection.html',1,'molpro::point_charge_symmetry']]],
+  ['rotation_269',['Rotation',['../classmolpro_1_1point__charge__symmetry_1_1Rotation.html',1,'molpro::point_charge_symmetry']]]
 ];
