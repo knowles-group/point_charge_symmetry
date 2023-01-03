@@ -747,6 +747,13 @@
       <anchor>ac7f0aef0e5a1fe6423619f283594a0da</anchor>
       <arglist>(container_t &amp;d) const override</arglist>
     </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>test_parameters</name>
+      <anchorfile>classmolpro_1_1point__charge__symmetry_1_1Problem__optimise__frame.html</anchorfile>
+      <anchor>ad06a9a8edb56bd92e19efaa6787af756</anchor>
+      <arglist>(unsigned int instance, container_t &amp;parameters) const override</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>molpro::point_charge_symmetry::Projector</name>

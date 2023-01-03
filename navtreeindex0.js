@@ -105,6 +105,7 @@ var NAVTREEINDEX0 =
 "classmolpro_1_1point__charge__symmetry_1_1Problem__optimise__frame.html":[1,0,0,10],
 "classmolpro_1_1point__charge__symmetry_1_1Problem__optimise__frame.html#a1f9fbe2839aac28a059050710387cd91":[1,0,0,10,0],
 "classmolpro_1_1point__charge__symmetry_1_1Problem__optimise__frame.html#ac7f0aef0e5a1fe6423619f283594a0da":[1,0,0,10,1],
+"classmolpro_1_1point__charge__symmetry_1_1Problem__optimise__frame.html#ad06a9a8edb56bd92e19efaa6787af756":[1,0,0,10,3],
 "classmolpro_1_1point__charge__symmetry_1_1Problem__optimise__frame.html#aeae31fd6467c816d2bc02580bbd08a83":[1,0,0,10,2],
 "classmolpro_1_1point__charge__symmetry_1_1Projector.html":[1,0,0,11],
 "classmolpro_1_1point__charge__symmetry_1_1Projector.html#a053a1e3b0e4f1caa137d9e33bb5c8e2d":[1,0,0,11,0],
