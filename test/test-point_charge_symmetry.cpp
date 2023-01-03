@@ -194,7 +194,7 @@ TEST(point_charge_symmetry, SymmetryMeasure_gradient) {
   //  group.add(Rotation({0, 0, 1}, 2));
   //  group.add(Reflection({1, 0, 0}));
   //  group.add(Reflection({0, 1, 0}));
-  auto group = Group(coordinate_system, "C3v");
+  auto group = Group(coordinate_system, "C2v");
   //  int best_axis = 0;
   //  double best_axis_sm = 1e50;
   //  for (int principal_axis = 0; principal_axis < 6; principal_axis++) {

@@ -290,7 +290,7 @@ public:
   Problem_optimise_frame(SymmetryMeasure& sm) : m_sm(sm) {}
   value_t residual(const container_t& parameters, container_t& residual) const override {
     constexpr bool optimize_origin = true;
-    //    std::cout << "parameters: "<<parameters<<std::endl;
+    m_sm.group().coordinate_system().m_parameters = parameters;
     //    residual = m_sm.coordinate_system_gradient(-1, 1);
     //    if (std::inner_product(residual.begin(), residual.end(), residual.begin(), double(0)) > 1e-6) {
     m_sm.reset_neighbours();
@@ -305,6 +305,17 @@ public:
   bool diagonals(container_t& d) const override {
     std::fill(d.begin(), d.end(), 100);
     return true;
+  }
+
+  bool test_parameters(unsigned int instance, container_t& parameters) const override {
+    parameters = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
+    if (instance == 0)
+      return true;
+    if (instance <= 6) {
+      parameters[instance - 1] += 0.01;
+      return true;
+    }
+    return false;
   }
 };
 
@@ -325,6 +336,10 @@ int SymmetryMeasure::refine_frame(int verbosity) {
       std::cout << atom.name << ": " << m_group.coordinate_system().to_local(atom.position).transpose() << std::endl;
   }
   auto problem = Problem_optimise_frame(*this);
+  if (false) {
+    Rvector v0, v1;
+    std::cout << "test_problem: " << solver->test_problem(problem, v0, v1, 0) << std::endl;
+  }
   CoordinateSystem::parameters_t grad;
   solver->set_verbosity(linalg::itsolv::Verbosity::None);
   if (verbosity > 1)
